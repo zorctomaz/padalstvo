@@ -1,0 +1,58 @@
+name: Osveži vremenske podatke in objavi na GitHub Pages
+
+on:
+  schedule:
+    # Vsako uro. Napoved ARSO se ne spreminja tako pogosto, da bi bila
+    # potrebna pogostejša osvežitev; GitHub tudi ne jamči natančne minute
+    # sprožitve pri "schedule" dogodkih.
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+  push:
+    branches:
+      - claude/weather-forecast-mobile-app-cjwy4o
+      # Ko to vejo združiš v glavno vejo (npr. main), dodaj njeno ime sem
+      # (ali ga zamenjaj), da se stran gradi tudi ob vsakem push-u nanjo.
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Namesti odvisnosti
+        run: npm ci
+
+      - name: Zgradi statične vremenske podatke (ARSO, opendata.si)
+        run: node scripts/build-data.js
+
+      - name: Pripravi Pages artefakt
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Objavi na GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

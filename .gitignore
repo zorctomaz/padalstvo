@@ -1,3 +1,7 @@
 node_modules/
 .DS_Store
 *.log
+
+# Zgrajeno s `npm run build:data` (ARSO/opendata.si posnetek) – generira se
+# lokalno ali v GitHub Action, ni del izvorne kode.
+public/data/

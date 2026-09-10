@@ -1,5 +1,11 @@
 'use strict';
 
+/**
+ * Frontend bere izključno statične JSON datoteke iz /data/ – tako deluje
+ * enako na GitHub Pages (brez strežnika) kot pod lokalnim Express strežnikom.
+ * Podatke v /data/ osveži `npm run build:data` (ročno ali prek GitHub Action).
+ */
+
 const state = {
   sites: [],
   currentSiteId: null,
@@ -25,7 +31,32 @@ const el = {
   linksCard: document.getElementById('linksCard'),
   linksList: document.getElementById('linksList'),
   disclaimerBox: document.getElementById('disclaimerBox'),
+  updatedInfo: document.getElementById('updatedInfo'),
 };
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function findNearestSite(lat, lon) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const site of state.sites) {
+    const d = haversineKm(lat, lon, site.lat, site.lon);
+    if (d < bestDist) {
+      bestDist = d;
+      best = site;
+    }
+  }
+  return { site: best, distanceKm: Math.round(bestDist * 10) / 10 };
+}
 
 function setStatus(message, type) {
   if (!message) {
@@ -40,12 +71,26 @@ function setStatus(message, type) {
 }
 
 async function loadSites() {
-  const res = await fetch('/api/sites');
-  const data = await res.json();
-  state.sites = data.sites;
+  const res = await fetch('data/sites.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error('Seznama vzletišč ni bilo mogoče naložiti.');
+  state.sites = await res.json();
   el.siteSelect.innerHTML = state.sites
     .map((s) => `<option value="${s.id}">${s.name} — ${s.region}</option>`)
     .join('');
+}
+
+async function loadMeta() {
+  try {
+    const res = await fetch('data/meta.json', { cache: 'no-store' });
+    if (!res.ok) return;
+    const meta = await res.json();
+    if (meta.generatedAt && el.updatedInfo) {
+      const d = new Date(meta.generatedAt);
+      el.updatedInfo.textContent = 'Podatki osveženi: ' + d.toLocaleString('sl-SI');
+    }
+  } catch (_) {
+    /* ni kritično, spregledamo */
+  }
 }
 
 function requestGeolocation() {
@@ -58,7 +103,11 @@ function requestGeolocation() {
     (pos) => {
       state.userCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
       setStatus(null);
-      loadWeatherByCoords(state.userCoords);
+      const nearest = findNearestSite(state.userCoords.lat, state.userCoords.lon);
+      if (nearest.site) {
+        el.siteSelect.value = nearest.site.id;
+        loadWeatherForSite(nearest.site.id);
+      }
     },
     (err) => {
       setStatus('Lokacije ni bilo mogoče pridobiti (' + err.message + '). Izberite vzletišče ročno.', 'error');
@@ -67,30 +116,19 @@ function requestGeolocation() {
   );
 }
 
-async function loadWeatherByCoords(coords) {
+async function loadWeatherForSite(siteId) {
   setStatus('Nalagam vremenske podatke…');
   try {
-    const res = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
+    const res = await fetch(`data/weather/${siteId}.json`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Podatki za to vzletišče še niso na voljo.');
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Napaka strežnika');
-    state.currentSiteId = data.site.id;
-    el.siteSelect.value = data.site.id;
-    renderWeather(data);
-    setStatus(null);
-  } catch (err) {
-    setStatus('Napaka pri nalaganju podatkov: ' + err.message, 'error');
-  }
-}
 
-async function loadWeatherBySite(siteId) {
-  setStatus('Nalagam vremenske podatke…');
-  try {
-    const coordsQuery = state.userCoords
-      ? `&lat=${state.userCoords.lat}&lon=${state.userCoords.lon}`
-      : '';
-    const res = await fetch(`/api/weather?siteId=${siteId}${coordsQuery}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Napaka strežnika');
+    if (state.userCoords) {
+      data.distanceKm = Math.round(
+        haversineKm(state.userCoords.lat, state.userCoords.lon, data.site.lat, data.site.lon) * 10
+      ) / 10;
+    }
+
     state.currentSiteId = siteId;
     renderWeather(data);
     setStatus(null);
@@ -242,8 +280,8 @@ function renderLinks(data) {
 
 function renderSources(data) {
   const problems = [];
-  if (!data.sources.arso.ok) problems.push('ARSO napoved trenutno ni na voljo.');
-  if (!data.sources.opendata.ok) problems.push('opendata.si podatki trenutno niso na voljo.');
+  if (!data.sources.arso.ok) problems.push('ARSO napoved ni bila na voljo ob zadnji osvežitvi.');
+  if (!data.sources.opendata.ok) problems.push('opendata.si podatki niso bili na voljo ob zadnji osvežitvi.');
   if (problems.length > 0) {
     setStatus(problems.join(' '), 'error');
   }
@@ -261,13 +299,18 @@ function renderWeather(data) {
 }
 
 el.locateBtn.addEventListener('click', requestGeolocation);
-el.siteSelect.addEventListener('change', () => loadWeatherBySite(el.siteSelect.value));
+el.siteSelect.addEventListener('change', () => loadWeatherForSite(el.siteSelect.value));
 
 (async function init() {
-  await loadSites();
-  if (state.sites.length > 0) {
-    el.siteSelect.value = state.sites[0].id;
-    await loadWeatherBySite(state.sites[0].id);
+  try {
+    await loadSites();
+    loadMeta();
+    if (state.sites.length > 0) {
+      el.siteSelect.value = state.sites[0].id;
+      await loadWeatherForSite(state.sites[0].id);
+    }
+    requestGeolocation();
+  } catch (err) {
+    setStatus('Napaka pri nalaganju aplikacije: ' + err.message, 'error');
   }
-  requestGeolocation();
 })();

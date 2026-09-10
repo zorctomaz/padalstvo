@@ -44,10 +44,11 @@ curl "https://vreme.arso.gov.si/api/1.0/location/?location=Bovec"
 s polji `t`, `rh`, `dd`, `ff_val`, `ffmax_val`, `clouds_shortText`, `tp_acc`),
 prilagodite `pick(...)` klice v `src/arso.js`.
 
-## Zagon
+## Zagon (lokalno)
 
 ```bash
 npm install
+npm run build:data   # zgradi public/data/*.json (potrebno, da frontend sploh prikaže podatke)
 npm start
 ```
 
@@ -55,29 +56,90 @@ Aplikacija posluša na `http://localhost:3000` (ali `$PORT`). Odpri jo v
 mobilnem brskalniku (ali z DevTools mobilnim pogledom) – vmesnik je zasnovan
 mobile-first, deluje pa tudi na namizju.
 
-Za razvoj z avtomatskim ponovnim zagonom ob spremembah:
+Za razvoj z avtomatskim ponovnim zagonom ob spremembah strežnika:
 
 ```bash
 npm run dev
 ```
 
+Frontend bere podatke iz `public/data/` (glej razdelek *Namestitev* spodaj),
+zato po vsaki spremembi `src/sites.json` ali če želiš sveže podatke, znova
+poženi `npm run build:data`.
+
 ## Namestitev (deploy)
 
-Aplikacija je navaden Node/Express strežnik brez podatkovne baze – primerna je
-za katerokoli gostovanje, ki poganja Node.js 18+ (Render, Railway, Fly.io,
-VPS + PM2, Docker …). Ni potrebnih API ključev.
+Frontend (`public/`) bere podatke izključno iz statičnih JSON datotek v
+`public/data/` (glej spodaj) – zato ga je mogoče gostiti **popolnoma
+statično**, brez strežnika. `server.js` (Express) je na voljo kot dodatna,
+neobvezna možnost za lokalni razvoj ali za gostovanje s samodejno svežimi
+podatki ob vsakem zagonu; za GitHub Pages ga ne potrebuješ.
+
+### Možnost A: GitHub Pages + lastna domena (priporočeno za ta primer)
+
+Ker je frontend statičen, celotna stran lahko "živi" na GitHub Pages,
+podatki (ARSO/opendata.si) pa se osvežujejo prek priloženega GitHub Action
+(`.github/workflows/update-data.yml`), ki:
+
+1. vsako uro (in ob vsakem `push`-u ter ročno prek zavihka *Actions* →
+   *Run workflow*) požene `node scripts/build-data.js`,
+2. ta zgradi sveže JSON datoteke v `public/data/`,
+3. celotna mapa `public/` se objavi na GitHub Pages prek uradnih
+   `actions/upload-pages-artifact` + `actions/deploy-pages`.
+
+**Pomembno:** podatki se ne osvežijo ob vsakem obisku strani, ampak samo ob
+vsakem teku te Action (privzeto vsako uro) – obiskovalci med dvema tekoma
+vidijo isti posnetek. Čas zadnje osvežitve je viden na vrhu strani
+("Podatki osveženi: …").
+
+Koraki za omogočanje:
+
+1. V nastavitvah repozitorija pojdi na **Settings → Pages** in pod *Build
+   and deployment → Source* izberi **GitHub Actions** (ne "Deploy from a
+   branch").
+2. Če to vejo (`claude/weather-forecast-mobile-app-cjwy4o`) združiš v svojo
+   glavno vejo (npr. `main`), v `update-data.yml` pod `on.push.branches`
+   dodaj/zamenjaj ime te veje, da se stran gradi tudi ob vsakem push-u.
+3. Prvi tek sproži ročno: **Actions → "Osveži vremenske podatke in objavi
+   na GitHub Pages" → Run workflow**. Po par minutah bo stran dosegljiva na
+   `https://<uporabnik>.github.io/<repo>/`.
+4. **Lastna domena:** v **Settings → Pages → Custom domain** vpiši svojo
+   domeno (npr. `vreme.tvojadomena.si`) in shrani – GitHub bo sam ustvaril
+   `CNAME` datoteko v izhodnem artefaktu. Pri registratorju domene nastavi:
+   - za poddomeno (npr. `vreme.tvojadomena.si`): `CNAME` zapis na
+     `<uporabnik>.github.io`;
+   - za apex/golo domeno (`tvojadomena.si`): `A` zapisi na GitHub Pages IP-je
+     `185.199.108.153`, `185.199.109.153`, `185.199.110.153`,
+     `185.199.111.153` (po želji tudi ustrezni `AAAA` za IPv6).
+   - Po propagaciji DNS (lahko traja do nekaj ur) v **Settings → Pages**
+     obkljukaj **Enforce HTTPS**.
+
+### Možnost B: Node/Express strežnik (Render, Railway, Fly.io, VPS + PM2, Docker …)
+
+```bash
+npm install
+npm run build:data   # enkratna izgradnja public/data/ (ali pusti prazno – API poti spodaj delujejo tudi brez tega)
+npm start
+```
+
+Strežnik posluša na `$PORT` (privzeto 3000) in poleg statičnih datotek
+ponuja tudi `/api/sites`, `/api/nearest` in `/api/weather` – uporabno, če
+želiš vedno sveže podatke ob vsaki zahtevi namesto urne osvežitve.
+Ni potrebnih API ključev.
 
 ## Struktura projekta
 
 ```
-server.js              Express strežnik in API poti (/api/sites, /api/nearest, /api/weather)
-src/sites.json          Seznam znanih slovenskih vzletišč (uredi/dodaj po potrebi)
-src/geo.js              Haversine razdalja, iskanje najbližjega vzletišča
-src/fetchUtil.js         fetch s časovno omejitvijo in predpomnilnikom (10 min TTL)
-src/arso.js              Klient za ARSO napoved po imenu kraja
-src/opendata.js          Klient za opendata.si GPS poročilo (radar/ALADIN/toča)
-src/paragliding.js       Izpeljane ocene: baza oblakov, ocena vetra, termika, povezave
-public/                  Mobilno prilagojen frontend (vanilla HTML/CSS/JS, brez build koraka)
+.github/workflows/update-data.yml   Urna osvežitev podatkov + objava na GitHub Pages
+scripts/build-data.js                Zgradi public/data/*.json iz ARSO/opendata.si
+server.js                            (Neobvezno) Express strežnik za lokalni razvoj / žive API poti
+src/sites.json                       Seznam znanih slovenskih vzletišč (uredi/dodaj po potrebi)
+src/geo.js                           Haversine razdalja, iskanje najbližjega vzletišča
+src/fetchUtil.js                     fetch s časovno omejitvijo in predpomnilnikom (10 min TTL)
+src/arso.js                          Klient za ARSO napoved po imenu kraja
+src/opendata.js                      Klient za opendata.si GPS poročilo (radar/ALADIN/toča)
+src/paragliding.js                   Izpeljane ocene: baza oblakov, ocena vetra, termika, povezave
+public/                              Mobilno prilagojen frontend (vanilla HTML/CSS/JS, brez build koraka)
+public/data/                         Generirano z `npm run build:data` – NI v git repozitoriju (.gitignore)
 ```
 
 ## Dodajanje vzletišč
