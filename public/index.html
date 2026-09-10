@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Padalstvo Vreme — napoved za jadralno padalstvo</title>
+  <meta name="description" content="Vremenska napoved za jadralno padalstvo v Sloveniji: veter, termika, baza oblakov po GPS lokaciji, ARSO, SkyTech in letalsko vreme." />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">🪂</span>
+      <div>
+        <h1>Padalstvo Vreme</h1>
+        <p class="subtitle">Napoved za jadralno padalstvo</p>
+      </div>
+    </div>
+    <button id="locateBtn" class="btn btn-primary" type="button">📍 Moja lokacija</button>
+  </header>
+
+  <main id="app">
+    <section class="site-picker card">
+      <label for="siteSelect">Vzletišče</label>
+      <select id="siteSelect"></select>
+      <p id="distanceInfo" class="muted"></p>
+    </section>
+
+    <section id="statusBox" class="status-box" hidden></section>
+
+    <section id="currentCard" class="card current-card" hidden>
+      <h2 id="currentSiteName">—</h2>
+      <p id="currentSiteMeta" class="muted"></p>
+      <div class="current-grid" id="currentGrid"></div>
+    </section>
+
+    <section id="nearbyCard" class="card" hidden>
+      <h3>Padavine in toča v bližini</h3>
+      <div id="nearbyContent" class="nearby-content"></div>
+      <p class="muted small">Vir: opendata.si (ARSO radar / ALADIN)</p>
+    </section>
+
+    <section id="forecastSection" class="card" hidden>
+      <h3>Večdnevna napoved</h3>
+      <div id="dayTabs" class="day-tabs"></div>
+      <div id="timeline" class="timeline"></div>
+    </section>
+
+    <section id="linksCard" class="card" hidden>
+      <h3>Uradni viri in dodatne povezave</h3>
+      <ul id="linksList" class="links-list"></ul>
+    </section>
+
+    <section class="card disclaimer" id="disclaimerBox" hidden></section>
+  </main>
+
+  <footer class="footer">
+    <p>Podatki: ARSO (vreme.arso.gov.si, meteo.si), opendata.si, SkyTech.si. Ni uradna letalska napoved.</p>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

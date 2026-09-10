@@ -1,0 +1,17 @@
+{
+  "name": "padalstvo-vreme",
+  "version": "1.0.0",
+  "description": "Vremenska napoved za jadralno padalstvo v Sloveniji – ARSO, opendata.si in povezave na SkyTech.si ter letalsko vreme, prilagojeno mobilnim napravam.",
+  "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

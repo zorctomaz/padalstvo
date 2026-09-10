@@ -1,0 +1,134 @@
+[
+  {
+    "id": "vogel-bohinj",
+    "name": "Vogel (Bohinj)",
+    "region": "Gorenjska",
+    "lat": 46.2606,
+    "lon": 13.8258,
+    "elevation": 1535,
+    "arsoLocation": "Bohinjska Bistrica",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Vzletišče pri zgornji postaji gondole Vogel nad Bohinjskim jezerom."
+  },
+  {
+    "id": "krvavec",
+    "name": "Krvavec",
+    "region": "Gorenjska",
+    "lat": 46.2989,
+    "lon": 14.5350,
+    "elevation": 1970,
+    "arsoLocation": "Cerklje na Gorenjskem",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Vzletišče na vrhu smučišča Krvavec, dostop z gondolo ali po cesti."
+  },
+  {
+    "id": "kobala-bovec",
+    "name": "Kobala (Bovec)",
+    "region": "Posočje",
+    "lat": 46.1810,
+    "lon": 13.7793,
+    "elevation": 1080,
+    "arsoLocation": "Bovec",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Znano tekmovalno vzletišče nad Bovcem, izhodišče za dolge XC prelete."
+  },
+  {
+    "id": "lijak-vipava",
+    "name": "Lijak (Vipavska dolina)",
+    "region": "Primorska",
+    "lat": 45.8870,
+    "lon": 13.9330,
+    "elevation": 591,
+    "arsoLocation": "Ajdovščina",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Široko travnato vzletišče, znano po močni burji in dobri termiki."
+  },
+  {
+    "id": "kovk-vipava",
+    "name": "Kovk (Vipavska dolina)",
+    "region": "Primorska",
+    "lat": 45.8865,
+    "lon": 13.9591,
+    "elevation": 860,
+    "arsoLocation": "Ajdovščina",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Vzletišče nad Vipavsko dolino, priljubljeno za XC lete proti morju."
+  },
+  {
+    "id": "golte",
+    "name": "Golte",
+    "region": "Savinjska",
+    "lat": 46.3970,
+    "lon": 14.9390,
+    "elevation": 1500,
+    "arsoLocation": "Mozirje",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Vzletišče na smučišču Golte nad Mozirjem."
+  },
+  {
+    "id": "kum",
+    "name": "Kum",
+    "region": "Zasavje",
+    "lat": 46.0889,
+    "lon": 15.0825,
+    "elevation": 1220,
+    "arsoLocation": "Zagorje ob Savi",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Najvišji vrh Zasavja, priljubljeno bližnje vzletišče za Ljubljano."
+  },
+  {
+    "id": "rogla",
+    "name": "Rogla",
+    "region": "Štajerska",
+    "lat": 46.4480,
+    "lon": 15.3280,
+    "elevation": 1517,
+    "arsoLocation": "Zreče",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Vzletišče na Pohorju pri smučišču Rogla."
+  },
+  {
+    "id": "blegos",
+    "name": "Blegoš",
+    "region": "Škofjeloško hribovje",
+    "lat": 46.1290,
+    "lon": 14.0330,
+    "elevation": 1562,
+    "arsoLocation": "Škofja Loka",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Najvišji vrh Škofjeloškega hribovja z razgledom na Alpe."
+  },
+  {
+    "id": "nanos",
+    "name": "Nanos",
+    "region": "Notranjska",
+    "lat": 45.7670,
+    "lon": 14.1040,
+    "elevation": 1262,
+    "arsoLocation": "Postojna",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Planota nad Postojno, znana po burji in dobrih pogojih za XC."
+  },
+  {
+    "id": "porezen",
+    "name": "Porezen",
+    "region": "Cerkljansko",
+    "lat": 46.1830,
+    "lon": 13.8990,
+    "elevation": 1630,
+    "arsoLocation": "Cerkno",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Vzletišče nad Cerknim, izhodišče za lete proti Julijcem."
+  },
+  {
+    "id": "ljubljana-grmada",
+    "name": "Grmada (Ljubljana)",
+    "region": "Osrednja Slovenija",
+    "lat": 46.1130,
+    "lon": 14.5540,
+    "elevation": 676,
+    "arsoLocation": "Ljubljana",
+    "skytechUrl": "https://skytech.si/?p=1",
+    "notes": "Priljubljeno lokalno vzletišče blizu Ljubljane."
+  }
+]
