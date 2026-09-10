@@ -45,8 +45,14 @@ async function main() {
         JSON.stringify(summary, null, 2)
       );
       const ok = summary.sources.arso.ok || summary.sources.opendata.ok;
-      console.log(ok ? 'OK' : 'OPOZORILO: oba vira sta spodletela');
-      results.push({ id: site.id, ok });
+      const dayCount = summary.forecast.length;
+      const firstEntry = summary.forecast[0] && summary.forecast[0].timeline[0];
+      console.log(
+        `ARSO=${summary.sources.arso.ok ? 'OK' : 'NAPAKA(' + summary.sources.arso.error + ')'} ` +
+        `opendata=${summary.sources.opendata.ok ? 'OK' : 'NAPAKA(' + summary.sources.opendata.error + ')'} ` +
+        `dnevi=${dayCount} prvi=${firstEntry ? `${firstEntry.temperatureC}°C/${firstEntry.windSpeedKmh}km/h ${firstEntry.windDirection || ''}` : 'ni podatka'}`
+      );
+      results.push({ id: site.id, ok, dayCount });
     } catch (err) {
       console.log('NAPAKA: ' + err.message);
       results.push({ id: site.id, ok: false, error: err.message });
