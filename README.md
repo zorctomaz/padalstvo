@@ -176,15 +176,22 @@ postaja" tu pomeni potrjen avtomatski telefonski odzivnik (prek SFFA –
 Zveze za prosto letenje Slovenije), ki v realnem času javi veter na
 vzletišču; nekateri od njih naj bi podatke pošiljali tudi na skytech.si.
 **Preverjeno (2026-09-10, prek GitHub Actions – glej Git zgodovino za
-podrobnosti):** skytech.si nima javnega API-ja, seznama postaj ali
-menija, ki bi vodil do posameznih postaj – domača stran ima le 5
-splošnih povezav, njihov skript `ogl.js` je zgolj rotator reklamnih
-pasic, `/?p=1` (prej uporabljen kot generična povezava) pa je navaden
-WordPress zapis. Žive podatke po vsem sodeč ponujajo le prek lastne
-Android aplikacije ali neposrednih URL-jev, ki jih pozna le posamezen
-klub – zato aplikacija namesto ugibane/nekoristne povezave raje pokaže
-telefonsko številko odzivnika (preverjen vir) in samo splošno povezavo
-na skytech.si domov stran.
+podrobnosti):** skytech.si domača stran, dosežena iz GitHub Actions
+(Azure IP), nima menija/seznama postaj in ne vsebuje podatkov (le
+splošna vsebina). Isti obiskovalec v pravem brskalniku (domač/mobilni
+IP) na `skytech.si` vidi polno tabelo živih postaj po regijah
+(hitrost/sunki/smer vetra, temperatura). Vzrok: odzivna glava
+`server: BitNinja-WafPro` razkriva **protibotni požarni zid**, ki
+avtomatiziran/datacenter promet prepozna po IP-ju/omrežnem ugledu in mu
+servira osiromašeno vsebino, še preden pride do dejanskih podatkov –
+enako se je zgodilo z bot-like, pravim Chrome in brez User-Agent glave.
+Stran tudi ne pošilja CORS glav, zato branje neposredno iz brskalnika
+obiskovalca prek JS na naši strani prav tako ni mogoče (brskalnik bi
+odgovor blokiral). Ker gre za namerno protiscraping zaščito lastnika
+strani, tega nismo poskušali obiti (npr. z rezidenčnimi proxy
+storitvami) brez njihovega dovoljenja – namesto tega aplikacija pokaže
+telefonsko številko odzivnika (preverjen, legitimen vir) in samo
+splošno povezavo na skytech.si domov stran za ročni ogled.
 
 Trenutno potrjeno: **Vogel, Krvavec (Ambrož pod Krvavcem), Kobala, Kovk**.
 Za ostala vzletišča `liveStation.confirmed` ostaja `false` – če veš za
