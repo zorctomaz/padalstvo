@@ -1,49 +1,38 @@
 'use strict';
-// Začasen razhroščevalni skript: preveri, ali je mogoče iz skytech.si
-// programsko prebrati hitrost/smer vetra po postajah (ni javnega API-ja,
-// zato preverimo surov HTML).
+// Začasen razhroščevalni skript, 2. krog: poišči meni/povezave do postaj
+// in preveri lasten skript ogl.js (morda vsebuje AJAX endpoint).
 
-async function inspect(url) {
-  console.log('\n===== ' + url + ' =====');
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; padalstvo-vreme-debug/1.0)',
-        Accept: 'text/html',
-      },
-    });
-    console.log('STATUS:', res.status, res.statusText);
-    const text = await res.text();
-    console.log('BODY LENGTH:', text.length);
-
-    // Ali stran uporablja iframe/JS za prikaz podatkov (pogosto pri takih widgetih)?
-    const iframeMatches = [...text.matchAll(/<iframe[^>]*src=["']([^"']+)["']/gi)].map((m) => m[1]);
-    console.log('IFRAME SRC-ji:', iframeMatches.slice(0, 20));
-
-    // Poišči morebitne AJAX/API klice v <script> vsebini
-    const scriptUrls = [...text.matchAll(/(https?:\/\/[^\s"'<>]+\.(?:php|json|asp|aspx)[^\s"'<>]*)/gi)].map((m) => m[1]);
-    console.log('MOŽNI API/PHP URL-ji v HTML:', [...new Set(scriptUrls)].slice(0, 20));
-
-    // Poišči besede povezane z vetrom (za grobo oceno, ali so podatki v samem HTML)
-    const windIdx = text.search(/veter|km\/h|m\/s|wind/i);
-    console.log('Prvo pojavljanje "veter/wind/km/h" na indeksu:', windIdx);
-    if (windIdx >= 0) {
-      console.log('Izsek okoli tega mesta:');
-      console.log(text.slice(Math.max(0, windIdx - 300), windIdx + 700));
-    }
-
-    // Izpiši splošno strukturo <body> (prvih 2000 znakov za orientacijo)
-    const bodyMatch = text.match(/<body[^>]*>([\s\S]*)/i);
-    if (bodyMatch) {
-      console.log('ZAČETEK <body> (prvih 1500 znakov):');
-      console.log(bodyMatch[1].slice(0, 1500));
-    }
-  } catch (err) {
-    console.log('NAPAKA:', err.message);
-  }
+async function fetchText(url) {
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; padalstvo-vreme-debug/1.0)' },
+  });
+  const text = await res.text();
+  return { status: res.status, text };
 }
 
 (async () => {
-  await inspect('https://skytech.si/');
-  await inspect('https://skytech.si/?p=1');
+  const { status, text } = await fetchText('https://skytech.si/');
+  console.log('HOMEPAGE STATUS:', status, 'LENGTH:', text.length);
+
+  // Vse povezave v meniju/strani (href + besedilo), da najdemo "Postaje"/"Vreme" ipd.
+  const links = [...text.matchAll(/<a[^>]*href=["']([^"']+)["'][^>]*>([^<]*)<\/a>/gi)]
+    .map((m) => ({ href: m[1], text: m[2].trim() }))
+    .filter((l) => l.text || l.href.includes('skytech'));
+  console.log('VSE POVEZAVE (' + links.length + '):');
+  console.log(JSON.stringify(links, null, 2));
+
+  // Poišči vse številke + enote (km/h, m/s, °C) v celotnem HTML - morda so postaje
+  // naštete kot statične vrednosti na strani (redko, a preverimo).
+  const dataPoints = [...text.matchAll(/([\wčšž .-]{2,30})\s*[:\-]?\s*(\d{1,3}(?:[.,]\d)?)\s*(km\/h|m\/s|°C)/gi)];
+  console.log('MOREBITNI PODATKOVNI VZORCI:', dataPoints.slice(0, 30).map((m) => m[0]));
+
+  // Preveri ogl.js
+  try {
+    const oglRes = await fetchText('https://skytech.si/skytechsys/ogl.js?v=2.3');
+    console.log('\nogl.js STATUS:', oglRes.status, 'LENGTH:', oglRes.text.length);
+    console.log('ogl.js VSEBINA (prvih 3000 znakov):');
+    console.log(oglRes.text.slice(0, 3000));
+  } catch (err) {
+    console.log('ogl.js NAPAKA:', err.message);
+  }
 })();
