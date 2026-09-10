@@ -8,7 +8,8 @@
     "elevation": 1535,
     "arsoLocation": "Bohinjska Bistrica",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Vzletišče pri zgornji postaji gondole Vogel nad Bohinjskim jezerom."
+    "launchWindDirections": ["E", "NE"],
+    "notes": "Vzletišče pri zgornji postaji gondole Vogel nad Bohinjskim jezerom. Primerna smer vetra: V–SV."
   },
   {
     "id": "krvavec",
@@ -19,7 +20,8 @@
     "elevation": 1970,
     "arsoLocation": "Cerklje na Gorenjskem",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Vzletišče na vrhu smučišča Krvavec, dostop z gondolo ali po cesti."
+    "launchWindDirections": null,
+    "notes": "Vzletišče na vrhu smučišča Krvavec, dostop z gondolo ali po cesti. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
   },
   {
     "id": "kobala-bovec",
@@ -30,7 +32,8 @@
     "elevation": 1080,
     "arsoLocation": "Bovec",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Znano tekmovalno vzletišče nad Bovcem, izhodišče za dolge XC prelete."
+    "launchWindDirections": ["E", "SE", "SW", "W"],
+    "notes": "Znano tekmovalno vzletišče nad Bovcem, izhodišče za dolge XC prelete. Primerna smer vetra: V, JV, JZ, Z (dve možni smeri vzleta)."
   },
   {
     "id": "lijak-vipava",
@@ -41,7 +44,8 @@
     "elevation": 591,
     "arsoLocation": "Ajdovščina",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Široko travnato vzletišče, znano po močni burji in dobri termiki."
+    "launchWindDirections": ["SW", "S", "SE"],
+    "notes": "Široko travnato vzletišče, znano po močni burji in dobri termiki. Primerna smer vetra: JZ, J, JV."
   },
   {
     "id": "kovk-vipava",
@@ -52,7 +56,8 @@
     "elevation": 860,
     "arsoLocation": "Ajdovščina",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Vzletišče nad Vipavsko dolino, priljubljeno za XC lete proti morju."
+    "launchWindDirections": ["S", "SW", "W"],
+    "notes": "Vzletišče nad Vipavsko dolino, priljubljeno za XC lete proti morju. Primerna smer vetra: J, JZ, Z."
   },
   {
     "id": "golte",
@@ -63,7 +68,8 @@
     "elevation": 1500,
     "arsoLocation": "Mozirje",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Vzletišče na smučišču Golte nad Mozirjem."
+    "launchWindDirections": null,
+    "notes": "Vzletišče na smučišču Golte nad Mozirjem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
   },
   {
     "id": "kum",
@@ -74,7 +80,8 @@
     "elevation": 1220,
     "arsoLocation": "Zagorje ob Savi",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Najvišji vrh Zasavja, priljubljeno bližnje vzletišče za Ljubljano."
+    "launchWindDirections": null,
+    "notes": "Najvišji vrh Zasavja, priljubljeno bližnje vzletišče za Ljubljano. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
   },
   {
     "id": "rogla",
@@ -85,7 +92,8 @@
     "elevation": 1517,
     "arsoLocation": "Zreče",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Vzletišče na Pohorju pri smučišču Rogla."
+    "launchWindDirections": null,
+    "notes": "Vzletišče na Pohorju pri smučišču Rogla. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
   },
   {
     "id": "blegos",
@@ -96,7 +104,8 @@
     "elevation": 1562,
     "arsoLocation": "Škofja Loka",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Najvišji vrh Škofjeloškega hribovja z razgledom na Alpe."
+    "launchWindDirections": null,
+    "notes": "Najvišji vrh Škofjeloškega hribovja z razgledom na Alpe. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
   },
   {
     "id": "nanos",
@@ -107,7 +116,8 @@
     "elevation": 1262,
     "arsoLocation": "Postojna",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Planota nad Postojno, znana po burji in dobrih pogojih za XC."
+    "launchWindDirections": null,
+    "notes": "Planota nad Postojno, znana po burji in dobrih pogojih za XC. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
   },
   {
     "id": "porezen",
@@ -118,7 +128,8 @@
     "elevation": 1630,
     "arsoLocation": "Cerkno",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Vzletišče nad Cerknim, izhodišče za lete proti Julijcem."
+    "launchWindDirections": null,
+    "notes": "Vzletišče nad Cerknim, izhodišče za lete proti Julijcem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
   },
   {
     "id": "ljubljana-grmada",
@@ -129,6 +140,7 @@
     "elevation": 676,
     "arsoLocation": "Ljubljana",
     "skytechUrl": "https://skytech.si/?p=1",
-    "notes": "Priljubljeno lokalno vzletišče blizu Ljubljane."
+    "launchWindDirections": null,
+    "notes": "Priljubljeno lokalno vzletišče blizu Ljubljane. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
   }
 ]

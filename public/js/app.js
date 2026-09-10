@@ -27,6 +27,7 @@ const el = {
   nearbyContent: document.getElementById('nearbyContent'),
   forecastSection: document.getElementById('forecastSection'),
   dayTabs: document.getElementById('dayTabs'),
+  xcSummary: document.getElementById('xcSummary'),
   timeline: document.getElementById('timeline'),
   linksCard: document.getElementById('linksCard'),
   linksList: document.getElementById('linksList'),
@@ -174,12 +175,17 @@ function renderCurrent(data) {
         : '—',
       p.wind
     ),
+    metricBox('Smer vs. vzletišče', p.launchAlignment.octant || '—', p.launchAlignment),
     metricBox('Sunki vetra', firstEntry.windGustKmh != null ? `${firstEntry.windGustKmh} km/h` : '—'),
     metricBox('Baza oblakov', p.cloudBaseM != null ? `~${p.cloudBaseM} m n.m.` : '—'),
     metricBox('Termika', firstEntry.cloudCover || '—', p.thermal),
     metricBox('Padavine', firstEntry.precipitationMm != null ? `${firstEntry.precipitationMm} mm/3h` : '—'),
   ].join('');
   el.currentCard.hidden = false;
+
+  if (data.site.launchWindDirections) {
+    el.currentSiteMeta.textContent += ` · Primerna smer vzleta: ${data.site.launchWindDirections.join(', ')}`;
+  }
 }
 
 function renderNearby(data) {
@@ -240,7 +246,20 @@ function formatTime(timeStr) {
   return d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
 }
 
+function renderXcSummary(day) {
+  const w = day.thermalWindow;
+  if (!w) {
+    el.xcSummary.textContent = 'Ni dovolj podatkov za oceno termalnega okna.';
+    return;
+  }
+  const windowText = w.startHour != null
+    ? `Okvirno termalno okno: ${String(w.startHour).padStart(2, '0')}:00–${String(w.endHour).padStart(2, '0')}:00 (~${w.durationHours} h).`
+    : 'Termalno okno danes verjetno zelo kratko ali odsotno.';
+  el.xcSummary.innerHTML = `${windowText} <span class="${pillClass(w.xc.color)}">${w.xc.label}</span>`;
+}
+
 function renderTimeline(day) {
+  renderXcSummary(day);
   if (!day || !day.timeline || day.timeline.length === 0) {
     el.timeline.innerHTML = '<p class="muted">Ni podatkov za ta dan.</p>';
     return;
@@ -258,6 +277,7 @@ function renderTimeline(day) {
             ${entry.cloudCover || ''}
           </div>
           <div class="${pillClass(p.wind.color)}">${p.wind.label}</div>
+          ${p.launchAlignment.known ? `<div class="${pillClass(p.launchAlignment.color)}">${p.launchAlignment.octant}</div>` : ''}
         </div>
       `;
     })
@@ -271,6 +291,7 @@ function renderLinks(data) {
     { href: links.arsoAviation, label: 'ARSO – letalsko vreme (GAFOR, SIGWX)' },
     { href: links.arsoRadar, label: 'ARSO – radarska slika padavin' },
     { href: links.skytech, label: 'SkyTech.si – žive vremenske postaje' },
+    { href: links.windAloft, label: 'Veter na višini (Windy.com, izberi nivo/hPa)' },
   ];
   el.linksList.innerHTML = items
     .map((i) => `<li><a href="${i.href}" target="_blank" rel="noopener">${i.label} ↗</a></li>`)

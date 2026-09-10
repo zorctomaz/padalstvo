@@ -219,6 +219,15 @@ select {
   color: white;
 }
 
+.xc-summary {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
 .timeline {
   display: flex;
   flex-direction: column;

@@ -3,8 +3,16 @@
 Spletna aplikacija (v celoti prilagojena mobilnim napravam) za vremensko napoved
 za **jadralno padalstvo** v Sloveniji. Na podlagi GPS lokacije uporabnika najde
 najbližje znano vzletišče in prikaže vremenske podatke ter iz njih izpeljane
-ocene, pomembne za pilote: veter (hitrost/smer/sunki), oceno baze oblakov,
-grobo oceno termike in padavine/točo v bližini.
+ocene, pomembne za pilote:
+
+- veter (hitrost/smer/sunki) z oceno primernosti za let,
+- **primerjava smeri vetra z znano primerno smerjo vzleta** (kjer je ta
+  potrjena – glej opombo spodaj),
+- grobo oceno baze oblakov,
+- grobo oceno termike in **okvirno "termalno okno"** (v katerih urah je
+  termika verjetno aktivna) z oceno primernosti za XC prelete,
+- padavine/točo v bližini,
+- povezavo na veter na višini (za oceno strižnega vetra pri XC preletih).
 
 ## Viri podatkov
 
@@ -14,6 +22,21 @@ grobo oceno termike in padavine/točo v bližini.
 | **opendata.si** – `opendata.si/vreme/report/` | ARSO radar padavin, ALADIN napoved oblačnosti/padavin, verjetnost toče – neposredno po GPS koordinati | Strežnik (`src/opendata.js`) pridobi podatke za koordinato vzletišča/uporabnika |
 | **ARSO letalsko vreme** – `meteo.si/met/sl/aviation/` | GAFOR, SIGWX, karte vetra na višini | Aplikacija povezuje neposredno na uradno stran (grafični/besedilni produkti, primerni za odpiranje, ne za avtomatsko razčlenjevanje) |
 | **SkyTech.si** | Žive vremenske postaje (veter v realnem času) na več slovenskih lokacijah | Aplikacija povezuje na SkyTech, ker ne objavljajo uradnega javnega API-ja |
+| **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model | Dodatna povezava na koordinato vzletišča – ARSO/meteo.si javno ne objavlja strojno berljivih kart vetra na višini, zato je Windy pragmatična dopolnitev |
+
+### Ocene, specifične za jadralno padalstvo
+
+| Ocena | Kako je izračunana | Zanesljivost |
+|---|---|---|
+| **Primernost smeri vetra za vzlet** (`rateLaunchAlignment`) | Napovedano smer vetra primerja s seznamom `launchWindDirections` pri vzletišču (`src/sites.json`) | Potrjeno (iz javno dostopnih opisov vzletišč) le za Vogel, Kobalo, Lijak in Kovk. Pri ostalih vzletiščih je polje `null` in aplikacija to jasno pove namesto ugibanja. **Pred letom vedno preveri z lokalnim društvom/šolo letenja.** |
+| **Termalno okno in XC ocena** (`estimateThermalWindow`) | Iz dnevnega poteka temperature/oblačnosti/padavin/vetra oceni približne ure aktivne termike | Groba hevristika, ne meteorološki model. Ne upošteva orografije, senc, inverzij ipd. |
+| **Baza oblakov** (`estimateCloudBaseM`) | Klasično pravilo: 125 m na °C razlike med temperaturo in rosiščem | Standarden približek, uporaben za grobo oceno, ne za natančno letalsko planiranje |
+
+Pomembna tehnična opomba o smeri vetra: ARSO besedilna polja (npr. `dd_shortText`)
+so predvidoma v slovenskih okrajšavah (S = sever, J = jug, V = vzhod, Z = zahod),
+zato razčlenjevalnik namenoma NE podpira hkrati angleških okrajšav (bi bilo
+dvoumno – npr. "S" bi lahko pomenilo sever ali "South"). Če je v odgovoru na
+voljo številska stopinja smeri, jo aplikacija uporabi prednostno.
 
 ### Pomembna opomba o zanesljivosti
 

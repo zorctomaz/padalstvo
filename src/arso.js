@@ -44,6 +44,7 @@ function normalizeTimelineEntry(entry) {
   const t = toNumber(pick(entry, ['t', 'T', 'temp', 'temperature']));
   const rh = toNumber(pick(entry, ['rh', 'RH', 'humidity']));
   const windDir = pick(entry, ['dd_shortText', 'dd_decodeText', 'dd', 'wind_dir', 'windDirection']);
+  const windDirDeg = toNumber(pick(entry, ['dd_deg', 'dd_val', 'wind_dir_deg', 'windDirectionDeg']));
   const windSpeed = toNumber(pick(entry, ['ff_val', 'ff', 'wind_speed', 'windSpeed']));
   const windGust = toNumber(pick(entry, ['ffmax_val', 'ffmax', 'gust', 'wind_gust', 'windGust']));
   const clouds = pick(entry, ['clouds_shortText', 'clouds_decodeText', 'cloudsIcon', 'clouds']);
@@ -56,6 +57,7 @@ function normalizeTimelineEntry(entry) {
     temperatureC: t,
     relativeHumidity: rh,
     windDirection: windDir || null,
+    windDirectionDeg: windDirDeg,
     windSpeedKmh: windSpeed,
     windGustKmh: windGust,
     cloudCover: clouds || null,
