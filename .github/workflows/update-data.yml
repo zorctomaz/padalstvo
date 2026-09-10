@@ -38,6 +38,9 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
+      - name: RAZHROŠČEVANJE – skytech.si z realnim UA (začasno)
+        run: node scripts/debug-skytech.js
+
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si)
         run: node scripts/build-data.js
 
