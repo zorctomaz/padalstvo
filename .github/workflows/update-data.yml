@@ -38,6 +38,9 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
+      - name: RAZHROŠČEVANJE – surov ARSO odgovor (začasno)
+        run: node scripts/debug-arso.js
+
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si)
         run: node scripts/build-data.js
 
