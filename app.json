@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Burja",
+    "slug": "burja-sailing",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "burja",
+    "description": "Aplikacija za jadralce: lokalna vremenska napoved, sosednje ladje (AIS) na zemljevidu in sporočila prijavljenim ladjam.",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Burja potrebuje tvojo lokacijo za prikaz lokalne vremenske napovedi in sosednjih ladij v bližini."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.burja.sailing",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Burja potrebuje tvojo lokacijo za prikaz lokalne vremenske napovedi in sosednjih ladij v bližini."
+      }
+    },
+    "android": {
+      "package": "com.burja.sailing",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B3D5C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
