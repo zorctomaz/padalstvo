@@ -6,46 +6,78 @@
     "lat": 46.2606,
     "lon": 13.8258,
     "elevation": 1535,
-    "arsoLocation": "Bohinjska Bistrica",
+    "arsoLocation": "Bled",
     "skytechUrl": "https://skytech.si/?p=1",
-    "launchWindDirections": ["E", "NE"],
-    "notes": "Vzletišče pri zgornji postaji gondole Vogel nad Bohinjskim jezerom. Primerna smer vetra: V–SV."
+    "launchWindDirections": [
+      "E",
+      "NE"
+    ],
+    "liveStation": {
+      "confirmed": true,
+      "phone": "031 704 911",
+      "note": "Avtomatska vremenska postaja (telefonski odzivnik, prek SFFA). Podatki naj bi se ~vsakih 10 min objavljali tudi na skytech.si, a natančne povezave do te postaje nismo mogli preveriti."
+    },
+    "notes": "Vzletišče pri zgornji postaji gondole Vogel nad Bohinjskim jezerom. Primerna smer vetra: V–SV. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)"
   },
   {
     "id": "krvavec",
     "name": "Krvavec",
     "region": "Gorenjska",
     "lat": 46.2989,
-    "lon": 14.5350,
+    "lon": 14.535,
     "elevation": 1970,
-    "arsoLocation": "Cerklje na Gorenjskem",
+    "arsoLocation": "Kranj",
     "skytechUrl": "https://skytech.si/?p=1",
     "launchWindDirections": null,
-    "notes": "Vzletišče na vrhu smučišča Krvavec, dostop z gondolo ali po cesti. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
+    "liveStation": {
+      "confirmed": true,
+      "phone": "031 712 318",
+      "note": "Avtomatska postaja Ambrož pod Krvavcem (telefonski odzivnik, prek SFFA). Lega postaje ni vedno reprezentativna za vzletišče. Natančne povezave na skytech.si nismo mogli preveriti."
+    },
+    "notes": "Vzletišče na vrhu smučišča Krvavec, dostop z gondolo ali po cesti. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)"
   },
   {
     "id": "kobala-bovec",
     "name": "Kobala (Bovec)",
     "region": "Posočje",
-    "lat": 46.1810,
+    "lat": 46.181,
     "lon": 13.7793,
     "elevation": 1080,
     "arsoLocation": "Bovec",
     "skytechUrl": "https://skytech.si/?p=1",
-    "launchWindDirections": ["E", "SE", "SW", "W"],
+    "launchWindDirections": [
+      "E",
+      "SE",
+      "SW",
+      "W"
+    ],
+    "liveStation": {
+      "confirmed": true,
+      "phone": "041 646 319",
+      "note": "Avtomatska vremenska postaja na vzletišču (telefonski odzivnik, prek SFFA). Natančne povezave do postaje na skytech.si nismo mogli preveriti."
+    },
     "notes": "Znano tekmovalno vzletišče nad Bovcem, izhodišče za dolge XC prelete. Primerna smer vetra: V, JV, JZ, Z (dve možni smeri vzleta)."
   },
   {
     "id": "lijak-vipava",
     "name": "Lijak (Vipavska dolina)",
     "region": "Primorska",
-    "lat": 45.8870,
-    "lon": 13.9330,
+    "lat": 45.887,
+    "lon": 13.933,
     "elevation": 591,
-    "arsoLocation": "Ajdovščina",
+    "arsoLocation": "Nova Gorica",
     "skytechUrl": "https://skytech.si/?p=1",
-    "launchWindDirections": ["SW", "S", "SE"],
-    "notes": "Široko travnato vzletišče, znano po močni burji in dobri termiki. Primerna smer vetra: JZ, J, JV."
+    "launchWindDirections": [
+      "SW",
+      "S",
+      "SE"
+    ],
+    "liveStation": {
+      "confirmed": false,
+      "phone": null,
+      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira; v bližini (Kovk) taka postaja obstaja."
+    },
+    "notes": "Široko travnato vzletišče, znano po močni burji in dobri termiki. Primerna smer vetra: JZ, J, JV. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)"
   },
   {
     "id": "kovk-vipava",
@@ -54,22 +86,36 @@
     "lat": 45.8865,
     "lon": 13.9591,
     "elevation": 860,
-    "arsoLocation": "Ajdovščina",
+    "arsoLocation": "Nova Gorica",
     "skytechUrl": "https://skytech.si/?p=1",
-    "launchWindDirections": ["S", "SW", "W"],
-    "notes": "Vzletišče nad Vipavsko dolino, priljubljeno za XC lete proti morju. Primerna smer vetra: J, JZ, Z."
+    "launchWindDirections": [
+      "S",
+      "SW",
+      "W"
+    ],
+    "liveStation": {
+      "confirmed": true,
+      "phone": "031 599 306",
+      "note": "Avtomatska vremenska postaja na vzletišču (telefonski odzivnik, prek SFFA). Natančne povezave do postaje na skytech.si nismo mogli preveriti."
+    },
+    "notes": "Vzletišče nad Vipavsko dolino, priljubljeno za XC lete proti morju. Primerna smer vetra: J, JZ, Z. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)"
   },
   {
     "id": "golte",
     "name": "Golte",
     "region": "Savinjska",
-    "lat": 46.3970,
-    "lon": 14.9390,
+    "lat": 46.397,
+    "lon": 14.939,
     "elevation": 1500,
-    "arsoLocation": "Mozirje",
+    "arsoLocation": "Celje",
     "skytechUrl": "https://skytech.si/?p=1",
     "launchWindDirections": null,
-    "notes": "Vzletišče na smučišču Golte nad Mozirjem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
+    "notes": "Vzletišče na smučišču Golte nad Mozirjem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
+    "liveStation": {
+      "confirmed": false,
+      "phone": null,
+      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+    }
   },
   {
     "id": "kum",
@@ -78,69 +124,99 @@
     "lat": 46.0889,
     "lon": 15.0825,
     "elevation": 1220,
-    "arsoLocation": "Zagorje ob Savi",
+    "arsoLocation": "Ljubljana",
     "skytechUrl": "https://skytech.si/?p=1",
     "launchWindDirections": null,
-    "notes": "Najvišji vrh Zasavja, priljubljeno bližnje vzletišče za Ljubljano. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
+    "notes": "Najvišji vrh Zasavja, priljubljeno bližnje vzletišče za Ljubljano. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
+    "liveStation": {
+      "confirmed": false,
+      "phone": null,
+      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+    }
   },
   {
     "id": "rogla",
     "name": "Rogla",
     "region": "Štajerska",
-    "lat": 46.4480,
-    "lon": 15.3280,
+    "lat": 46.448,
+    "lon": 15.328,
     "elevation": 1517,
-    "arsoLocation": "Zreče",
+    "arsoLocation": "Maribor",
     "skytechUrl": "https://skytech.si/?p=1",
     "launchWindDirections": null,
-    "notes": "Vzletišče na Pohorju pri smučišču Rogla. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
+    "notes": "Vzletišče na Pohorju pri smučišču Rogla. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
+    "liveStation": {
+      "confirmed": false,
+      "phone": null,
+      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+    }
   },
   {
     "id": "blegos",
     "name": "Blegoš",
     "region": "Škofjeloško hribovje",
-    "lat": 46.1290,
-    "lon": 14.0330,
+    "lat": 46.129,
+    "lon": 14.033,
     "elevation": 1562,
     "arsoLocation": "Škofja Loka",
     "skytechUrl": "https://skytech.si/?p=1",
     "launchWindDirections": null,
-    "notes": "Najvišji vrh Škofjeloškega hribovja z razgledom na Alpe. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
+    "notes": "Najvišji vrh Škofjeloškega hribovja z razgledom na Alpe. Primerna smer vetra ni potrjena – preveri z lokalnim klubom.",
+    "liveStation": {
+      "confirmed": false,
+      "phone": null,
+      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+    }
   },
   {
     "id": "nanos",
     "name": "Nanos",
     "region": "Notranjska",
-    "lat": 45.7670,
-    "lon": 14.1040,
+    "lat": 45.767,
+    "lon": 14.104,
     "elevation": 1262,
     "arsoLocation": "Postojna",
     "skytechUrl": "https://skytech.si/?p=1",
     "launchWindDirections": null,
-    "notes": "Planota nad Postojno, znana po burji in dobrih pogojih za XC. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
+    "notes": "Planota nad Postojno, znana po burji in dobrih pogojih za XC. Primerna smer vetra ni potrjena – preveri z lokalnim klubom.",
+    "liveStation": {
+      "confirmed": false,
+      "phone": null,
+      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+    }
   },
   {
     "id": "porezen",
     "name": "Porezen",
     "region": "Cerkljansko",
-    "lat": 46.1830,
-    "lon": 13.8990,
+    "lat": 46.183,
+    "lon": 13.899,
     "elevation": 1630,
-    "arsoLocation": "Cerkno",
+    "arsoLocation": "Škofja Loka",
     "skytechUrl": "https://skytech.si/?p=1",
     "launchWindDirections": null,
-    "notes": "Vzletišče nad Cerknim, izhodišče za lete proti Julijcem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
+    "notes": "Vzletišče nad Cerknim, izhodišče za lete proti Julijcem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
+    "liveStation": {
+      "confirmed": false,
+      "phone": null,
+      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+    }
   },
   {
     "id": "ljubljana-grmada",
     "name": "Grmada (Ljubljana)",
     "region": "Osrednja Slovenija",
-    "lat": 46.1130,
-    "lon": 14.5540,
+    "lat": 46.113,
+    "lon": 14.554,
     "elevation": 676,
     "arsoLocation": "Ljubljana",
     "skytechUrl": "https://skytech.si/?p=1",
     "launchWindDirections": null,
-    "notes": "Priljubljeno lokalno vzletišče blizu Ljubljane. Primerna smer vetra ni potrjena – preveri z lokalnim klubom."
+    "notes": "Priljubljeno lokalno vzletišče blizu Ljubljane. Primerna smer vetra ni potrjena – preveri z lokalnim klubom.",
+    "liveStation": {
+      "confirmed": false,
+      "phone": null,
+      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+    }
   }
 ]

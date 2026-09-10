@@ -76,7 +76,10 @@ async function loadSites() {
   if (!res.ok) throw new Error('Seznama vzletišč ni bilo mogoče naložiti.');
   state.sites = await res.json();
   el.siteSelect.innerHTML = state.sites
-    .map((s) => `<option value="${s.id}">${s.name} — ${s.region}</option>`)
+    .map((s) => {
+      const badge = s.liveStation && s.liveStation.confirmed ? '📡' : '📊';
+      return `<option value="${s.id}">${badge} ${s.name} — ${s.region}</option>`;
+    })
     .join('');
 }
 
@@ -186,6 +189,13 @@ function renderCurrent(data) {
   if (data.site.launchWindDirections) {
     el.currentSiteMeta.textContent += ` · Primerna smer vzleta: ${data.site.launchWindDirections.join(', ')}`;
   }
+
+  const ls = data.site.liveStation;
+  if (ls && ls.confirmed) {
+    el.currentSiteMeta.textContent += ` · 📡 Živa postaja: ${ls.phone}`;
+  } else {
+    el.currentSiteMeta.textContent += ' · 📊 Brez potrjene žive postaje (le napoved)';
+  }
 }
 
 function renderNearby(data) {
@@ -286,16 +296,33 @@ function renderTimeline(day) {
 
 function renderLinks(data) {
   const links = data.links;
+  const ls = data.site.liveStation;
   const items = [
     { href: links.arsoForecastPage, label: `ARSO – podrobna napoved (${data.site.name})` },
     { href: links.arsoAviation, label: 'ARSO – letalsko vreme (GAFOR, SIGWX)' },
     { href: links.arsoRadar, label: 'ARSO – radarska slika padavin' },
-    { href: links.skytech, label: 'SkyTech.si – žive vremenske postaje' },
-    { href: links.windAloft, label: 'Veter na višini (Windy.com, izberi nivo/hPa)' },
   ];
+  if (ls && ls.confirmed && ls.phone) {
+    items.push({
+      href: `tel:${ls.phone.replace(/\s+/g, '')}`,
+      label: `📡 Živa postaja – telefonski odzivnik (${ls.phone})`,
+    });
+  }
+  items.push({
+    href: links.skytech,
+    label: ls && ls.confirmed
+      ? 'SkyTech.si – žive postaje (povezava do te postaje ni potrjena)'
+      : 'SkyTech.si – žive postaje (za to vzletišče ni potrjenega vira)',
+  });
+  items.push({ href: links.windAloft, label: 'Veter na višini (Windy.com, izberi nivo/hPa)' });
+
   el.linksList.innerHTML = items
     .map((i) => `<li><a href="${i.href}" target="_blank" rel="noopener">${i.label} ↗</a></li>`)
     .join('');
+
+  if (ls && ls.note) {
+    el.linksList.innerHTML += `<li class="muted small" style="padding:0 4px;">${ls.note}</li>`;
+  }
   el.linksCard.hidden = false;
 }
 

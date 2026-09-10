@@ -31,12 +31,16 @@ function toNumber(v) {
  */
 function extractDays(data) {
   if (!data) return [];
-  const feature =
-    (Array.isArray(data.features) && data.features[0]) ||
-    (Array.isArray(data) && data[0]) ||
-    data;
+  // Dejanska oblika (potrjena 2026-09-10): { forecast3h: { features: [ { properties: { days: [...] } } ] } }
+  const featureList =
+    (data.forecast3h && Array.isArray(data.forecast3h.features) && data.forecast3h.features) ||
+    (data.forecast1h && Array.isArray(data.forecast1h.features) && data.forecast1h.features) ||
+    (Array.isArray(data.features) && data.features) ||
+    (Array.isArray(data) && data) ||
+    null;
+  const feature = (featureList && featureList[0]) || data;
   const props = feature.properties || feature;
-  const days = props.days || props.forecast3h || props.forecast1h || [];
+  const days = props.days || [];
   return Array.isArray(days) ? days : [];
 }
 
@@ -48,6 +52,7 @@ function normalizeTimelineEntry(entry) {
   const windSpeed = toNumber(pick(entry, ['ff_val', 'ff', 'wind_speed', 'windSpeed']));
   const windGust = toNumber(pick(entry, ['ffmax_val', 'ffmax', 'gust', 'wind_gust', 'windGust']));
   const clouds = pick(entry, ['clouds_shortText', 'clouds_decodeText', 'cloudsIcon', 'clouds']);
+  const cloudBaseArso = pick(entry, ['cloudBase_shortText']);
   const precip = toNumber(pick(entry, ['tp_acc', 'tp', 'precip', 'precipitation']));
   const pressure = toNumber(pick(entry, ['msl', 'pressure']));
   const validTime = pick(entry, ['valid', 'validDate', 'dateISO', 'date']);
@@ -61,6 +66,7 @@ function normalizeTimelineEntry(entry) {
     windSpeedKmh: windSpeed,
     windGustKmh: windGust,
     cloudCover: clouds || null,
+    cloudBaseArsoText: cloudBaseArso || null,
     precipitationMm: precip,
     pressureHpa: pressure,
   };
@@ -84,6 +90,8 @@ async function fetchArsoForecast(locationName) {
         : [];
       return {
         date: day.date || day.day || null,
+        sunrise: day.sunrise || null,
+        sunset: day.sunset || null,
         timeline: timeline.map(normalizeTimelineEntry),
       };
     })

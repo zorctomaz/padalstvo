@@ -247,6 +247,7 @@ function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult 
       lon: site.lon,
       elevation: site.elevation,
       launchWindDirections: site.launchWindDirections || null,
+      liveStation: site.liveStation || { confirmed: false, phone: null, note: null },
       notes: site.notes,
     },
     distanceKm: distanceKm ?? null,
