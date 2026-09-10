@@ -310,9 +310,7 @@ function renderLinks(data) {
   }
   items.push({
     href: links.skytech,
-    label: ls && ls.confirmed
-      ? 'SkyTech.si – žive postaje (povezava do te postaje ni potrjena)'
-      : 'SkyTech.si – žive postaje (za to vzletišče ni potrjenega vira)',
+    label: 'SkyTech.si – domača stran (brez javnega seznama postaj; preverjeno 2026-09-10)',
   });
   items.push({ href: links.windAloft, label: 'Veter na višini (Windy.com, izberi nivo/hPa)' });
 

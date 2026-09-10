@@ -21,7 +21,8 @@ ocene, pomembne za pilote:
 | **ARSO** – `vreme.arso.gov.si/api/1.0/location/` | Večdnevna napoved (temperatura, veter, oblačnost, padavine) po imenu kraja | Strežnik (`src/arso.js`) pridobi napoved za ARSO lokacijo, najbližjo izbranemu vzletišču |
 | **opendata.si** – `opendata.si/vreme/report/` | ARSO radar padavin, ALADIN napoved oblačnosti/padavin, verjetnost toče – neposredno po GPS koordinati | Strežnik (`src/opendata.js`) pridobi podatke za koordinato vzletišča/uporabnika |
 | **ARSO letalsko vreme** – `meteo.si/met/sl/aviation/` | GAFOR, SIGWX, karte vetra na višini | Aplikacija povezuje neposredno na uradno stran (grafični/besedilni produkti, primerni za odpiranje, ne za avtomatsko razčlenjevanje) |
-| **SkyTech.si / SFFA telefonski odzivniki** | Žive vremenske postaje (veter v realnem času) na nekaterih vzletiščih | Za vzletišča s potrjeno postajo (`liveStation.confirmed`) aplikacija prikaže telefonsko številko odzivnika (vir: SFFA – Zveza za prosto letenje); povezava na skytech.si je generična, ker natančnega URL-ja do posamezne postaje nismo mogli preveriti (glej spodaj) |
+| **SFFA telefonski odzivniki** | Žive vremenske postaje (veter v realnem času) na nekaterih vzletiščih | Za vzletišča s potrjeno postajo (`liveStation.confirmed`) aplikacija prikaže telefonsko številko odzivnika (vir: SFFA – Zveza za prosto letenje) |
+| **SkyTech.si** | Proizvajalec vremenskih postaj; po njihovih trditvah izbrane postaje pošiljajo podatke nanje vsakih ~10 min | Le splošna povezava na domačo stran – **potrjeno (2026-09-10, glej spodaj), da javno ne obstaja seznam/API postaj**, zato programsko branje ni mogoče |
 | **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model | Dodatna povezava na koordinato vzletišča – ARSO/meteo.si javno ne objavlja strojno berljivih kart vetra na višini, zato je Windy pragmatična dopolnitev |
 
 ### Ocene, specifične za jadralno padalstvo
@@ -173,11 +174,17 @@ Izbirni seznam vzletišč loči tista s **potrjeno živo vremensko postajo**
 (📡) od tistih, kjer je na voljo **le izračunana napoved** (📊). "Živa
 postaja" tu pomeni potrjen avtomatski telefonski odzivnik (prek SFFA –
 Zveze za prosto letenje Slovenije), ki v realnem času javi veter na
-vzletišču; nekateri od njih naj bi podatke pošiljali tudi na skytech.si,
-a ker SkyTech ne objavlja javnega API-ja niti seznama URL-jev po
-vzletiščih, teh povezav **nismo mogli programsko preveriti** – zato
-aplikacija namesto ugibane povezave raje pokaže telefonsko številko
-(preverjen vir) in generično povezavo na skytech.si domov stran.
+vzletišču; nekateri od njih naj bi podatke pošiljali tudi na skytech.si.
+**Preverjeno (2026-09-10, prek GitHub Actions – glej Git zgodovino za
+podrobnosti):** skytech.si nima javnega API-ja, seznama postaj ali
+menija, ki bi vodil do posameznih postaj – domača stran ima le 5
+splošnih povezav, njihov skript `ogl.js` je zgolj rotator reklamnih
+pasic, `/?p=1` (prej uporabljen kot generična povezava) pa je navaden
+WordPress zapis. Žive podatke po vsem sodeč ponujajo le prek lastne
+Android aplikacije ali neposrednih URL-jev, ki jih pozna le posamezen
+klub – zato aplikacija namesto ugibane/nekoristne povezave raje pokaže
+telefonsko številko odzivnika (preverjen vir) in samo splošno povezavo
+na skytech.si domov stran.
 
 Trenutno potrjeno: **Vogel, Krvavec (Ambrož pod Krvavcem), Kobala, Kovk**.
 Za ostala vzletišča `liveStation.confirmed` ostaja `false` – če veš za

@@ -7,7 +7,7 @@
     "lon": 13.8258,
     "elevation": 1535,
     "arsoLocation": "Bled",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": [
       "E",
       "NE"
@@ -27,7 +27,7 @@
     "lon": 14.535,
     "elevation": 1970,
     "arsoLocation": "Kranj",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "liveStation": {
       "confirmed": true,
@@ -44,7 +44,7 @@
     "lon": 13.7793,
     "elevation": 1080,
     "arsoLocation": "Bovec",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": [
       "E",
       "SE",
@@ -66,7 +66,7 @@
     "lon": 13.933,
     "elevation": 591,
     "arsoLocation": "Nova Gorica",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": [
       "SW",
       "S",
@@ -87,7 +87,7 @@
     "lon": 13.9591,
     "elevation": 860,
     "arsoLocation": "Nova Gorica",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": [
       "S",
       "SW",
@@ -108,7 +108,7 @@
     "lon": 14.939,
     "elevation": 1500,
     "arsoLocation": "Celje",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "notes": "Vzletišče na smučišču Golte nad Mozirjem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
     "liveStation": {
@@ -125,7 +125,7 @@
     "lon": 15.0825,
     "elevation": 1220,
     "arsoLocation": "Ljubljana",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "notes": "Najvišji vrh Zasavja, priljubljeno bližnje vzletišče za Ljubljano. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
     "liveStation": {
@@ -142,7 +142,7 @@
     "lon": 15.328,
     "elevation": 1517,
     "arsoLocation": "Maribor",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "notes": "Vzletišče na Pohorju pri smučišču Rogla. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
     "liveStation": {
@@ -159,7 +159,7 @@
     "lon": 14.033,
     "elevation": 1562,
     "arsoLocation": "Škofja Loka",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "notes": "Najvišji vrh Škofjeloškega hribovja z razgledom na Alpe. Primerna smer vetra ni potrjena – preveri z lokalnim klubom.",
     "liveStation": {
@@ -176,7 +176,7 @@
     "lon": 14.104,
     "elevation": 1262,
     "arsoLocation": "Postojna",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "notes": "Planota nad Postojno, znana po burji in dobrih pogojih za XC. Primerna smer vetra ni potrjena – preveri z lokalnim klubom.",
     "liveStation": {
@@ -193,7 +193,7 @@
     "lon": 13.899,
     "elevation": 1630,
     "arsoLocation": "Škofja Loka",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "notes": "Vzletišče nad Cerknim, izhodišče za lete proti Julijcem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
     "liveStation": {
@@ -210,7 +210,7 @@
     "lon": 14.554,
     "elevation": 676,
     "arsoLocation": "Ljubljana",
-    "skytechUrl": "https://skytech.si/?p=1",
+    "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "notes": "Priljubljeno lokalno vzletišče blizu Ljubljane. Primerna smer vetra ni potrjena – preveri z lokalnim klubom.",
     "liveStation": {
