@@ -21,7 +21,7 @@ ocene, pomembne za pilote:
 | **ARSO** – `vreme.arso.gov.si/api/1.0/location/` | Večdnevna napoved (temperatura, veter, oblačnost, padavine) po imenu kraja | Strežnik (`src/arso.js`) pridobi napoved za ARSO lokacijo, najbližjo izbranemu vzletišču |
 | **opendata.si** – `opendata.si/vreme/report/` | ARSO radar padavin, ALADIN napoved oblačnosti/padavin, verjetnost toče – neposredno po GPS koordinati | Strežnik (`src/opendata.js`) pridobi podatke za koordinato vzletišča/uporabnika |
 | **ARSO letalsko vreme** – `meteo.si/met/sl/aviation/` | GAFOR, SIGWX, karte vetra na višini | Aplikacija povezuje neposredno na uradno stran (grafični/besedilni produkti, primerni za odpiranje, ne za avtomatsko razčlenjevanje) |
-| **SkyTech.si** | Žive vremenske postaje (veter v realnem času) na več slovenskih lokacijah | Aplikacija povezuje na SkyTech, ker ne objavljajo uradnega javnega API-ja |
+| **SkyTech.si / SFFA telefonski odzivniki** | Žive vremenske postaje (veter v realnem času) na nekaterih vzletiščih | Za vzletišča s potrjeno postajo (`liveStation.confirmed`) aplikacija prikaže telefonsko številko odzivnika (vir: SFFA – Zveza za prosto letenje); povezava na skytech.si je generična, ker natančnega URL-ja do posamezne postaje nismo mogli preveriti (glej spodaj) |
 | **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model | Dodatna povezava na koordinato vzletišča – ARSO/meteo.si javno ne objavlja strojno berljivih kart vetra na višini, zato je Windy pragmatična dopolnitev |
 
 ### Ocene, specifične za jadralno padalstvo
@@ -40,19 +40,22 @@ voljo številska stopinja smeri, jo aplikacija uporabi prednostno.
 
 ### Pomembna opomba o zanesljivosti
 
-- ARSO ne objavlja uradne, formalne specifikacije za `vreme.arso.gov.si/api/1.0/`,
-  zato razčlenjevalnik (`src/arso.js`) polja bere obrambno (poskusi več znanih
-  imen polj) in se ob spremembah ne sesuje, ampak jasno javi, da podatek
-  manjka.
-- Okolje, v katerem je bila aplikacija razvita, nima omrežnega dostopa do
-  domen ARSO/opendata.si/SkyTech (blokirano s strani varnostne politike
-  organizacije), zato integracije **ni bilo mogoče v živo preizkusiti** med
-  razvojem. Strežniška koda je bila preverjena na dejanski (čeprav
-  blokirani) URL shemi in se ob napaki (403, časovna omejitev, sprememba
-  oblike odgovora) elegantno degradira – uporabniku prikaže jasno sporočilo
-  namesto da bi se aplikacija sesula. **Pred uporabo v produkciji priporočamo
-  hiter preizkus z dejanskim omrežnim dostopom** (glejte spodaj) in po potrebi
-  prilagoditev imen polj v `src/arso.js`.
+- **ARSO shema je bila potrjena na živem odgovoru** (2026-09-10, prek GitHub
+  Actions – to razvojno okolje samo nima omrežnega dostopa do ARSO domen).
+  Dejanska oblika je `{ forecast3h: { features: [ { properties: { days: [...] } } ] } }`;
+  `src/arso.js` (`extractDays`) to pravilno razčleni. Polja znotraj
+  `timeline[]` (`t`, `rh`, `dd_shortText`, `ff_val`, `ffmax_val`, `clouds_shortText`,
+  `tp_acc`, `msl`, `valid`, `cloudBase_shortText`) so prav tako potrjena.
+  Razčlenjevalnik kljub temu polja bere obrambno (poskusi več znanih imen),
+  za primer, da ARSO shemo v prihodnje spremeni.
+- **Imena lokacij (`arsoLocation`) niso poljubna** – ARSO API podpira le
+  omejen seznam krajev (predvidoma večja mesta/regionalni centri), ne vseh
+  slovenskih krajevnih imen. Potrjeno delujoča imena: `Ljubljana`, `Bovec`,
+  `Škofja Loka`, `Postojna`, `Bled`, `Kranj`, `Nova Gorica`, `Celje`, `Maribor`.
+  Za vzletišča, ki niso v bližini takega mesta, `arsoLocation` kaže na
+  najbližje potrjeno veljavno mesto (glej opombo `notes` pri posameznem
+  vzletišču v `src/sites.json`) – napoved je zato regijska približna, ne
+  za točno GPS lokacijo vzletišča.
 - Ocene termike, baze oblakov in "primernosti vetra" so poenostavljene
   hevristike (glejte `src/paragliding.js`), **niso uradna letalska napoved**.
   V aplikaciji je zato viden opozorilni napis (disclaimer).
@@ -63,9 +66,8 @@ voljo številska stopinja smeri, jo aplikacija uporabi prednostno.
 curl "https://vreme.arso.gov.si/api/1.0/location/?location=Bovec"
 ```
 
-Če se struktura razlikuje od pričakovane (`features[].properties.days[].timeline[]`
-s polji `t`, `rh`, `dd`, `ff_val`, `ffmax_val`, `clouds_shortText`, `tp_acc`),
-prilagodite `pick(...)` klice v `src/arso.js`.
+Če je odgovor prazen ali 404, ime kraja verjetno ni v ARSO-jevem podprtem
+seznamu lokacij – poišči najbližje veljavno večje mesto (glej seznam zgoraj).
 
 ## Zagon (lokalno)
 
@@ -165,13 +167,32 @@ public/                              Mobilno prilagojen frontend (vanilla HTML/C
 public/data/                         Generirano z `npm run build:data` – NI v git repozitoriju (.gitignore)
 ```
 
+## Žive postaje vs. samo napoved (📡 / 📊)
+
+Izbirni seznam vzletišč loči tista s **potrjeno živo vremensko postajo**
+(📡) od tistih, kjer je na voljo **le izračunana napoved** (📊). "Živa
+postaja" tu pomeni potrjen avtomatski telefonski odzivnik (prek SFFA –
+Zveze za prosto letenje Slovenije), ki v realnem času javi veter na
+vzletišču; nekateri od njih naj bi podatke pošiljali tudi na skytech.si,
+a ker SkyTech ne objavlja javnega API-ja niti seznama URL-jev po
+vzletiščih, teh povezav **nismo mogli programsko preveriti** – zato
+aplikacija namesto ugibane povezave raje pokaže telefonsko številko
+(preverjen vir) in generično povezavo na skytech.si domov stran.
+
+Trenutno potrjeno: **Vogel, Krvavec (Ambrož pod Krvavcem), Kobala, Kovk**.
+Za ostala vzletišča `liveStation.confirmed` ostaja `false` – če veš za
+resnično postajo/povezavo, dodaj podatke v `src/sites.json` (glej spodaj).
+
 ## Dodajanje vzletišč
 
 Uredi `src/sites.json` – vsak vnos potrebuje `id`, `name`, `region`, `lat`,
-`lon`, `elevation` (m), `arsoLocation` (ime kraja, kot ga pozna ARSO napoved)
-in po želji `skytechUrl` ter `notes`. Koordinate in ARSO imena krajev za
-obstoječi seznam so bila zbrana iz javno dostopnih virov (turistične strani,
-Paragliding Geopedia) in jih pred resno uporabo priporočamo preveriti/dopolniti
+`lon`, `elevation` (m), `arsoLocation` (ime kraja iz ARSO-jevega podprtega
+seznama – glej opombo zgoraj), `launchWindDirections` (seznam primernih
+smeri vetra ali `null`, če ni potrjeno), `liveStation` (`{ confirmed,
+phone, note }` ali `{ confirmed: false, phone: null, note: "..." }`) in po
+želji `skytechUrl` ter `notes`. Koordinate in imena za obstoječi seznam so
+bila zbrana iz javno dostopnih virov (turistične strani, Paragliding
+Geopedia, SFFA) in jih pred resno uporabo priporočamo preveriti/dopolniti
 s podatki lokalnih klubov.
 
 ## Varnost in odgovornost
