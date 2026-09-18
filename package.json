@@ -13,6 +13,7 @@
     "build:data": "node scripts/build-data.js"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "qrcode-terminal": "^0.12.0"
   }
 }

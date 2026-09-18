@@ -1,7 +1,9 @@
 'use strict';
 
+const os = require('os');
 const path = require('path');
 const express = require('express');
+const qrcode = require('qrcode-terminal');
 
 const sites = require('./src/sites.json');
 const { findNearestSite } = require('./src/geo');
@@ -71,6 +73,26 @@ app.get('/api/weather', async (req, res) => {
   }
 });
 
+function getLanUrl() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return `http://${iface.address}:${PORT}`;
+      }
+    }
+  }
+  return null;
+}
+
 app.listen(PORT, () => {
   console.log(`Padalstvo vreme app posluša na http://localhost:${PORT}`);
+
+  const lanUrl = getLanUrl();
+  if (lanUrl) {
+    console.log(`Za odpiranje na telefonu (ista WiFi): ${lanUrl}`);
+    qrcode.generate(lanUrl, { small: true });
+  } else {
+    console.log('Ni bilo mogoče zaznati omrežnega naslova za QR kodo (npr. brez WiFi/LAN povezave).');
+  }
 });

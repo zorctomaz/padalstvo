@@ -78,8 +78,11 @@ npm run build:data   # zgradi public/data/*.json (potrebno, da frontend sploh pr
 npm start
 ```
 
-Aplikacija posluša na `http://localhost:3000` (ali `$PORT`). Odpri jo v
-mobilnem brskalniku (ali z DevTools mobilnim pogledom) – vmesnik je zasnovan
+Aplikacija posluša na `http://localhost:3000` (ali `$PORT`). `npm start` ob
+zagonu v terminal izpiše tudi QR kodo za naslov v lokalnem omrežju (npr.
+`http://192.168.x.x:3000`) – poskeniraj jo s telefonom (ista WiFi kot
+računalnik), da odpreš aplikacijo neposredno na mobilni napravi. Sicer jo
+odpri v mobilnem brskalniku ročno (ali z DevTools mobilnim pogledom) – vmesnik je zasnovan
 mobile-first, deluje pa tudi na namizju.
 
 Za razvoj z avtomatskim ponovnim zagonom ob spremembah strežnika:
