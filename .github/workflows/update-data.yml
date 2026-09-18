@@ -38,6 +38,9 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
+      - name: RAZHROŠČEVANJE – dokumentacija KOK/SkyTech API (začasno)
+        run: node scripts/debug-kok-api-doc.js
+
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si)
         run: node scripts/build-data.js
 
