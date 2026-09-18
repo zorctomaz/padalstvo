@@ -17,16 +17,18 @@ const sites = require('../src/sites.json');
 const { fetchArsoForecast } = require('../src/arso');
 const { fetchOpendataReport } = require('../src/opendata');
 const { buildParaglidingSummary } = require('../src/paragliding');
+const { fetchAllStations } = require('../src/skytech');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
 
-async function buildSite(site) {
+async function buildSite(site, stationById) {
   const [arsoResult, opendataResult] = await Promise.allSettled([
     fetchArsoForecast(site.arsoLocation),
     fetchOpendataReport(site.lat, site.lon),
   ]);
-  const summary = buildParaglidingSummary({ site, distanceKm: null, arsoResult, opendataResult });
+  const skytechStation = site.skytechStationId != null ? stationById.get(site.skytechStationId) || null : null;
+  const summary = buildParaglidingSummary({ site, distanceKm: null, arsoResult, opendataResult, skytechStation });
   return summary;
 }
 
@@ -35,11 +37,22 @@ async function main() {
 
   fs.writeFileSync(path.join(DATA_DIR, 'sites.json'), JSON.stringify(sites, null, 2));
 
+  // En sam klic za VSE SkyTech postaje (API to izrecno priporoča namesto
+  // klica na postajo), nato jih po id-ju razdelimo dodeljenim vzletiščem.
+  process.stdout.write('Pridobivam SkyTech postaje... ');
+  const skytech = await fetchAllStations();
+  console.log(
+    skytech.ok
+      ? `OK (${skytech.stations.length} postaj)`
+      : `NAPAKA(${skytech.error})`
+  );
+  const stationById = new Map(skytech.stations.map((s) => [s.id, s]));
+
   const results = [];
   for (const site of sites) {
     process.stdout.write(`Gradim podatke za ${site.name} (${site.id})... `);
     try {
-      const summary = await buildSite(site);
+      const summary = await buildSite(site, stationById);
       fs.writeFileSync(
         path.join(WEATHER_DIR, `${site.id}.json`),
         JSON.stringify(summary, null, 2)
@@ -47,9 +60,11 @@ async function main() {
       const ok = summary.sources.arso.ok || summary.sources.opendata.ok;
       const dayCount = summary.forecast.length;
       const firstEntry = summary.forecast[0] && summary.forecast[0].timeline[0];
+      const sk = summary.skytech;
       console.log(
         `ARSO=${summary.sources.arso.ok ? 'OK' : 'NAPAKA(' + summary.sources.arso.error + ')'} ` +
         `opendata=${summary.sources.opendata.ok ? 'OK' : 'NAPAKA(' + summary.sources.opendata.error + ')'} ` +
+        `skytech=${sk ? (sk.hasMeasurement ? `OK(${sk.windSpeedKmh}km/h ${sk.windDirection}, ${sk.ageMinutes}min)` : 'brez meritve') : '-'} ` +
         `dnevi=${dayCount} prvi=${firstEntry ? `${firstEntry.temperatureC}°C/${firstEntry.windSpeedKmh}km/h ${firstEntry.windDirection || ''}` : 'ni podatka'}`
       );
       results.push({ id: site.id, ok, dayCount });

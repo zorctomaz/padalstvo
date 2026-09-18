@@ -185,6 +185,60 @@ function estimateThermalWindow(day) {
   return { startHour, endHour, durationHours, xc };
 }
 
+/**
+ * Oceni smer vetra glede na SkyTech-ovo uradno razvrstitev postaje
+ * (direction_green/yellow/red) – to ni najina hevristika, ampak ocena
+ * lastnika/proizvajalca postaje, zato je zanesljivejša od degToOctant
+ * primerjave, kadar je postaja znana.
+ */
+function rateSkytechDirection(station, compassDirection) {
+  if (!station || !compassDirection) {
+    return { known: false, label: 'Ni podatka o smeri', color: 'gray' };
+  }
+  if (station.directionsGreen.includes(compassDirection)) {
+    return { known: true, label: `Smer (${compassDirection}) ustreza postaji`, color: 'green' };
+  }
+  if (station.directionsYellow.includes(compassDirection)) {
+    return { known: true, label: `Smer (${compassDirection}) mejna`, color: 'orange' };
+  }
+  if (station.directionsRed.includes(compassDirection)) {
+    return { known: true, label: `Smer (${compassDirection}) neprimerna`, color: 'red' };
+  }
+  return { known: false, label: `Smer (${compassDirection}) ni razvrščena`, color: 'gray' };
+}
+
+/**
+ * Povzame žive podatke SkyTech postaje (če je vzletišču dodeljena) v obliko,
+ * primerno za prikaz: ocena vetra, ocena smeri, starost meritve.
+ */
+function summarizeSkytechStation(station) {
+  if (!station) return null;
+  const base = {
+    stationId: station.id,
+    stationName: station.name,
+    directionsGreen: station.directionsGreen,
+    directionsYellow: station.directionsYellow,
+    directionsRed: station.directionsRed,
+  };
+  const m = station.measurement;
+  if (!m) {
+    return { ...base, hasMeasurement: false };
+  }
+  const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
+  return {
+    ...base,
+    hasMeasurement: true,
+    time: m.time,
+    ageMinutes,
+    windSpeedKmh: m.windSpeedKmh,
+    windGustKmh: m.windGustKmh,
+    windDirection: m.windDirection,
+    temperatureC: m.temperatureC,
+    wind: rateWind(m.windSpeedKmh, m.windGustKmh),
+    directionRating: rateSkytechDirection(station, m.windDirection),
+  };
+}
+
 function buildLinks(site) {
   const arsoNameEncoded = encodeURIComponent(site.arsoLocation);
   const lat = site.lat.toFixed(3);
@@ -218,7 +272,7 @@ function summarizeTimelineEntry(entry, site) {
   };
 }
 
-function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult }) {
+function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult, skytechStation }) {
   const arso =
     arsoResult.status === 'fulfilled'
       ? arsoResult.value
@@ -229,14 +283,37 @@ function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult 
       ? opendataResult.value
       : { ok: false, error: opendataResult.reason ? String(opendataResult.reason.message || opendataResult.reason) : 'napaka' };
 
+  const skytech = summarizeSkytechStation(skytechStation || null);
+
+  // Če primerna smer vzleta ni bila ročno potrjena (SFFA/opis vzletišča),
+  // pa imamo dodeljeno SkyTech postajo z uradno oceno smeri, uporabimo to –
+  // zanesljivejši vir od najinega ugibanja.
+  const manualDirections = site.launchWindDirections && site.launchWindDirections.length > 0
+    ? site.launchWindDirections
+    : null;
+  const skytechDirections = skytechStation && skytechStation.directionsGreen.length > 0
+    ? skytechStation.directionsGreen
+    : null;
+  const effectiveDirections = manualDirections || skytechDirections;
+  const directionsSource = manualDirections ? 'sffa' : (skytechDirections ? 'skytech' : null);
+  const siteForAlignment = { ...site, launchWindDirections: effectiveDirections };
+
   const days = (arso.days || []).map((day) => {
-    const timeline = day.timeline.map((entry) => summarizeTimelineEntry(entry, site));
+    const timeline = day.timeline.map((entry) => summarizeTimelineEntry(entry, siteForAlignment));
     return {
       date: day.date,
       timeline,
       thermalWindow: estimateThermalWindow({ timeline }),
     };
   });
+
+  const liveStation = skytech && skytech.hasMeasurement
+    ? {
+        confirmed: true,
+        phone: (site.liveStation && site.liveStation.phone) || null,
+        note: 'Potrjeno prek uradnega SkyTech API-ja (žive meritve).',
+      }
+    : (site.liveStation || { confirmed: false, phone: null, note: null });
 
   return {
     site: {
@@ -246,8 +323,9 @@ function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult 
       lat: site.lat,
       lon: site.lon,
       elevation: site.elevation,
-      launchWindDirections: site.launchWindDirections || null,
-      liveStation: site.liveStation || { confirmed: false, phone: null, note: null },
+      launchWindDirections: effectiveDirections,
+      launchWindDirectionsSource: directionsSource,
+      liveStation,
       notes: site.notes,
     },
     distanceKm: distanceKm ?? null,
@@ -256,6 +334,7 @@ function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult 
       arso: { ok: arso.ok, sourceUrl: arso.sourceUrl, error: arso.ok ? null : arso.error || 'Ni podatkov iz ARSO napovedi.' },
       opendata: { ok: opendata.ok, sourceUrl: opendata.sourceUrl, error: opendata.ok ? null : opendata.error || 'Ni podatkov iz opendata.si.' },
     },
+    skytech,
     nearby: opendata.ok
       ? { rain: opendata.rain, forecast: opendata.forecast, hail: opendata.hail }
       : null,
@@ -279,4 +358,6 @@ module.exports = {
   estimateThermalWindow,
   textDirectionToDeg,
   degToOctant,
+  rateSkytechDirection,
+  summarizeSkytechStation,
 };
