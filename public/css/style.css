@@ -139,6 +139,14 @@ select {
   font-size: 1.4rem;
 }
 
+.skytech-card {
+  border-color: var(--green);
+}
+
+.skytech-card h3 {
+  color: var(--green);
+}
+
 .current-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

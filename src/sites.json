@@ -18,7 +18,7 @@
       "note": "Avtomatska vremenska postaja (telefonski odzivnik, prek SFFA). Podatki naj bi se ~vsakih 10 min objavljali tudi na skytech.si, a natančne povezave do te postaje nismo mogli preveriti."
     },
     "notes": "Vzletišče pri zgornji postaji gondole Vogel nad Bohinjskim jezerom. Primerna smer vetra: V–SV. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
-    "skytechStationId": null
+    "skytechStationId": 10
   },
   {
     "id": "krvavec",
@@ -36,7 +36,7 @@
       "note": "Avtomatska postaja Ambrož pod Krvavcem (telefonski odzivnik, prek SFFA). Lega postaje ni vedno reprezentativna za vzletišče. Natančne povezave na skytech.si nismo mogli preveriti."
     },
     "notes": "Vzletišče na vrhu smučišča Krvavec, dostop z gondolo ali po cesti. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
-    "skytechStationId": null
+    "skytechStationId": 16
   },
   {
     "id": "kobala-bovec",
@@ -59,7 +59,7 @@
       "note": "Avtomatska vremenska postaja na vzletišču (telefonski odzivnik, prek SFFA). Natančne povezave do postaje na skytech.si nismo mogli preveriti."
     },
     "notes": "Znano tekmovalno vzletišče nad Bovcem, izhodišče za dolge XC prelete. Primerna smer vetra: V, JV, JZ, Z (dve možni smeri vzleta).",
-    "skytechStationId": null
+    "skytechStationId": 11
   },
   {
     "id": "lijak-vipava",
@@ -76,12 +76,12 @@
       "SE"
     ],
     "liveStation": {
-      "confirmed": false,
+      "confirmed": true,
       "phone": null,
-      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira; v bližini (Kovk) taka postaja obstaja."
+      "note": "Potrjeno prek uradnega SkyTech API-ja (žive meritve)."
     },
     "notes": "Široko travnato vzletišče, znano po močni burji in dobri termiki. Primerna smer vetra: JZ, J, JV. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
-    "skytechStationId": null
+    "skytechStationId": 47
   },
   {
     "id": "kovk-vipava",
@@ -103,7 +103,7 @@
       "note": "Avtomatska vremenska postaja na vzletišču (telefonski odzivnik, prek SFFA). Natančne povezave do postaje na skytech.si nismo mogli preveriti."
     },
     "notes": "Vzletišče nad Vipavsko dolino, priljubljeno za XC lete proti morju. Primerna smer vetra: J, JZ, Z. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
-    "skytechStationId": null
+    "skytechStationId": 13
   },
   {
     "id": "golte",
@@ -117,11 +117,11 @@
     "launchWindDirections": null,
     "notes": "Vzletišče na smučišču Golte nad Mozirjem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
     "liveStation": {
-      "confirmed": false,
+      "confirmed": true,
       "phone": null,
-      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+      "note": "Potrjeno prek uradnega SkyTech API-ja (žive meritve)."
     },
-    "skytechStationId": null
+    "skytechStationId": 54
   },
   {
     "id": "kum",
@@ -171,11 +171,11 @@
     "launchWindDirections": null,
     "notes": "Najvišji vrh Škofjeloškega hribovja z razgledom na Alpe. Primerna smer vetra ni potrjena – preveri z lokalnim klubom.",
     "liveStation": {
-      "confirmed": false,
+      "confirmed": true,
       "phone": null,
-      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+      "note": "Potrjeno prek uradnega SkyTech API-ja (žive meritve)."
     },
-    "skytechStationId": null
+    "skytechStationId": 4
   },
   {
     "id": "nanos",
@@ -207,11 +207,11 @@
     "launchWindDirections": null,
     "notes": "Vzletišče nad Cerknim, izhodišče za lete proti Julijcem. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
     "liveStation": {
-      "confirmed": false,
+      "confirmed": true,
       "phone": null,
-      "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
+      "note": "Potrjeno prek uradnega SkyTech API-ja (žive meritve)."
     },
-    "skytechStationId": null
+    "skytechStationId": 30
   },
   {
     "id": "ljubljana-grmada",

@@ -38,11 +38,6 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
-      - name: RAZHROŠČEVANJE – uskladi SkyTech postaje z vzletišči (začasno)
-        env:
-          SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
-        run: node scripts/debug-match-skytech-stations.js
-
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si, SkyTech)
         env:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}

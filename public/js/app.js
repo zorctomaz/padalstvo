@@ -19,6 +19,9 @@ const el = {
   distanceInfo: document.getElementById('distanceInfo'),
   locateBtn: document.getElementById('locateBtn'),
   statusBox: document.getElementById('statusBox'),
+  skytechCard: document.getElementById('skytechCard'),
+  skytechMeta: document.getElementById('skytechMeta'),
+  skytechGrid: document.getElementById('skytechGrid'),
   currentCard: document.getElementById('currentCard'),
   currentSiteName: document.getElementById('currentSiteName'),
   currentSiteMeta: document.getElementById('currentSiteMeta'),
@@ -187,7 +190,8 @@ function renderCurrent(data) {
   el.currentCard.hidden = false;
 
   if (data.site.launchWindDirections) {
-    el.currentSiteMeta.textContent += ` · Primerna smer vzleta: ${data.site.launchWindDirections.join(', ')}`;
+    const srcLabel = data.site.launchWindDirectionsSource === 'skytech' ? ' (SkyTech)' : '';
+    el.currentSiteMeta.textContent += ` · Primerna smer vzleta${srcLabel}: ${data.site.launchWindDirections.join(', ')}`;
   }
 
   const ls = data.site.liveStation;
@@ -195,6 +199,33 @@ function renderCurrent(data) {
     el.currentSiteMeta.textContent += ` · 📡 Živa postaja: ${ls.phone}`;
   } else {
     el.currentSiteMeta.textContent += ' · 📊 Brez potrjene žive postaje (le napoved)';
+  }
+}
+
+function renderSkytech(data) {
+  const sk = data.skytech;
+  if (!sk || !sk.hasMeasurement) {
+    el.skytechCard.hidden = true;
+    return;
+  }
+  const ageText = sk.ageMinutes != null
+    ? (sk.ageMinutes <= 1 ? 'pred manj kot minuto' : `pred ${sk.ageMinutes} min`)
+    : '';
+  el.skytechMeta.textContent = `Postaja: ${sk.stationName} · Meritev ${ageText}`;
+  el.skytechGrid.innerHTML = [
+    metricBox(
+      'Veter',
+      sk.windSpeedKmh != null ? `${sk.windSpeedKmh} km/h${sk.windDirection ? ' ' + sk.windDirection : ''}` : '—',
+      sk.wind
+    ),
+    metricBox('Sunki vetra', sk.windGustKmh != null ? `${sk.windGustKmh} km/h` : '—'),
+    metricBox('Smer (SkyTech ocena)', sk.windDirection || '—', sk.directionRating),
+    metricBox('Temperatura', sk.temperatureC != null ? `${sk.temperatureC}°C` : '—'),
+  ].join('');
+  el.skytechCard.hidden = false;
+
+  if (sk.ageMinutes != null && sk.ageMinutes > 30) {
+    el.skytechMeta.textContent += ' ⚠️ podatek je star, postaja morda ne poroča';
   }
 }
 
@@ -310,7 +341,9 @@ function renderLinks(data) {
   }
   items.push({
     href: links.skytech,
-    label: 'SkyTech.si – domača stran (brez javnega seznama postaj; preverjeno 2026-09-10)',
+    label: data.skytech
+      ? 'SkyTech.si – domača stran (podatki zgoraj prek uradnega API-ja)'
+      : 'SkyTech.si – domača stran (za to vzletišče ni dodeljene postaje)',
   });
   items.push({ href: links.windAloft, label: 'Veter na višini (Windy.com, izberi nivo/hPa)' });
 
@@ -335,6 +368,7 @@ function renderSources(data) {
 
 function renderWeather(data) {
   state.weather = data;
+  renderSkytech(data);
   renderCurrent(data);
   renderNearby(data);
   renderForecast(data);
