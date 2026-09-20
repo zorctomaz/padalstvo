@@ -15,7 +15,11 @@ ocene, pomembne za pilote:
 - **druga SkyTech merilna mesta v bližini izbrane lokacije** (do 25 km,
   niso uradna vzletišča, a dajo dodaten vpogled v veter na sosednjih
   vrhovih/dolinah, kjer nameravaš leteti),
-- povezavo na veter na višini (za oceno strižnega vetra pri XC preletih).
+- povezavo na veter na višini (za oceno strižnega vetra pri XC preletih),
+- **izbiro enote za prikaz hitrosti vetra** (km/h, m/s, mph, vozli) v
+  izbirnem meniju na vrhu strani – izbira se shrani v brskalniku
+  (`localStorage`) in velja za vse prikaze hitrosti/sunkov vetra na
+  strani (interno se vedno računa v km/h, pretvorba je le za prikaz).
 
 ## Viri podatkov
 

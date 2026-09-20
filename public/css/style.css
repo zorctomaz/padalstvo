@@ -85,6 +85,24 @@ p {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.unit-select {
+  width: auto;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
 .btn {
   border: none;
   border-radius: 999px;

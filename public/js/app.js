@@ -6,18 +6,37 @@
  * Podatke v /data/ osveži `npm run build:data` (ročno ali prek GitHub Action).
  */
 
+const WIND_UNITS = {
+  kmh: { label: 'km/h', factor: 1 },
+  ms: { label: 'm/s', factor: 1 / 3.6 },
+  mph: { label: 'mph', factor: 1 / 1.60934 },
+  kn: { label: 'kn', factor: 1 / 1.852 },
+};
+const WIND_UNIT_STORAGE_KEY = 'padalstvo-vreme:windUnit';
+
+function loadStoredWindUnit() {
+  try {
+    const stored = localStorage.getItem(WIND_UNIT_STORAGE_KEY);
+    return stored && WIND_UNITS[stored] ? stored : 'kmh';
+  } catch (_) {
+    return 'kmh';
+  }
+}
+
 const state = {
   sites: [],
   currentSiteId: null,
   userCoords: null,
   weather: null,
   activeDayIndex: 0,
+  windUnit: loadStoredWindUnit(),
 };
 
 const el = {
   siteSelect: document.getElementById('siteSelect'),
   distanceInfo: document.getElementById('distanceInfo'),
   locateBtn: document.getElementById('locateBtn'),
+  unitSelect: document.getElementById('unitSelect'),
   statusBox: document.getElementById('statusBox'),
   skytechCard: document.getElementById('skytechCard'),
   skytechMeta: document.getElementById('skytechMeta'),
@@ -161,6 +180,13 @@ function pillClass(color) {
   return `pill pill-${color || 'gray'}`;
 }
 
+function formatWind(windSpeedKmh) {
+  if (windSpeedKmh === null || windSpeedKmh === undefined) return '—';
+  const unit = WIND_UNITS[state.windUnit] || WIND_UNITS.kmh;
+  const value = Math.round(windSpeedKmh * unit.factor * 10) / 10;
+  return `${value} ${unit.label}`;
+}
+
 function metricBox(label, value, pill) {
   return `
     <div class="metric">
@@ -190,12 +216,12 @@ function renderCurrent(data) {
     metricBox(
       'Veter',
       firstEntry.windSpeedKmh != null
-        ? `${firstEntry.windSpeedKmh} km/h${firstEntry.windDirection ? ' ' + firstEntry.windDirection : ''}`
+        ? `${formatWind(firstEntry.windSpeedKmh)}${firstEntry.windDirection ? ' ' + firstEntry.windDirection : ''}`
         : '—',
       p.wind
     ),
     metricBox('Smer vs. vzletišče', p.launchAlignment.octant || '—', p.launchAlignment),
-    metricBox('Sunki vetra', firstEntry.windGustKmh != null ? `${firstEntry.windGustKmh} km/h` : '—'),
+    metricBox('Sunki vetra', formatWind(firstEntry.windGustKmh)),
     metricBox('Baza oblakov', p.cloudBaseM != null ? `~${p.cloudBaseM} m n.m.` : '—'),
     metricBox('Termika', firstEntry.cloudCover || '—', p.thermal),
     metricBox('Padavine', firstEntry.precipitationMm != null ? `${firstEntry.precipitationMm} mm/3h` : '—'),
@@ -228,10 +254,10 @@ function renderSkytech(data) {
   el.skytechGrid.innerHTML = [
     metricBox(
       'Veter',
-      sk.windSpeedKmh != null ? `${sk.windSpeedKmh} km/h${sk.windDirection ? ' ' + sk.windDirection : ''}` : '—',
+      sk.windSpeedKmh != null ? `${formatWind(sk.windSpeedKmh)}${sk.windDirection ? ' ' + sk.windDirection : ''}` : '—',
       sk.wind
     ),
-    metricBox('Sunki vetra', sk.windGustKmh != null ? `${sk.windGustKmh} km/h` : '—'),
+    metricBox('Sunki vetra', formatWind(sk.windGustKmh)),
     metricBox('Smer (SkyTech ocena)', sk.windDirection || '—', sk.directionRating),
     metricBox('Temperatura', sk.temperatureC != null ? `${sk.temperatureC}°C` : '—'),
   ].join('');
@@ -258,8 +284,8 @@ function renderNearbyStations(data) {
           <div class="timeline-time">${s.distanceKm} km</div>
           <div class="timeline-detail">
             ${s.stationName}${s.altitude != null ? ' (' + s.altitude + ' m)' : ''} ·
-            ${s.windSpeedKmh != null ? s.windSpeedKmh + ' km/h' : '—'}${s.windDirection ? ' ' + s.windDirection : ''}
-            ${s.windGustKmh != null ? ' (sunki ' + s.windGustKmh + ')' : ''} · ${ageText}
+            ${s.windSpeedKmh != null ? formatWind(s.windSpeedKmh) : '—'}${s.windDirection ? ' ' + s.windDirection : ''}
+            ${s.windGustKmh != null ? ' (sunki ' + formatWind(s.windGustKmh) + ')' : ''} · ${ageText}
           </div>
           <div class="${pillClass(s.wind.color)}">${s.wind.label}</div>
         </div>
@@ -353,8 +379,8 @@ function renderTimeline(day) {
           <div class="timeline-time">${formatTime(entry.time)}</div>
           <div class="timeline-detail">
             ${entry.temperatureC != null ? entry.temperatureC + '°C' : '—'} ·
-            ${entry.windSpeedKmh != null ? entry.windSpeedKmh + ' km/h' : '—'}${entry.windDirection ? ' ' + entry.windDirection : ''}
-            ${entry.windGustKmh != null ? ' (sunki ' + entry.windGustKmh + ')' : ''} ·
+            ${entry.windSpeedKmh != null ? formatWind(entry.windSpeedKmh) : '—'}${entry.windDirection ? ' ' + entry.windDirection : ''}
+            ${entry.windGustKmh != null ? ' (sunki ' + formatWind(entry.windGustKmh) + ')' : ''} ·
             ${entry.cloudCover || ''}
           </div>
           <div class="${pillClass(p.wind.color)}">${p.wind.label}</div>
@@ -424,9 +450,24 @@ el.siteSelect.addEventListener('change', () => {
   el.distanceInfo.textContent = '';
   loadWeatherForSite(el.siteSelect.value);
 });
+el.unitSelect.addEventListener('change', () => {
+  state.windUnit = el.unitSelect.value;
+  try {
+    localStorage.setItem(WIND_UNIT_STORAGE_KEY, state.windUnit);
+  } catch (_) {
+    /* ni kritično, spregledamo */
+  }
+  if (state.weather) {
+    renderSkytech(state.weather);
+    renderCurrent(state.weather);
+    renderNearbyStations(state.weather);
+    renderTimeline(state.weather.forecast[state.activeDayIndex]);
+  }
+});
 
 (async function init() {
   try {
+    el.unitSelect.value = state.windUnit;
     await loadSites();
     loadMeta();
     if (state.sites.length > 0) {
