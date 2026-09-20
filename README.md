@@ -323,6 +323,12 @@ sunki) in temperature za zadnjih nekaj ur** za tisto postajo.
   (`buildLineChartSvg`) – aplikacija nima build koraka, zato dodajanje
   npr. Chart.js ne bi bilo smiselno za en sam preprost graf. Hitrost
   vetra se prikaže v trenutno izbrani enoti (km/h/m/s/mph/vozli).
+- Nad grafom vetra je vrstica **puščic smeri** (ena na uro, izbrana
+  po `pickHourlyIndices` – prva meritev v vsaki novi lokalni uri, ne
+  glede na to, da postaja ne poroča točno na okroglo minuto). Puščica
+  kaže, **od kod piha veter** (npr. puščica navzgor = veter od severa) –
+  enaka konvencija kot pri SkyTech oceni primerne smeri drugje v
+  aplikaciji.
 - **Omejitev:** ker se zgodovina pred-izračuna le za postaje, povezane z
   enim od 12 uradnih vzletišč, graf morda ni na voljo za postajo, ki se
   pojavi izključno v načinu "Moja lokacija" na GPS točki daleč od vseh

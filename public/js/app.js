@@ -649,6 +649,54 @@ function convertWindValue(windSpeedKmh) {
   return Math.round(windSpeedKmh * unit.factor * 10) / 10;
 }
 
+const COMPASS_TO_DEG = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
+
+/**
+ * Izbere po en indeks za vsako novo (lokalno) uro v seriji - "ena
+ * puščica na uro", ne glede na dejanski interval poročanja postaje
+ * (~10 min, ni nujno točno na okroglo minuto).
+ */
+function pickHourlyIndices(series) {
+  const indices = [];
+  let lastHourKey = null;
+  series.forEach((p, i) => {
+    if (!p.time) return;
+    const d = new Date(p.time);
+    const hourKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
+    if (hourKey !== lastHourKey) {
+      indices.push(i);
+      lastHourKey = hourKey;
+    }
+  });
+  return indices;
+}
+
+/**
+ * Vrstica puščic smeri vetra nad grafom hitrosti - vsaka puščica kaže,
+ * OD KOD piha veter (npr. puščica navzgor = veter piha od severa),
+ * poravnana z isto časovno osjo kot graf zgoraj.
+ */
+function buildDirectionArrowsSvg(series, width = 320, height = 28) {
+  const padding = { left: 4, right: 8 };
+  const innerW = width - padding.left - padding.right;
+  const n = series.length;
+  if (n === 0) return '';
+  const xAt = (i) => padding.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const cy = height / 2 + 4;
+
+  const glyphs = pickHourlyIndices(series)
+    .map((i) => {
+      const deg = COMPASS_TO_DEG[series[i].direction];
+      if (deg === undefined) return '';
+      const cx = xAt(i).toFixed(1);
+      return `<text x="${cx}" y="${cy}" font-size="13" fill="#9db0cc" text-anchor="middle" transform="rotate(${deg} ${cx} ${cy - 4})">↑</text>`;
+    })
+    .join('');
+
+  if (!glyphs) return '';
+  return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" class="history-chart-arrows">${glyphs}</svg>`;
+}
+
 function renderHistoryCharts(history) {
   if (!history || !history.ok || !history.measurements || history.measurements.length === 0) {
     el.historyModalBody.innerHTML = '<p class="muted">Zgodovina za to postajo (zadnjih nekaj ur) ni na voljo.</p>';
@@ -658,6 +706,7 @@ function renderHistoryCharts(history) {
   const unitLabel = (WIND_UNITS[state.windUnit] || WIND_UNITS.kmh).label;
   const windSeries = m.map((e) => ({ time: e.time, value: convertWindValue(e.windSpeedKmh) }));
   const gustSeries = m.map((e) => ({ time: e.time, value: convertWindValue(e.windGustKmh) }));
+  const dirSeries = m.map((e) => ({ time: e.time, direction: e.windDirection }));
   const tempSeries = m.map((e) => ({ time: e.time, value: e.temperatureC }));
   const hoursSpan = Math.round((m.length * 10) / 6) / 10;
 
@@ -665,6 +714,8 @@ function renderHistoryCharts(history) {
     <div class="chart-block">
       <h4>Veter (${unitLabel})</h4>
       ${buildLineChartSvg({ series: windSeries, series2: gustSeries, color: '#4f8cff', color2: '#f5a524', unit: '' })}
+      ${buildDirectionArrowsSvg(dirSeries)}
+      <p class="muted small">↑ = smer, od koder piha veter (sever = puščica navzgor), po ena za vsako uro.</p>
       <div class="chart-legend">
         <span><span class="swatch" style="background:#4f8cff"></span>hitrost</span>
         <span><span class="swatch" style="background:#f5a524"></span>sunki</span>

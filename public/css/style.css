@@ -306,6 +306,11 @@ select {
   font-weight: 600;
 }
 
+.history-chart-arrows {
+  display: block;
+  margin-top: -6px;
+}
+
 .chart-legend {
   display: flex;
   gap: 14px;
