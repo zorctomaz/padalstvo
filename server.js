@@ -10,6 +10,7 @@ const { findNearestSite } = require('./src/geo');
 const { fetchArsoForecast } = require('./src/arso');
 const { fetchOpendataReport } = require('./src/opendata');
 const { buildParaglidingSummary } = require('./src/paragliding');
+const { fetchAllStations } = require('./src/skytech');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,12 +61,26 @@ app.get('/api/weather', async (req, res) => {
       distanceKm = nearest.distanceKm;
     }
 
-    const [arsoResult, opendataResult] = await Promise.allSettled([
-      fetchArsoForecast(site.arsoLocation),
-      fetchOpendataReport(site.lat, site.lon),
+    const [[arsoResult, opendataResult], skytech] = await Promise.all([
+      Promise.allSettled([
+        fetchArsoForecast(site.arsoLocation),
+        fetchOpendataReport(site.lat, site.lon),
+      ]),
+      fetchAllStations(),
     ]);
 
-    const summary = buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult });
+    const skytechStation = site.skytechStationId != null
+      ? skytech.stations.find((s) => s.id === site.skytechStationId) || null
+      : null;
+
+    const summary = buildParaglidingSummary({
+      site,
+      distanceKm,
+      arsoResult,
+      opendataResult,
+      skytechStation,
+      allStations: skytech.stations,
+    });
     res.json(summary);
   } catch (err) {
     console.error('Napaka /api/weather:', err);

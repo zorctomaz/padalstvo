@@ -22,6 +22,8 @@ const el = {
   skytechCard: document.getElementById('skytechCard'),
   skytechMeta: document.getElementById('skytechMeta'),
   skytechGrid: document.getElementById('skytechGrid'),
+  nearbyStationsCard: document.getElementById('nearbyStationsCard'),
+  nearbyStationsList: document.getElementById('nearbyStationsList'),
   currentCard: document.getElementById('currentCard'),
   currentSiteName: document.getElementById('currentSiteName'),
   currentSiteMeta: document.getElementById('currentSiteMeta'),
@@ -229,6 +231,33 @@ function renderSkytech(data) {
   }
 }
 
+function renderNearbyStations(data) {
+  const stations = data.nearbyStations;
+  if (!stations || stations.length === 0) {
+    el.nearbyStationsCard.hidden = true;
+    return;
+  }
+  el.nearbyStationsList.innerHTML = stations
+    .map((s) => {
+      const ageText = s.ageMinutes != null
+        ? (s.ageMinutes <= 1 ? 'pred <1 min' : `pred ${s.ageMinutes} min`)
+        : '';
+      return `
+        <div class="timeline-row">
+          <div class="timeline-time">${s.distanceKm} km</div>
+          <div class="timeline-detail">
+            ${s.stationName}${s.altitude != null ? ' (' + s.altitude + ' m)' : ''} ·
+            ${s.windSpeedKmh != null ? s.windSpeedKmh + ' km/h' : '—'}${s.windDirection ? ' ' + s.windDirection : ''}
+            ${s.windGustKmh != null ? ' (sunki ' + s.windGustKmh + ')' : ''} · ${ageText}
+          </div>
+          <div class="${pillClass(s.wind.color)}">${s.wind.label}</div>
+        </div>
+      `;
+    })
+    .join('');
+  el.nearbyStationsCard.hidden = false;
+}
+
 function renderNearby(data) {
   if (!data.nearby) {
     el.nearbyCard.hidden = true;
@@ -370,6 +399,7 @@ function renderWeather(data) {
   state.weather = data;
   renderSkytech(data);
   renderCurrent(data);
+  renderNearbyStations(data);
   renderNearby(data);
   renderForecast(data);
   renderLinks(data);

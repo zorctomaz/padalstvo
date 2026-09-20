@@ -7,6 +7,8 @@
  * uradne vire (GAFOR, SIGWX, lokalno društvo) pred letom.
  */
 
+const { haversineKm } = require('./geo');
+
 function estimateDewPointC(tempC, rh) {
   if (tempC === null || rh === null) return null;
   // Poenostavljena aproksimacija (natančnejša je Magnusova formula,
@@ -239,6 +241,30 @@ function summarizeSkytechStation(station) {
   };
 }
 
+const NEARBY_STATIONS_MAX_DISTANCE_KM = 25;
+const NEARBY_STATIONS_MAX_COUNT = 6;
+
+/**
+ * Vsa SkyTech merilna mesta v bližini izbrane lokacije (kjer boš dejansko
+ * letel) – ne le tista, ki so uradno pripisana vzletišču. Uporabno za grob
+ * vpogled v veter na sosednjih vrhovih/dolinah, ki niso vzletišča. Izloči
+ * postajo, ki je že prikazana kot glavna (skytechStation), in tiste brez
+ * žive meritve ali GPS koordinat.
+ */
+function summarizeNearbyStations(allStations, site, excludeStationId) {
+  if (!Array.isArray(allStations) || allStations.length === 0) return [];
+  return allStations
+    .filter((s) => s.id !== excludeStationId && typeof s.lat === 'number' && typeof s.lon === 'number')
+    .map((s) => ({
+      distanceKm: Math.round(haversineKm(site.lat, site.lon, s.lat, s.lon) * 10) / 10,
+      altitude: s.altitude ?? null,
+      ...summarizeSkytechStation(s),
+    }))
+    .filter((s) => s.hasMeasurement && s.distanceKm <= NEARBY_STATIONS_MAX_DISTANCE_KM)
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, NEARBY_STATIONS_MAX_COUNT);
+}
+
 function buildLinks(site) {
   const arsoNameEncoded = encodeURIComponent(site.arsoLocation);
   const lat = site.lat.toFixed(3);
@@ -272,7 +298,7 @@ function summarizeTimelineEntry(entry, site) {
   };
 }
 
-function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult, skytechStation }) {
+function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult, skytechStation, allStations }) {
   const arso =
     arsoResult.status === 'fulfilled'
       ? arsoResult.value
@@ -284,6 +310,11 @@ function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult,
       : { ok: false, error: opendataResult.reason ? String(opendataResult.reason.message || opendataResult.reason) : 'napaka' };
 
   const skytech = summarizeSkytechStation(skytechStation || null);
+  const nearbyStations = summarizeNearbyStations(
+    allStations || [],
+    site,
+    skytechStation ? skytechStation.id : null
+  );
 
   // Če primerna smer vzleta ni bila ročno potrjena (SFFA/opis vzletišča),
   // pa imamo dodeljeno SkyTech postajo z uradno oceno smeri, uporabimo to –
@@ -335,6 +366,7 @@ function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult,
       opendata: { ok: opendata.ok, sourceUrl: opendata.sourceUrl, error: opendata.ok ? null : opendata.error || 'Ni podatkov iz opendata.si.' },
     },
     skytech,
+    nearbyStations,
     nearby: opendata.ok
       ? { rain: opendata.rain, forecast: opendata.forecast, hail: opendata.hail }
       : null,
@@ -360,4 +392,5 @@ module.exports = {
   degToOctant,
   rateSkytechDirection,
   summarizeSkytechStation,
+  summarizeNearbyStations,
 };

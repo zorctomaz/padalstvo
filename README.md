@@ -12,6 +12,9 @@ ocene, pomembne za pilote:
 - grobo oceno termike in **okvirno "termalno okno"** (v katerih urah je
   termika verjetno aktivna) z oceno primernosti za XC prelete,
 - padavine/točo v bližini,
+- **druga SkyTech merilna mesta v bližini izbrane lokacije** (do 25 km,
+  niso uradna vzletišča, a dajo dodaten vpogled v veter na sosednjih
+  vrhovih/dolinah, kjer nameravaš leteti),
 - povezavo na veter na višini (za oceno strižnega vetra pri XC preletih).
 
 ## Viri podatkov
@@ -205,6 +208,19 @@ razdalji, zato `skytechStationId` ostaja `null` in `liveStation.confirmed`
 `false` – če veš za pravo postajo za katero od njih, dodaj ujemanje (glej
 spodaj). Poleg tega nekatera vzletišča (npr. Vogel) ohranjajo tudi
 potrjeno telefonsko številko SFFA odzivnika kot dodaten/varnostni vir.
+
+### Druga merilna mesta v bližini (niso uradna vzletišča)
+
+Poleg uradno pripisane postaje aplikacija za vsako vzletišče prikaže tudi
+seznam **vseh SkyTech postaj v bližini** (do 25 km zračne razdalje, največ
+6, razvrščene po oddaljenosti; izloči se postaja, ki je že prikazana
+zgoraj kot glavna). Namen: piloti pogosto letijo tudi izven uradnega
+seznama vzletišč, zato je koristno videti veter na sosednjih vrhovih,
+grebenih ali v dolinah, kamor bi lahko letel/-a, čeprav to niso uradna
+vzletišča z lastnim vnosom v `src/sites.json`. Izračuna jo
+`summarizeNearbyStations` v `src/paragliding.js` (Haversine razdalja od
+GPS koordinate vzletišča do vseh 62 postaj), prikazana je v kartici
+"📡 Druga merilna mesta v bližini" na strani.
 
 ## Dodajanje vzletišč
 
