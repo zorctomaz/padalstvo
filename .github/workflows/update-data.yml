@@ -43,14 +43,6 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
-      - name: Začasno - preveri zgodovino postaje Nebesa (id 27)
-        env:
-          SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
-        run: |
-          node scripts/debug-nebesa-history.js
-          echo "--- generirana datoteka public/data/history/27.json ---"
-          cat public/data/history/27.json
-
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
         with:
