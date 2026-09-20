@@ -196,12 +196,18 @@ function rateSkytechDirectionClient(station, compassDirection) {
 
 const NEARBY_MAX_DISTANCE_KM = 25;
 const NEARBY_MAX_COUNT = 6;
+const NEARBY_MAX_AGE_MINUTES = 24 * 60;
 
 /**
  * Enako kot summarizeNearbyStations v src/paragliding.js, a za poljubno
  * (lat, lon) - uporabljeno za "Moja lokacija", kjer uporabnik ni nujno
- * na uradnem vzletišču. Izloči tudi postaje z altitude 0 (glej
- * SKYTECH_API_ISSUES.md - podvojen/pokvarjen vnos "Kranjska gora").
+ * na uradnem vzletišču. Izloči postaje z altitude 0 IN postaje s
+ * starostjo meritve nad 24h (glej SKYTECH_API_ISSUES.md) - precej
+ * neaktivnih SkyTech postaj namesto manjkajočih koordinat vrača skupno
+ * privzeto točko (npr. lat:46, lon:15 - "Letališče Ptuj", "Žetale-Log"
+ * in druge, v resnici stotine km stran), ki je pri nas po naključju
+ * blizu Šentrupertu; starost meritve je zanesljivejši splošen signal
+ * od same nadmorske višine.
  */
 function computeNearbyStationsForPoint(stations, lat, lon, excludeId) {
   if (!Array.isArray(stations)) return [];
@@ -232,7 +238,11 @@ function computeNearbyStationsForPoint(stations, lat, lon, excludeId) {
         directionRating: rateSkytechDirectionClient(s, m.windDirection),
       };
     })
-    .filter((s) => s.distanceKm <= NEARBY_MAX_DISTANCE_KM)
+    .filter((s) =>
+      s.distanceKm <= NEARBY_MAX_DISTANCE_KM &&
+      s.ageMinutes != null &&
+      s.ageMinutes <= NEARBY_MAX_AGE_MINUTES
+    )
     .sort((a, b) => a.distanceKm - b.distanceKm)
     .slice(0, NEARBY_MAX_COUNT);
 }

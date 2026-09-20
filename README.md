@@ -243,16 +243,19 @@ vzletišča z lastnim vnosom v `src/sites.json`. Izračuna jo
 GPS koordinate vzletišča do vseh 62 postaj), prikazana je v kartici
 "📡 Druga merilna mesta v bližini" na strani.
 
-**Znana napaka podatkov pri viru (popravljeno 2026-09-20):** SkyTech API
-vsebuje podvojen vnos "Kranjska gora" (id 46) s pokvarjenimi/privzetimi
-koordinatami (`lat:46, lon:15.1, altitude:0`), ki so po naključju skoraj
-enake resnični lokaciji postaje "Nebesa nad Šentrupertom" – zato se je
-napačno prikazoval kot zelo blizu vzletišču Kum, čeprav je prava Kranjska
-Gora (druga, veljavna postaja "Kranjska Gora landing", id 15) v resnici
-~109 km stran. `summarizeNearbyStations` zato izloči vse postaje z
-nadmorsko višino 0 m – noben resničen slovenski padalski vrh ni na nivoju
-morja, zato je ta filter varen pred podobnimi pokvarjenimi vnosi v
-prihodnje. Glej `SKYTECH_API_ISSUES.md` za zbirni seznam napak, ki jih
+**Znana napaka podatkov pri viru (popravljeno 2026-09-20):** več neaktivnih
+SkyTech postaj vrača skupno privzeto/napačno koordinato (najpogosteje
+`lat:46, lon:15`, ena varianta tudi `lat:46, lon:15.1` za "Kranjska gora",
+druga `(0,0)` za "Izola-Zeleni kare") namesto prave lokacije ali manjkajoče
+vrednosti – ta točka je po naključju blizu Šentrupertu (Dolenjska), zato so
+se npr. "Letališče Ptuj" in "Žetale-Log" (v resnici v vzhodni Štajerski,
+~70-80 km stran) uporabniku od tam prikazala kot navidezno ~14 km blizu.
+`summarizeNearbyStations` (in klientski `computeNearbyStationsForPoint`)
+zato izloči postaje z nadmorsko višino 0 m IN postaje s starostjo meritve
+nad 24h – slednje je zanesljivejši splošen signal, saj imajo vse doslej
+najdene pokvarjene/neaktivne postaje meritev staro od ~21h do skoraj 3 let
+(nekatere imajo neničelno nadmorsko višino, zato jih prvi filter sam ne bi
+ujel). Glej `SKYTECH_API_ISSUES.md` za polni zbirni seznam napak, ki jih
 nameravamo poročati SkyTech-u/KOK-u.
 
 ### Moja lokacija (📍) – napoved za tvojo natančno GPS točko

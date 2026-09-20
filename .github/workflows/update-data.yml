@@ -43,11 +43,6 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
-      - name: Začasno - razišči napačno razdaljo do Letališče Ptuj/Žetale-Log
-        env:
-          SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
-        run: node scripts/debug-ptuj-distance-bug.js
-
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
         with:

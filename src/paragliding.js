@@ -243,6 +243,7 @@ function summarizeSkytechStation(station) {
 
 const NEARBY_STATIONS_MAX_DISTANCE_KM = 25;
 const NEARBY_STATIONS_MAX_COUNT = 6;
+const NEARBY_STATIONS_MAX_AGE_MINUTES = 24 * 60;
 
 /**
  * Vsa SkyTech merilna mesta v bližini izbrane lokacije (kjer boš dejansko
@@ -251,13 +252,19 @@ const NEARBY_STATIONS_MAX_COUNT = 6;
  * postajo, ki je že prikazana kot glavna (skytechStation), in tiste brez
  * žive meritve ali GPS koordinat.
  *
- * Izloči tudi postaje z nadmorsko višino 0 m: v SkyTech naboru se je to
- * izkazalo za znak pokvarjenega/privzetega vnosa (npr. postaja "Kranjska
- * gora", id 46, ima altitude:0 in sumljivo okrogle koordinate lat:46,
- * lon:15.1 – ki po naključju skoraj sovpadajo z resnično oddaljeno postajo
- * "Nebesa nad Šentrupertom" in bi bila zato napačno prikazana kot zelo
- * blizu). Noben resničen slovenski padalski vrh/postaja ni na nivoju
- * morja, zato je ta filter varen.
+ * Izloči tudi postaje z nadmorsko višino 0 m in postaje s starostjo
+ * meritve nad 24h – v SkyTech naboru se je izkazalo, da precej neaktivnih/
+ * ukinjenih postaj namesto manjkajočih koordinat vrača skupno privzeto
+ * koordinato (npr. lat:46, lon:15 – deli si jo vsaj 5 nepovezanih postaj,
+ * med njimi "Letališče Ptuj" in "Žetale-Log", ki sta v resnici v vzhodni
+ * Štajerski, ne pri tej točki; podobno "Kranjska gora" z lat:46, lon:15.1
+ * in altitude:0). Ta privzeta točka je pri nas po naključju blizu
+ * Šentrupertu (Dolenjska), zato so se take postaje napačno prikazale kot
+ * "v bližini". Nadmorska višina 0 m ujame nekatere od njih, ne pa vseh
+ * (Ptuj/Žetale imata neničelno, a še vedno izmišljeno višino) – zanesljiv
+ * splošen signal je STAROST meritve: vse doslej najdene pokvarjene postaje
+ * imajo meritev staro več kot 24h (do skoraj 3 leta), medtem ko imajo
+ * prave žive postaje meritev staro nekaj minut. Glej SKYTECH_API_ISSUES.md.
  */
 function summarizeNearbyStations(allStations, site, excludeStationId) {
   if (!Array.isArray(allStations) || allStations.length === 0) return [];
@@ -273,7 +280,12 @@ function summarizeNearbyStations(allStations, site, excludeStationId) {
       altitude: s.altitude ?? null,
       ...summarizeSkytechStation(s),
     }))
-    .filter((s) => s.hasMeasurement && s.distanceKm <= NEARBY_STATIONS_MAX_DISTANCE_KM)
+    .filter((s) =>
+      s.hasMeasurement &&
+      s.distanceKm <= NEARBY_STATIONS_MAX_DISTANCE_KM &&
+      s.ageMinutes != null &&
+      s.ageMinutes <= NEARBY_STATIONS_MAX_AGE_MINUTES
+    )
     .sort((a, b) => a.distanceKm - b.distanceKm)
     .slice(0, NEARBY_STATIONS_MAX_COUNT);
 }
