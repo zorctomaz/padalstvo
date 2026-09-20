@@ -43,6 +43,11 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
+      - name: Začasno - preveri, ali API ponuja zgodovino meritev
+        env:
+          SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
+        run: node scripts/debug-kok-history-check.js
+
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
         with:
