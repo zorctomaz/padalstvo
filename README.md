@@ -234,6 +234,17 @@ vzletišča z lastnim vnosom v `src/sites.json`. Izračuna jo
 GPS koordinate vzletišča do vseh 62 postaj), prikazana je v kartici
 "📡 Druga merilna mesta v bližini" na strani.
 
+**Znana napaka podatkov pri viru (popravljeno 2026-09-20):** SkyTech API
+vsebuje podvojen vnos "Kranjska gora" (id 46) s pokvarjenimi/privzetimi
+koordinatami (`lat:46, lon:15.1, altitude:0`), ki so po naključju skoraj
+enake resnični lokaciji postaje "Nebesa nad Šentrupertom" – zato se je
+napačno prikazoval kot zelo blizu vzletišču Kum, čeprav je prava Kranjska
+Gora (druga, veljavna postaja "Kranjska Gora landing", id 15) v resnici
+~109 km stran. `summarizeNearbyStations` zato izloči vse postaje z
+nadmorsko višino 0 m – noben resničen slovenski padalski vrh ni na nivoju
+morja, zato je ta filter varen pred podobnimi pokvarjenimi vnosi v
+prihodnje.
+
 ## Dodajanje vzletišč
 
 Uredi `src/sites.json` – vsak vnos potrebuje `id`, `name`, `region`, `lat`,

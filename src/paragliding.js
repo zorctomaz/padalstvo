@@ -250,11 +250,24 @@ const NEARBY_STATIONS_MAX_COUNT = 6;
  * vpogled v veter na sosednjih vrhovih/dolinah, ki niso vzletišča. Izloči
  * postajo, ki je že prikazana kot glavna (skytechStation), in tiste brez
  * žive meritve ali GPS koordinat.
+ *
+ * Izloči tudi postaje z nadmorsko višino 0 m: v SkyTech naboru se je to
+ * izkazalo za znak pokvarjenega/privzetega vnosa (npr. postaja "Kranjska
+ * gora", id 46, ima altitude:0 in sumljivo okrogle koordinate lat:46,
+ * lon:15.1 – ki po naključju skoraj sovpadajo z resnično oddaljeno postajo
+ * "Nebesa nad Šentrupertom" in bi bila zato napačno prikazana kot zelo
+ * blizu). Noben resničen slovenski padalski vrh/postaja ni na nivoju
+ * morja, zato je ta filter varen.
  */
 function summarizeNearbyStations(allStations, site, excludeStationId) {
   if (!Array.isArray(allStations) || allStations.length === 0) return [];
   return allStations
-    .filter((s) => s.id !== excludeStationId && typeof s.lat === 'number' && typeof s.lon === 'number')
+    .filter((s) =>
+      s.id !== excludeStationId &&
+      typeof s.lat === 'number' &&
+      typeof s.lon === 'number' &&
+      s.altitude !== 0
+    )
     .map((s) => ({
       distanceKm: Math.round(haversineKm(site.lat, site.lon, s.lat, s.lon) * 10) / 10,
       altitude: s.altitude ?? null,
