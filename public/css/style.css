@@ -239,6 +239,14 @@ select {
   padding: 0;
 }
 
+/* Avtorski `display` zgoraj sicer preglasi brskalnikov privzeti
+   `[hidden] { display: none }` (avtorski slog vedno zmaga nad UA
+   privzetim, ne glede na specifičnost) - brez tega pravila bi bil
+   modal viden ves čas, ne glede na `hidden` atribut. */
+.modal-overlay[hidden] {
+  display: none;
+}
+
 @media (min-width: 640px) {
   .modal-overlay {
     align-items: center;
