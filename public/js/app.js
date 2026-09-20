@@ -119,7 +119,14 @@ function requestGeolocation() {
       const nearest = findNearestSite(state.userCoords.lat, state.userCoords.lon);
       if (nearest.site) {
         el.siteSelect.value = nearest.site.id;
+        el.distanceInfo.textContent =
+          `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
+          `→ najbližje vzletišče: ${nearest.site.name} (${nearest.distanceKm} km)`;
         loadWeatherForSite(nearest.site.id);
+      } else {
+        el.distanceInfo.textContent =
+          `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
+          `– ni znanih vzletišč v bližini.`;
       }
     },
     (err) => {
@@ -413,7 +420,10 @@ function renderWeather(data) {
 }
 
 el.locateBtn.addEventListener('click', requestGeolocation);
-el.siteSelect.addEventListener('change', () => loadWeatherForSite(el.siteSelect.value));
+el.siteSelect.addEventListener('change', () => {
+  el.distanceInfo.textContent = '';
+  loadWeatherForSite(el.siteSelect.value);
+});
 
 (async function init() {
   try {
