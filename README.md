@@ -21,7 +21,12 @@ prikaže vremenske podatke ter iz njih izpeljane ocene, pomembne za pilote:
 - **izbiro enote za prikaz hitrosti vetra** (km/h, m/s, mph, vozli) v
   izbirnem meniju na vrhu strani – izbira se shrani v brskalniku
   (`localStorage`) in velja za vse prikaze hitrosti/sunkov vetra na
-  strani (interno se vedno računa v km/h, pretvorba je le za prikaz).
+  strani (interno se vedno računa v km/h, pretvorba je le za prikaz),
+  - **nočno zatemnitev** – ponoči (med sončnim zahodom in vzhodom na
+    relevantni lokaciji – glej razdelek spodaj) je stran namenoma zelo
+    slabo vidna, saj se takrat jadralno padalstvo uradno (VFR, dnevno
+    letenje) ne sme izvajati; gumb 🔦 na vrhu (viden le ponoči) to
+    začasno izklopi za branje.
 
 ## Viri podatkov
 
@@ -284,6 +289,31 @@ naloži v brskalniku in zanj zrcali `haversineKm`, `rateWind` in
 bližnje postaje za POLJUBNO GPS točko brez dodatnega strežniškega
 klica – to je edini način, ki deluje tudi na povsem statičnem GitHub
 Pages gostovanju brez žive backend poti.
+
+### Nočna zatemnitev (🌙 / 🔦)
+
+Jadralno padalstvo se v Sloveniji (kot VFR/dnevno letenje) uradno sme
+izvajati le podnevi – med sončnim vzhodom in zahodom. Da to aplikacija
+vizualno poudari, ponoči (glede na sistemsko uro naprave uporabnika)
+zelo zatemni celotno vsebino strani (`body.is-night #app` v
+`css/style.css` – nizka prosojnost + sivinski filter) in prikaže
+opozorilni pas na vrhu.
+
+- `getSunTimes(date, lat, lon)` v `public/js/app.js` izračuna sončni
+  vzhod/zahod po poenostavljeni NOAA formuli (natančnost ~1-2 min) za
+  relevantno lokacijo – **ne** fiksne ure, saj se sončni vzhod/zahod v
+  Sloveniji skozi leto razlikuje tudi za več kot 5 ur. Lokacija je
+  uporabnikova prava GPS pozicija, če je na voljo (`state.userCoords`,
+  npr. po kliku "Moja lokacija"), sicer lokacija trenutno izbranega
+  vzletišča.
+- Preverjanje se ponovi vsako minuto (`setInterval`), da se zatemnitev
+  samodejno vklopi/izklopi tudi, če uporabnik pusti stran odprto čez
+  sončni vzhod/zahod.
+- Gumb "🔦" na vrhu je viden le, kadar je trenutno noč, in omogoča
+  **začasen** preklop nazaj na berljiv prikaz (npr. za pregled napovedi
+  za naslednje jutro) – ta izbira se namenoma NE shranjuje med obiski
+  (ni v `localStorage`), saj gre za varnostni opomnik, ne uporabniško
+  nastavitev, ki naj privzeto ne ostane trajno izklopljena.
 
 ## Dodajanje vzletišč
 

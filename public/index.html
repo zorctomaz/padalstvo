@@ -20,6 +20,7 @@
       </div>
     </div>
     <div class="topbar-actions">
+      <button id="nightOverrideBtn" class="btn btn-flashlight" type="button" hidden title="Začasno prižgi zatemnitev (podatke vseeno prikaži berljivo)">🔦</button>
       <select id="unitSelect" class="unit-select" aria-label="Enota za hitrost vetra">
         <option value="kmh">km/h</option>
         <option value="ms">m/s</option>
@@ -29,6 +30,8 @@
       <button id="locateBtn" class="btn btn-primary" type="button">📍 Moja lokacija</button>
     </div>
   </header>
+
+  <div id="nightBanner" class="night-banner" hidden></div>
 
   <main id="app">
     <section class="site-picker card">

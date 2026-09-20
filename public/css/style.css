@@ -122,6 +122,39 @@ p {
   opacity: 0.85;
 }
 
+.btn-flashlight {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.btn-flashlight.active {
+  background: var(--orange);
+}
+
+.night-banner {
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: rgba(79, 140, 255, 0.12);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+body.is-night #app {
+  opacity: 0.22;
+  filter: grayscale(0.7) brightness(0.65);
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+body:not(.is-night) #app {
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
 .card {
   background: var(--bg-elev);
   border: 1px solid var(--border);

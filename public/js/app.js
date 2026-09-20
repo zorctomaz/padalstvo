@@ -32,12 +32,15 @@ const state = {
   windUnit: loadStoredWindUnit(),
   myLocationMode: false,
   allStations: null,
+  nightOverride: false,
 };
 
 const el = {
   siteSelect: document.getElementById('siteSelect'),
   distanceInfo: document.getElementById('distanceInfo'),
   locateBtn: document.getElementById('locateBtn'),
+  nightOverrideBtn: document.getElementById('nightOverrideBtn'),
+  nightBanner: document.getElementById('nightBanner'),
   unitSelect: document.getElementById('unitSelect'),
   statusBox: document.getElementById('statusBox'),
   skytechCard: document.getElementById('skytechCard'),
@@ -63,6 +66,90 @@ const el = {
   updatedInfo: document.getElementById('updatedInfo'),
   versionInfo: document.getElementById('versionInfo'),
 };
+
+/**
+ * Približen izračun sončnega vzhoda/zahoda (NOAA poenostavljena formula,
+ * natančnost ~1-2 min) za dano koordinato in datum. Uporabljeno za nočno
+ * zatemnitev strani - jadralno padalstvo (VFR, dnevno letenje) se sme
+ * uradno izvajati le med sončnim vzhodom in zahodom, zato je uporaba
+ * fiksnih ur (npr. "6:00-21:00") skozi leto preveč netočna.
+ * Vrne { sunrise, sunset } kot Date objekta (UTC, zato primerljiva z
+ * `new Date()` ne glede na časovni pas brskalnika), ali { alwaysDay:
+ * true } / { alwaysNight: true } za polarni dan/noč (ne velja za
+ * Slovenijo, a formula naj bo splošno pravilna).
+ */
+function getSunTimes(date, lat, lon) {
+  const rad = Math.PI / 180;
+  const deg = 180 / Math.PI;
+
+  const dayStartUTC = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const yearStartUTC = Date.UTC(date.getUTCFullYear(), 0, 1);
+  const dayOfYear = Math.floor((dayStartUTC - yearStartUTC) / 86400000) + 1;
+
+  const b = rad * (360 / 365) * (dayOfYear - 81);
+  const decl = 23.44 * rad * Math.sin(b);
+  const eqTimeMin = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b);
+
+  const latRad = lat * rad;
+  const cosHourAngle =
+    (Math.sin(-0.83 * rad) - Math.sin(latRad) * Math.sin(decl)) /
+    (Math.cos(latRad) * Math.cos(decl));
+
+  if (cosHourAngle > 1) return { sunrise: null, sunset: null, alwaysNight: true };
+  if (cosHourAngle < -1) return { sunrise: null, sunset: null, alwaysDay: true };
+
+  const hourAngleDeg = Math.acos(cosHourAngle) * deg;
+  const solarNoonUTCMin = 720 - 4 * lon - eqTimeMin;
+  const sunriseUTCMin = solarNoonUTCMin - 4 * hourAngleDeg;
+  const sunsetUTCMin = solarNoonUTCMin + 4 * hourAngleDeg;
+
+  return {
+    sunrise: new Date(dayStartUTC + sunriseUTCMin * 60000),
+    sunset: new Date(dayStartUTC + sunsetUTCMin * 60000),
+  };
+}
+
+function currentCoordsForSun() {
+  if (state.userCoords) return state.userCoords;
+  if (state.weather && state.weather.site) return state.weather.site;
+  return null;
+}
+
+/**
+ * Preveri, ali je trenutno (glede na sistemsko uro brskalnika) noč na
+ * relevantni lokaciji, in ustrezno zatemni #app. Uporabnik lahko
+ * zatemnitev začasno izklopi z gumbom "svetilka" (state.nightOverride) -
+ * to se ne shranjuje med obiski, saj gre za varnostni opomnik, ne
+ * nastavitev.
+ */
+function updateNightMode() {
+  const coords = currentCoordsForSun();
+  if (!coords || coords.lat == null || coords.lon == null) {
+    document.body.classList.remove('is-night');
+    el.nightBanner.hidden = true;
+    el.nightOverrideBtn.hidden = true;
+    return;
+  }
+
+  const now = new Date();
+  const sun = getSunTimes(now, coords.lat, coords.lon);
+  const isNight = sun.alwaysNight || (!sun.alwaysDay && (now < sun.sunrise || now > sun.sunset));
+
+  el.nightOverrideBtn.hidden = !isNight;
+  if (!isNight) state.nightOverride = false;
+
+  document.body.classList.toggle('is-night', isNight && !state.nightOverride);
+  el.nightOverrideBtn.classList.toggle('active', isNight && state.nightOverride);
+
+  if (!isNight) {
+    el.nightBanner.hidden = true;
+    return;
+  }
+  el.nightBanner.hidden = false;
+  el.nightBanner.textContent = state.nightOverride
+    ? '🔦 Zatemnitev začasno izklopljena – ponoči se uradno (VFR, dnevno letenje) še vedno ne sme leteti.'
+    : '🌙 Trenutno je noč – uradno (VFR, dnevno letenje) se ne sme leteti, zato so podatki spodaj zatemnjeni. Klikni 🔦 zgoraj, če jih vseeno želiš prebrati.';
+}
 
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -624,12 +711,17 @@ function renderWeather(data) {
   el.disclaimerBox.textContent = data.disclaimer;
   el.disclaimerBox.hidden = false;
   renderSources(data);
+  updateNightMode();
 }
 
 el.locateBtn.addEventListener('click', requestGeolocation);
 el.siteSelect.addEventListener('change', () => {
   el.distanceInfo.textContent = '';
   loadWeatherForSite(el.siteSelect.value);
+});
+el.nightOverrideBtn.addEventListener('click', () => {
+  state.nightOverride = !state.nightOverride;
+  updateNightMode();
 });
 el.unitSelect.addEventListener('change', () => {
   state.windUnit = el.unitSelect.value;
@@ -656,6 +748,8 @@ el.unitSelect.addEventListener('change', () => {
       await loadWeatherForSite(state.sites[0].id);
     }
     requestGeolocation();
+    updateNightMode();
+    setInterval(updateNightMode, 60000);
   } catch (err) {
     setStatus('Napaka pri nalaganju aplikacije: ' + err.message, 'error');
   }
