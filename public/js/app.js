@@ -613,13 +613,15 @@ function buildLineChartSvg({ series, series2, width = 320, height = 130, color =
 
   function pathFor(pts) {
     let d = '';
+    let needMove = true; // true na začetku in takoj po vrzeli (null vrednost)
     pts.forEach((p, i) => {
       if (p.value === null || p.value === undefined) {
-        d += ' ';
+        needMove = true;
         return;
       }
-      const cmd = d.endsWith(' ') || d === '' ? 'M' : 'L';
+      const cmd = needMove ? 'M' : 'L';
       d += `${cmd}${xAt(i).toFixed(1)},${yAt(p.value).toFixed(1)} `;
+      needMove = false;
     });
     return d.trim();
   }
