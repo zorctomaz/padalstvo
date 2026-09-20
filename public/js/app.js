@@ -33,6 +33,8 @@ const state = {
   myLocationMode: false,
   allStations: null,
   nightOverride: false,
+  stationHistoryCache: new Map(),
+  currentHistoryStationId: null,
 };
 
 const el = {
@@ -65,6 +67,10 @@ const el = {
   disclaimerBox: document.getElementById('disclaimerBox'),
   updatedInfo: document.getElementById('updatedInfo'),
   versionInfo: document.getElementById('versionInfo'),
+  historyModalOverlay: document.getElementById('historyModalOverlay'),
+  historyModalTitle: document.getElementById('historyModalTitle'),
+  historyModalBody: document.getElementById('historyModalBody'),
+  historyModalClose: document.getElementById('historyModalClose'),
 };
 
 /**
@@ -507,6 +513,8 @@ function renderSkytech(data) {
     el.skytechCard.hidden = true;
     return;
   }
+  el.skytechCard.dataset.stationId = sk.stationId;
+  el.skytechCard.dataset.stationName = sk.stationName;
   const ageText = sk.ageMinutes != null
     ? (sk.ageMinutes <= 1 ? 'pred manj kot minuto' : `pred ${sk.ageMinutes} min`)
     : '';
@@ -556,7 +564,7 @@ function renderNearbyStations(data) {
         ? (s.ageMinutes <= 1 ? 'pred <1 min' : `pred ${s.ageMinutes} min`)
         : '';
       return `
-        <div class="timeline-row">
+        <div class="timeline-row station-row-clickable" data-station-id="${s.stationId}" data-station-name="${s.stationName}">
           <div class="timeline-time">${s.distanceKm} km</div>
           <div class="timeline-detail">
             ${s.stationName}${s.altitude != null ? ' (' + s.altitude + ' m)' : ''} ·
@@ -569,6 +577,135 @@ function renderNearbyStations(data) {
     })
     .join('');
   el.nearbyStationsCard.hidden = false;
+}
+
+/**
+ * Preprost SVG graf ene ali dveh časovnih vrst, brez zunanjih knjižnic
+ * (aplikacija nima build koraka). `series`/`series2` sta seznama
+ * {time, value} v kronološkem vrstnem redu; vrzeli (value === null)
+ * prekinejo črto namesto lažnega interpoliranja.
+ */
+function buildLineChartSvg({ series, series2, width = 320, height = 130, color = '#4f8cff', color2 = '#f5a524', unit = '' }) {
+  const padding = { top: 14, right: 8, bottom: 20, left: 4 };
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+
+  const allValues = series
+    .concat(series2 || [])
+    .map((p) => p.value)
+    .filter((v) => v !== null && v !== undefined);
+  if (allValues.length === 0) {
+    return '<p class="muted small">Ni podatkov za graf.</p>';
+  }
+  let min = Math.min(...allValues);
+  let max = Math.max(...allValues);
+  if (min === max) {
+    min -= 1;
+    max += 1;
+  }
+  const pad = (max - min) * 0.12;
+  const scaleMin = min - pad;
+  const scaleMax = max + pad;
+
+  const n = series.length;
+  const xAt = (i) => padding.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const yAt = (v) => padding.top + innerH - ((v - scaleMin) / (scaleMax - scaleMin)) * innerH;
+
+  function pathFor(pts) {
+    let d = '';
+    pts.forEach((p, i) => {
+      if (p.value === null || p.value === undefined) {
+        d += ' ';
+        return;
+      }
+      const cmd = d.endsWith(' ') || d === '' ? 'M' : 'L';
+      d += `${cmd}${xAt(i).toFixed(1)},${yAt(p.value).toFixed(1)} `;
+    });
+    return d.trim();
+  }
+
+  const fmtTime = (t) => (t ? new Date(t).toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' }) : '');
+  const firstTime = series[0] && series[0].time;
+  const lastTime = series[n - 1] && series[n - 1].time;
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none" class="history-chart">
+      <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#22304a" stroke-width="1" />
+      <text x="${padding.left}" y="${padding.top - 4}" font-size="10" fill="#9db0cc">${Math.round(max * 10) / 10}${unit}</text>
+      <text x="${padding.left}" y="${height - padding.bottom - 2}" font-size="10" fill="#9db0cc">${Math.round(min * 10) / 10}${unit}</text>
+      ${series2 ? `<path d="${pathFor(series2)}" fill="none" stroke="${color2}" stroke-width="1.5" stroke-dasharray="3,3" />` : ''}
+      <path d="${pathFor(series)}" fill="none" stroke="${color}" stroke-width="2" />
+      <text x="${padding.left}" y="${height - 4}" font-size="9" fill="#9db0cc">${fmtTime(firstTime)}</text>
+      <text x="${width - padding.right}" y="${height - 4}" font-size="9" fill="#9db0cc" text-anchor="end">${fmtTime(lastTime)}</text>
+    </svg>
+  `;
+}
+
+function convertWindValue(windSpeedKmh) {
+  if (windSpeedKmh === null || windSpeedKmh === undefined) return null;
+  const unit = WIND_UNITS[state.windUnit] || WIND_UNITS.kmh;
+  return Math.round(windSpeedKmh * unit.factor * 10) / 10;
+}
+
+function renderHistoryCharts(history) {
+  if (!history || !history.ok || !history.measurements || history.measurements.length === 0) {
+    el.historyModalBody.innerHTML = '<p class="muted">Zgodovina za to postajo (zadnjih nekaj ur) ni na voljo.</p>';
+    return;
+  }
+  const m = history.measurements;
+  const unitLabel = (WIND_UNITS[state.windUnit] || WIND_UNITS.kmh).label;
+  const windSeries = m.map((e) => ({ time: e.time, value: convertWindValue(e.windSpeedKmh) }));
+  const gustSeries = m.map((e) => ({ time: e.time, value: convertWindValue(e.windGustKmh) }));
+  const tempSeries = m.map((e) => ({ time: e.time, value: e.temperatureC }));
+  const hoursSpan = Math.round((m.length * 10) / 6) / 10;
+
+  el.historyModalBody.innerHTML = `
+    <div class="chart-block">
+      <h4>Veter (${unitLabel})</h4>
+      ${buildLineChartSvg({ series: windSeries, series2: gustSeries, color: '#4f8cff', color2: '#f5a524', unit: '' })}
+      <div class="chart-legend">
+        <span><span class="swatch" style="background:#4f8cff"></span>hitrost</span>
+        <span><span class="swatch" style="background:#f5a524"></span>sunki</span>
+      </div>
+    </div>
+    <div class="chart-block">
+      <h4>Temperatura (°C)</h4>
+      ${buildLineChartSvg({ series: tempSeries, color: '#f5544f', unit: '°' })}
+    </div>
+    <p class="muted small">Zadnjih ${m.length} meritev (~${hoursSpan} h, postaja poroča približno vsakih 10 min).</p>
+  `;
+}
+
+async function loadStationHistory(stationId) {
+  if (state.stationHistoryCache.has(stationId)) {
+    return state.stationHistoryCache.get(stationId);
+  }
+  const res = await fetch(`data/history/${stationId}.json`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Zgodovina za to postajo ni na voljo.');
+  const data = await res.json();
+  state.stationHistoryCache.set(stationId, data);
+  return data;
+}
+
+function closeHistoryModal() {
+  el.historyModalOverlay.hidden = true;
+  state.currentHistoryStationId = null;
+}
+
+function openHistoryModal(stationId, stationName) {
+  state.currentHistoryStationId = stationId;
+  el.historyModalTitle.textContent = stationName || 'Postaja';
+  el.historyModalBody.innerHTML = '<p class="muted">Nalagam zgodovino…</p>';
+  el.historyModalOverlay.hidden = false;
+  loadStationHistory(stationId)
+    .then((history) => {
+      if (state.currentHistoryStationId === stationId) renderHistoryCharts(history);
+    })
+    .catch((err) => {
+      if (state.currentHistoryStationId === stationId) {
+        el.historyModalBody.innerHTML = `<p class="muted">${err.message}</p>`;
+      }
+    });
 }
 
 function renderNearby(data) {
@@ -746,6 +883,32 @@ el.unitSelect.addEventListener('change', () => {
     renderNearbyStations(state.weather);
     renderTimeline(state.weather.forecast[state.activeDayIndex]);
   }
+  if (state.currentHistoryStationId && state.stationHistoryCache.has(state.currentHistoryStationId)) {
+    renderHistoryCharts(state.stationHistoryCache.get(state.currentHistoryStationId));
+  }
+});
+
+el.skytechCard.addEventListener('click', () => {
+  const id = el.skytechCard.dataset.stationId;
+  if (id) openHistoryModal(id, el.skytechCard.dataset.stationName);
+});
+el.skytechCard.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    el.skytechCard.click();
+  }
+});
+el.nearbyStationsList.addEventListener('click', (e) => {
+  const row = e.target.closest('.station-row-clickable');
+  if (!row) return;
+  openHistoryModal(row.dataset.stationId, row.dataset.stationName);
+});
+el.historyModalClose.addEventListener('click', closeHistoryModal);
+el.historyModalOverlay.addEventListener('click', (e) => {
+  if (e.target === el.historyModalOverlay) closeHistoryModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !el.historyModalOverlay.hidden) closeHistoryModal();
 });
 
 (async function init() {

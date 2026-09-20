@@ -18,10 +18,12 @@ const sites = require('../src/sites.json');
 const { fetchArsoForecast } = require('../src/arso');
 const { fetchOpendataReport } = require('../src/opendata');
 const { buildParaglidingSummary } = require('../src/paragliding');
-const { fetchAllStations } = require('../src/skytech');
+const { fetchAllStations, fetchStationHistory } = require('../src/skytech');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
+const HISTORY_DIR = path.join(DATA_DIR, 'history');
+const HISTORY_LEN = 48; // ~8h pri poročanju vsakih ~10 min
 
 /**
  * Kratka identifikacija trenutno objavljenega koda (git commit), da
@@ -52,6 +54,22 @@ async function buildSite(site, stationById, allStations) {
   return summary;
 }
 
+async function buildStationHistories(stationIds) {
+  fs.mkdirSync(HISTORY_DIR, { recursive: true });
+  let ok = 0;
+  let failed = 0;
+  for (const id of stationIds) {
+    const result = await fetchStationHistory(id, HISTORY_LEN);
+    fs.writeFileSync(
+      path.join(HISTORY_DIR, `${id}.json`),
+      JSON.stringify({ stationId: id, generatedAt: new Date().toISOString(), ...result }, null, 2)
+    );
+    if (result.ok) ok++;
+    else failed++;
+  }
+  return { ok, failed };
+}
+
 async function main() {
   fs.mkdirSync(WEATHER_DIR, { recursive: true });
 
@@ -79,6 +97,7 @@ async function main() {
   );
 
   const results = [];
+  const relevantStationIds = new Set();
   for (const site of sites) {
     process.stdout.write(`Gradim podatke za ${site.name} (${site.id})... `);
     try {
@@ -99,11 +118,22 @@ async function main() {
         `dnevi=${dayCount} prvi=${firstEntry ? `${firstEntry.temperatureC}°C/${firstEntry.windSpeedKmh}km/h ${firstEntry.windDirection || ''}` : 'ni podatka'}`
       );
       results.push({ id: site.id, ok, dayCount });
+
+      if (site.skytechStationId != null) relevantStationIds.add(site.skytechStationId);
+      for (const s of summary.nearbyStations) relevantStationIds.add(s.stationId);
     } catch (err) {
       console.log('NAPAKA: ' + err.message);
       results.push({ id: site.id, ok: false, error: err.message });
     }
   }
+
+  // Zgodovina (za graf vetra/temperature "zadnjih nekaj ur" ob kliku na
+  // postajo) - samo za postaje, ki se dejansko kjerkoli prikažejo (glavne
+  // dodeljene + vse "bližnje" pri katerem koli vzletišču), ne za vseh 62,
+  // da ne obremenimo omejitve klicev API-ja po nepotrebnem.
+  process.stdout.write(`Pridobivam zgodovino za ${relevantStationIds.size} postaj... `);
+  const historyResult = await buildStationHistories(relevantStationIds);
+  console.log(`OK(${historyResult.ok}) NAPAKA(${historyResult.failed})`);
 
   fs.writeFileSync(
     path.join(DATA_DIR, 'meta.json'),

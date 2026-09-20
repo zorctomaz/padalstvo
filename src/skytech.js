@@ -97,4 +97,53 @@ async function fetchAllStations() {
   }
 }
 
-module.exports = { fetchAllStations, directionIndexToCompass, msToKmh, DIRECTION_BY_INDEX };
+/**
+ * Zgodovina meritev ene postaje (primer uporabe 2 v dokumentaciji:
+ * `?id=<postaja>&len=<n>`), za prikaz grafa vetra/temperature zadnjih
+ * nekaj ur. Postaje poročajo ~vsakih 10 min, zato `len=48` pokrije
+ * približno zadnjih 8 ur. API vrne najnovejšo meritev prvo – tu jih
+ * obrnemo v kronološki vrstni red (najstarejša prva), primeren za graf.
+ */
+async function fetchStationHistory(stationId, len = 48) {
+  const token = process.env.SKYTECH_API_TOKEN;
+  if (!token) {
+    return {
+      ok: false,
+      error: 'SKYTECH_API_TOKEN ni nastavljen (manjka GitHub Actions secret).',
+      measurements: [],
+    };
+  }
+
+  try {
+    const url = `${SKYTECH_API_BASE}?id=${encodeURIComponent(stationId)}&len=${encodeURIComponent(len)}`;
+    const result = await fetchJsonCached(url, {
+      ttlMs: 10 * 60 * 1000,
+      timeoutMs: 8000,
+      headers: { 'X-Api-Key': token },
+    });
+
+    const raw = (result.data && result.data.postaja && result.data.postaja.podatki) || [];
+    const measurements = raw
+      .slice()
+      .reverse()
+      .map((m) => ({
+        time: m.timestamp_utc || null,
+        windSpeedKmh: msToKmh(m.wind_speed),
+        windGustKmh: msToKmh(m.wind_gusts),
+        windDirection: directionIndexToCompass(m.wind_direction),
+        temperatureC: m.temperature ?? null,
+      }));
+
+    return { ok: true, measurements };
+  } catch (err) {
+    return { ok: false, error: err.message, measurements: [] };
+  }
+}
+
+module.exports = {
+  fetchAllStations,
+  fetchStationHistory,
+  directionIndexToCompass,
+  msToKmh,
+  DIRECTION_BY_INDEX,
+};

@@ -44,10 +44,11 @@
 
     <section id="statusBox" class="status-box" hidden></section>
 
-    <section id="skytechCard" class="card skytech-card" hidden>
+    <section id="skytechCard" class="card skytech-card clickable-card" hidden role="button" tabindex="0">
       <h3>📡 Živa postaja (SkyTech)</h3>
       <p id="skytechMeta" class="muted small"></p>
       <div class="current-grid" id="skytechGrid"></div>
+      <p class="muted small station-hint">Klikni za graf vetra/temperature zadnjih ur ↗</p>
     </section>
 
     <section id="nearbyStationsCard" class="card" hidden>
@@ -86,6 +87,16 @@
   <footer class="footer">
     <p>Podatki: ARSO (vreme.arso.gov.si, meteo.si), opendata.si, SkyTech.si. Ni uradna letalska napoved.</p>
   </footer>
+
+  <div id="historyModalOverlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
+      <div class="modal-header">
+        <h3 id="historyModalTitle">Postaja</h3>
+        <button id="historyModalClose" class="modal-close" type="button" aria-label="Zapri">✕</button>
+      </div>
+      <div id="historyModalBody" class="modal-body"></div>
+    </div>
+  </div>
 
   <script src="js/app.js"></script>
 </body>

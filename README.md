@@ -193,6 +193,7 @@ src/paragliding.js                   Izpeljane ocene: baza oblakov, ocena vetra,
 public/                              Mobilno prilagojen frontend (vanilla HTML/CSS/JS, brez build koraka)
 public/data/                         Generirano z `npm run build:data` – NI v git repozitoriju (.gitignore)
 public/data/skytech-stations.json    Javni seznam vseh SkyTech postaj (za "Moja lokacija" - glej razdelek spodaj)
+public/data/history/<id>.json        Zgodovina meritev postaje (za graf ob kliku - glej razdelek spodaj)
 SKYTECH_API_ISSUES.md                Zbirni seznam napak v SkyTech API podatkih za poročanje SkyTech-u
 ```
 
@@ -292,6 +293,34 @@ naloži v brskalniku in zanj zrcali `haversineKm`, `rateWind` in
 bližnje postaje za POLJUBNO GPS točko brez dodatnega strežniškega
 klica – to je edini način, ki deluje tudi na povsem statičnem GitHub
 Pages gostovanju brez žive backend poti.
+
+### Graf zgodovine postaje (klik na 📡 postajo)
+
+Klik na glavno "📡 Živa postaja" kartico ali na katerokoli vrstico v
+seznamu "bližnjih postaj" odpre modalno okno z grafom **vetra (hitrost +
+sunki) in temperature za zadnjih nekaj ur** za tisto postajo.
+
+- KOK/SkyTech API poleg `?latest=1` (trenutno stanje) ponuja tudi
+  `?id=<postaja>&len=<n>` – zgodovino zadnjih meritev posamezne postaje
+  (do 100, privzeto 20), potrjeno iz uradne dokumentacije. Postaje
+  poročajo približno vsakih 10 minut.
+- `src/skytech.js` (`fetchStationHistory`) ob vsaki izgradnji pridobi
+  zadnjih 48 meritev (~8 ur) za vsako postajo, ki se dejansko kjerkoli
+  prikaže (glavna dodeljena + vse "bližnje" pri katerem koli od 12
+  vzletišč) – ne za vseh 62, da po nepotrebnem ne obremenimo omejitve
+  klicev API-ja (60/min na token). `scripts/build-data.js` jih zapiše v
+  `public/data/history/<stationId>.json`.
+- Frontend (`public/js/app.js`) ob kliku na postajo lenobno (`fetch`,
+  predpomnjeno v `state.stationHistoryCache`) naloži ustrezno datoteko in
+  izriše graf kot **navaden inline SVG, brez zunanjih knjižnic**
+  (`buildLineChartSvg`) – aplikacija nima build koraka, zato dodajanje
+  npr. Chart.js ne bi bilo smiselno za en sam preprost graf. Hitrost
+  vetra se prikaže v trenutno izbrani enoti (km/h/m/s/mph/vozli).
+- **Omejitev:** ker se zgodovina pred-izračuna le za postaje, povezane z
+  enim od 12 uradnih vzletišč, graf morda ni na voljo za postajo, ki se
+  pojavi izključno v načinu "Moja lokacija" na GPS točki daleč od vseh
+  uradnih vzletišč (modal v tem primeru to jasno pove, namesto da bi se
+  zrušil).
 
 ### Nočna zatemnitev (🌙 / 🔦)
 
