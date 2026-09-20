@@ -44,6 +44,21 @@ function getVersion() {
   }
 }
 
+/**
+ * Doda/posodobi "cache-busting" poizvedbo (?v=<verzija>) na css/js
+ * povezavah v index.html, da brskalniki in vmesni predpomnilniki
+ * (GitHub Pages CDN) po vsakem deployu nujno naložijo sveže datoteke
+ * namesto morebitne stare predpomnjene različice.
+ */
+function addCacheBusting(version) {
+  const v = version || String(Date.now());
+  const indexPath = path.join(__dirname, '..', 'public', 'index.html');
+  let html = fs.readFileSync(indexPath, 'utf8');
+  html = html.replace(/(href="css\/style\.css)(\?v=[^"]*)?(")/, `$1?v=${v}$3`);
+  html = html.replace(/(src="js\/app\.js)(\?v=[^"]*)?(")/, `$1?v=${v}$3`);
+  fs.writeFileSync(indexPath, html);
+}
+
 async function buildSite(site, stationById, allStations) {
   const [arsoResult, opendataResult] = await Promise.allSettled([
     fetchArsoForecast(site.arsoLocation),
@@ -72,6 +87,9 @@ async function buildStationHistories(stationIds) {
 
 async function main() {
   fs.mkdirSync(WEATHER_DIR, { recursive: true });
+
+  const version = getVersion();
+  addCacheBusting(version);
 
   fs.writeFileSync(path.join(DATA_DIR, 'sites.json'), JSON.stringify(sites, null, 2));
 
@@ -137,7 +155,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(DATA_DIR, 'meta.json'),
-    JSON.stringify({ generatedAt: new Date().toISOString(), version: getVersion(), results }, null, 2)
+    JSON.stringify({ generatedAt: new Date().toISOString(), version, results }, null, 2)
   );
 
   const failed = results.filter((r) => !r.ok);

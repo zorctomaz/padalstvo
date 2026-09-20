@@ -134,13 +134,20 @@ vsakem teku te Action (privzeto vsako uro) – obiskovalci med dvema tekoma
 vidijo isti posnetek. Čas zadnje osvežitve je viden na vrhu strani
 ("Podatki osveženi: …").
 
-**Verzija:** `scripts/build-data.js` v `public/data/meta.json` zapiše tudi
-kratko git-sha kode, ki je bila deployana (`version`, iz `GITHUB_SHA` v
-Actions oz. `git rev-parse --short HEAD` lokalno). Frontend jo prikaže
-pod naslovom aplikacije ("Različica: …") – tako lahko primerjaš, ali se
-verzija na strani ujema z zadnjim commit-om in ali so tvoje spremembe že
-objavljene (`public/data/*.json` se nalagajo z `cache: 'no-store'`, zato
-ni potrebno ročno brisanje predpomnilnika brskalnika).
+**Verzija in predpomnjenje brskalnika:** `scripts/build-data.js` v
+`public/data/meta.json` zapiše tudi kratko git-sha kode, ki je bila
+deployana (`version`, iz `GITHUB_SHA` v Actions oz. `git rev-parse
+--short HEAD` lokalno). Frontend jo prikaže pod naslovom aplikacije
+("Različica: …") – tako lahko primerjaš, ali se verzija na strani ujema
+z zadnjim commit-om. `public/data/*.json` se nalagajo z `cache:
+'no-store'`, zato so vedno sveži. `css/style.css` in `js/app.js` pa
+sta statični datoteki brez tega mehanizma – zato `addCacheBusting()` v
+`scripts/build-data.js` ob vsaki izgradnji v `index.html` samodejno
+doda/posodobi `?v=<verzija>` na obeh povezavah, da brskalniki in GitHub
+Pages CDN po vsakem deployu obvezno naložijo sveže datoteke namesto
+morebitne stare predpomnjene različice (brez tega bi lahko uporabnik
+po popravku še vedno videl staro obnašanje, dokler ročno ne izprazni
+predpomnilnika).
 
 Koraki za omogočanje:
 
