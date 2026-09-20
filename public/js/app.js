@@ -38,6 +38,7 @@ const el = {
   linksList: document.getElementById('linksList'),
   disclaimerBox: document.getElementById('disclaimerBox'),
   updatedInfo: document.getElementById('updatedInfo'),
+  versionInfo: document.getElementById('versionInfo'),
 };
 
 function haversineKm(lat1, lon1, lat2, lon2) {
@@ -96,6 +97,9 @@ async function loadMeta() {
     if (meta.generatedAt && el.updatedInfo) {
       const d = new Date(meta.generatedAt);
       el.updatedInfo.textContent = 'Podatki osveženi: ' + d.toLocaleString('sl-SI');
+    }
+    if (el.versionInfo) {
+      el.versionInfo.textContent = meta.version ? `Različica: ${meta.version}` : '';
     }
   } catch (_) {
     /* ni kritično, spregledamo */

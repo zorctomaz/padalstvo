@@ -78,6 +78,13 @@ p {
   font-size: 0.85rem;
 }
 
+.version-info {
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin: 2px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 .btn {
   border: none;
   border-radius: 999px;

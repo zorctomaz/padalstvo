@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const sites = require('../src/sites.json');
 const { fetchArsoForecast } = require('../src/arso');
@@ -21,6 +22,25 @@ const { fetchAllStations } = require('../src/skytech');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
+
+/**
+ * Kratka identifikacija trenutno objavljenega koda (git commit), da
+ * uporabnik na strani vidi, ali so njegove spremembe že deployane.
+ * V GitHub Actions je GITHUB_SHA vedno na voljo; lokalno pade nazaj na
+ * `git rev-parse`.
+ */
+function getVersion() {
+  if (process.env.GITHUB_SHA) {
+    return process.env.GITHUB_SHA.slice(0, 7);
+  }
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: path.join(__dirname, '..') })
+      .toString()
+      .trim();
+  } catch (_) {
+    return null;
+  }
+}
 
 async function buildSite(site, stationById, allStations) {
   const [arsoResult, opendataResult] = await Promise.allSettled([
@@ -77,7 +97,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(DATA_DIR, 'meta.json'),
-    JSON.stringify({ generatedAt: new Date().toISOString(), results }, null, 2)
+    JSON.stringify({ generatedAt: new Date().toISOString(), version: getVersion(), results }, null, 2)
   );
 
   const failed = results.filter((r) => !r.ok);

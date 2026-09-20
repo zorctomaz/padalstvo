@@ -123,6 +123,14 @@ vsakem teku te Action (privzeto vsako uro) – obiskovalci med dvema tekoma
 vidijo isti posnetek. Čas zadnje osvežitve je viden na vrhu strani
 ("Podatki osveženi: …").
 
+**Verzija:** `scripts/build-data.js` v `public/data/meta.json` zapiše tudi
+kratko git-sha kode, ki je bila deployana (`version`, iz `GITHUB_SHA` v
+Actions oz. `git rev-parse --short HEAD` lokalno). Frontend jo prikaže
+pod naslovom aplikacije ("Različica: …") – tako lahko primerjaš, ali se
+verzija na strani ujema z zadnjim commit-om in ali so tvoje spremembe že
+objavljene (`public/data/*.json` se nalagajo z `cache: 'no-store'`, zato
+ni potrebno ročno brisanje predpomnilnika brskalnika).
+
 Koraki za omogočanje:
 
 1. V nastavitvah repozitorija pojdi na **Settings → Pages** in pod *Build
