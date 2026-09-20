@@ -30,6 +30,8 @@ const state = {
   weather: null,
   activeDayIndex: 0,
   windUnit: loadStoredWindUnit(),
+  myLocationMode: false,
+  allStations: null,
 };
 
 const el = {
@@ -42,6 +44,8 @@ const el = {
   skytechMeta: document.getElementById('skytechMeta'),
   skytechGrid: document.getElementById('skytechGrid'),
   nearbyStationsCard: document.getElementById('nearbyStationsCard'),
+  nearbyStationsTitle: document.getElementById('nearbyStationsTitle'),
+  nearbyStationsIntro: document.getElementById('nearbyStationsIntro'),
   nearbyStationsList: document.getElementById('nearbyStationsList'),
   currentCard: document.getElementById('currentCard'),
   currentSiteName: document.getElementById('currentSiteName'),
@@ -69,6 +73,94 @@ function haversineKm(lat1, lon1, lat2, lon2) {
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Zrcali oceno vetra/smeri iz src/paragliding.js (rateWind,
+ * rateSkytechDirection), da lahko za poljubno GPS točko (ne le za 12
+ * uradnih vzletišč) v brskalniku izračunamo bližnje žive postaje brez
+ * dodatnega strežniškega klica - podatki o vseh postajah so že javno
+ * objavljeni v data/skytech-stations.json (brez API tokena).
+ */
+function rateWindClient(windSpeedKmh, windGustKmh) {
+  if (windSpeedKmh === null || windSpeedKmh === undefined) {
+    return { level: 'unknown', label: 'Ni podatka o vetru', color: 'gray' };
+  }
+  const gustSpread = windGustKmh != null ? windGustKmh - windSpeedKmh : 0;
+  if (windSpeedKmh > 30) return { level: 'unfly', label: 'Neprimerno za letenje (premočan veter)', color: 'red' };
+  if (windSpeedKmh > 20 || gustSpread > 15) return { level: 'caution', label: 'Močan/sunkovit veter – samo izkušeni piloti', color: 'orange' };
+  if (windSpeedKmh >= 8) return { level: 'good', label: 'Ugodno za letenje', color: 'green' };
+  return { level: 'light', label: 'Šibek/miren veter', color: 'blue' };
+}
+
+function rateSkytechDirectionClient(station, compassDirection) {
+  if (!station || !compassDirection) return { known: false, label: 'Ni podatka o smeri', color: 'gray' };
+  if (station.directionsGreen && station.directionsGreen.includes(compassDirection)) {
+    return { known: true, label: `Smer (${compassDirection}) ustreza postaji`, color: 'green' };
+  }
+  if (station.directionsYellow && station.directionsYellow.includes(compassDirection)) {
+    return { known: true, label: `Smer (${compassDirection}) mejna`, color: 'orange' };
+  }
+  if (station.directionsRed && station.directionsRed.includes(compassDirection)) {
+    return { known: true, label: `Smer (${compassDirection}) neprimerna`, color: 'red' };
+  }
+  return { known: false, label: `Smer (${compassDirection}) ni razvrščena`, color: 'gray' };
+}
+
+const NEARBY_MAX_DISTANCE_KM = 25;
+const NEARBY_MAX_COUNT = 6;
+
+/**
+ * Enako kot summarizeNearbyStations v src/paragliding.js, a za poljubno
+ * (lat, lon) - uporabljeno za "Moja lokacija", kjer uporabnik ni nujno
+ * na uradnem vzletišču. Izloči tudi postaje z altitude 0 (glej
+ * SKYTECH_API_ISSUES.md - podvojen/pokvarjen vnos "Kranjska gora").
+ */
+function computeNearbyStationsForPoint(stations, lat, lon, excludeId) {
+  if (!Array.isArray(stations)) return [];
+  return stations
+    .filter((s) =>
+      s.id !== excludeId &&
+      typeof s.lat === 'number' &&
+      typeof s.lon === 'number' &&
+      s.altitude !== 0 &&
+      s.measurement
+    )
+    .map((s) => {
+      const m = s.measurement;
+      const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
+      return {
+        distanceKm: Math.round(haversineKm(lat, lon, s.lat, s.lon) * 10) / 10,
+        altitude: s.altitude ?? null,
+        stationId: s.id,
+        stationName: s.name,
+        hasMeasurement: true,
+        time: m.time,
+        ageMinutes,
+        windSpeedKmh: m.windSpeedKmh,
+        windGustKmh: m.windGustKmh,
+        windDirection: m.windDirection,
+        temperatureC: m.temperatureC,
+        wind: rateWindClient(m.windSpeedKmh, m.windGustKmh),
+        directionRating: rateSkytechDirectionClient(s, m.windDirection),
+      };
+    })
+    .filter((s) => s.distanceKm <= NEARBY_MAX_DISTANCE_KM)
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, NEARBY_MAX_COUNT);
+}
+
+async function loadAllStations() {
+  if (state.allStations) return state.allStations;
+  try {
+    const res = await fetch('data/skytech-stations.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    state.allStations = data.stations || [];
+  } catch (_) {
+    state.allStations = [];
+  }
+  return state.allStations;
 }
 
 function findNearestSite(lat, lon) {
@@ -133,15 +225,19 @@ function requestGeolocation() {
   setStatus('Iščem tvojo lokacijo…');
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      state.userCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      state.userCoords = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        altitude: pos.coords.altitude,
+      };
       setStatus(null);
       const nearest = findNearestSite(state.userCoords.lat, state.userCoords.lon);
       if (nearest.site) {
         el.siteSelect.value = nearest.site.id;
         el.distanceInfo.textContent =
           `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
-          `→ najbližje vzletišče: ${nearest.site.name} (${nearest.distanceKm} km)`;
-        loadWeatherForSite(nearest.site.id);
+          `· najbližji vir ARSO napovedi: ${nearest.site.name} (${nearest.distanceKm} km)`;
+        showMyLocationWeather(nearest);
       } else {
         el.distanceInfo.textContent =
           `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
@@ -153,6 +249,44 @@ function requestGeolocation() {
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 5 * 60 * 1000 }
   );
+}
+
+/**
+ * Prikaže napoved za TOČNO GPS lokacijo uporabnika, ne za "vzletišče
+ * nearest.site" kot tako - vzletiščna ARSO/opendata.si napoved (mesto
+ * je edini vir, ki ga ARSO podpira) je zgolj regijski približek, žive
+ * postaje v bližini pa se preračunajo neposredno iz uporabnikovih
+ * koordinat, ne iz koordinat najbližjega vzletišča. Prikaz zato ne
+ * predpostavlja, da je uporabnik na uradnem vzletišču, in ne prikazuje
+ * njegove telefonske odzivniške številke/primerne smeri vzleta, ki
+ * veljata samo za to vzletišče.
+ */
+async function showMyLocationWeather(nearest) {
+  setStatus('Nalagam vremenske podatke…');
+  try {
+    const res = await fetch(`data/weather/${nearest.site.id}.json`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Podatki še niso na voljo.');
+    const data = await res.json();
+
+    data.distanceKm = nearest.distanceKm;
+    data.myLocationMode = true;
+    data.userCoords = { ...state.userCoords };
+
+    const allStations = await loadAllStations();
+    data.nearbyStations = computeNearbyStationsForPoint(
+      allStations,
+      state.userCoords.lat,
+      state.userCoords.lon,
+      null
+    );
+
+    state.myLocationMode = true;
+    state.currentSiteId = nearest.site.id;
+    renderWeather(data);
+    setStatus(null);
+  } catch (err) {
+    setStatus('Napaka pri nalaganju podatkov: ' + err.message, 'error');
+  }
 }
 
 async function loadWeatherForSite(siteId) {
@@ -168,6 +302,7 @@ async function loadWeatherForSite(siteId) {
       ) / 10;
     }
 
+    state.myLocationMode = false;
     state.currentSiteId = siteId;
     renderWeather(data);
     setStatus(null);
@@ -199,19 +334,32 @@ function metricBox(label, value, pill) {
 
 function renderCurrent(data) {
   const firstEntry = data.forecast[0] && data.forecast[0].timeline[0];
-  el.currentSiteName.textContent = `${data.site.name} (${data.site.elevation} m)`;
-  el.currentSiteMeta.textContent = data.distanceKm != null
-    ? `${data.site.region} · ${data.distanceKm} km od tvoje lokacije`
-    : data.site.region;
+
+  if (data.myLocationMode) {
+    const coords = data.userCoords;
+    el.currentSiteName.textContent = '📍 Tvoja lokacija';
+    el.currentSiteMeta.textContent = coords
+      ? `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}` +
+        (coords.altitude != null ? ` · ${Math.round(coords.altitude)} m n.m. (GPS)` : '')
+      : '';
+    el.currentSiteMeta.textContent +=
+      ` · napoved je regijski približek (vir: ${data.site.name}, ${data.distanceKm} km stran) – ` +
+      'ni nujno uradno vzletišče niti ni v bližini potrjena žive postaje.';
+  } else {
+    el.currentSiteName.textContent = `${data.site.name} (${data.site.elevation} m)`;
+    el.currentSiteMeta.textContent = data.distanceKm != null
+      ? `${data.site.region} · ${data.distanceKm} km od tvoje lokacije`
+      : data.site.region;
+  }
 
   if (!firstEntry) {
-    el.currentGrid.innerHTML = `<p class="muted">Trenutno ni podatkov ARSO napovedi za to vzletišče.</p>`;
+    el.currentGrid.innerHTML = `<p class="muted">Trenutno ni podatkov ARSO napovedi za to lokacijo.</p>`;
     el.currentCard.hidden = false;
     return;
   }
 
   const p = firstEntry.paragliding;
-  el.currentGrid.innerHTML = [
+  const boxes = [
     metricBox('Temperatura', firstEntry.temperatureC != null ? `${firstEntry.temperatureC}°C` : '—'),
     metricBox(
       'Veter',
@@ -220,13 +368,20 @@ function renderCurrent(data) {
         : '—',
       p.wind
     ),
-    metricBox('Smer vs. vzletišče', p.launchAlignment.octant || '—', p.launchAlignment),
+  ];
+  if (!data.myLocationMode) {
+    boxes.push(metricBox('Smer vs. vzletišče', p.launchAlignment.octant || '—', p.launchAlignment));
+  }
+  boxes.push(
     metricBox('Sunki vetra', formatWind(firstEntry.windGustKmh)),
     metricBox('Baza oblakov', p.cloudBaseM != null ? `~${p.cloudBaseM} m n.m.` : '—'),
     metricBox('Termika', firstEntry.cloudCover || '—', p.thermal),
-    metricBox('Padavine', firstEntry.precipitationMm != null ? `${firstEntry.precipitationMm} mm/3h` : '—'),
-  ].join('');
+    metricBox('Padavine', firstEntry.precipitationMm != null ? `${firstEntry.precipitationMm} mm/3h` : '—')
+  );
+  el.currentGrid.innerHTML = boxes.join('');
   el.currentCard.hidden = false;
+
+  if (data.myLocationMode) return;
 
   if (data.site.launchWindDirections) {
     const srcLabel = data.site.launchWindDirectionsSource === 'skytech' ? ' (SkyTech)' : '';
@@ -242,6 +397,14 @@ function renderCurrent(data) {
 }
 
 function renderSkytech(data) {
+  if (data.myLocationMode) {
+    // Dodeljena "glavna" postaja pripada uradnemu vzletišču, ne nujno
+    // uporabnikovi natančni točki - v tem načinu je edini relevanten
+    // prikaz spodnji seznam "žive postaje v bližini tvoje lokacije",
+    // izračunan iz pravih GPS koordinat uporabnika.
+    el.skytechCard.hidden = true;
+    return;
+  }
   const sk = data.skytech;
   if (!sk || !sk.hasMeasurement) {
     el.skytechCard.hidden = true;
@@ -270,8 +433,24 @@ function renderSkytech(data) {
 
 function renderNearbyStations(data) {
   const stations = data.nearbyStations;
+
+  if (data.myLocationMode) {
+    el.nearbyStationsTitle.textContent = '📡 Žive vremenske postaje v bližini tvoje lokacije';
+    el.nearbyStationsIntro.textContent =
+      'Izračunano neposredno iz tvojih GPS koordinat (do 25 km) - ne glede na to, ali je tu uradno vzletišče.';
+  } else {
+    el.nearbyStationsTitle.textContent = '📡 Druga merilna mesta v bližini';
+    el.nearbyStationsIntro.textContent =
+      'Niso uradna vzletišča – dodaten vpogled v veter v okolici, kjer nameravaš leteti.';
+  }
+
   if (!stations || stations.length === 0) {
-    el.nearbyStationsCard.hidden = true;
+    if (data.myLocationMode) {
+      el.nearbyStationsList.innerHTML = '<p class="muted">V bližini (do 25 km) trenutno ni žive SkyTech postaje z meritvijo.</p>';
+      el.nearbyStationsCard.hidden = false;
+    } else {
+      el.nearbyStationsCard.hidden = true;
+    }
     return;
   }
   el.nearbyStationsList.innerHTML = stations
@@ -384,7 +563,7 @@ function renderTimeline(day) {
             ${entry.cloudCover || ''}
           </div>
           <div class="${pillClass(p.wind.color)}">${p.wind.label}</div>
-          ${p.launchAlignment.known ? `<div class="${pillClass(p.launchAlignment.color)}">${p.launchAlignment.octant}</div>` : ''}
+          ${(!state.myLocationMode && p.launchAlignment.known) ? `<div class="${pillClass(p.launchAlignment.color)}">${p.launchAlignment.octant}</div>` : ''}
         </div>
       `;
     })
@@ -399,7 +578,7 @@ function renderLinks(data) {
     { href: links.arsoAviation, label: 'ARSO – letalsko vreme (GAFOR, SIGWX)' },
     { href: links.arsoRadar, label: 'ARSO – radarska slika padavin' },
   ];
-  if (ls && ls.confirmed && ls.phone) {
+  if (!data.myLocationMode && ls && ls.confirmed && ls.phone) {
     items.push({
       href: `tel:${ls.phone.replace(/\s+/g, '')}`,
       label: `📡 Živa postaja – telefonski odzivnik (${ls.phone})`,
@@ -407,9 +586,11 @@ function renderLinks(data) {
   }
   items.push({
     href: links.skytech,
-    label: data.skytech
-      ? 'SkyTech.si – domača stran (podatki zgoraj prek uradnega API-ja)'
-      : 'SkyTech.si – domača stran (za to vzletišče ni dodeljene postaje)',
+    label: data.myLocationMode
+      ? 'SkyTech.si – domača stran (žive postaje v bližini glej zgoraj)'
+      : (data.skytech
+        ? 'SkyTech.si – domača stran (podatki zgoraj prek uradnega API-ja)'
+        : 'SkyTech.si – domača stran (za to vzletišče ni dodeljene postaje)'),
   });
   items.push({ href: links.windAloft, label: 'Veter na višini (Windy.com, izberi nivo/hPa)' });
 
@@ -417,7 +598,7 @@ function renderLinks(data) {
     .map((i) => `<li><a href="${i.href}" target="_blank" rel="noopener">${i.label} ↗</a></li>`)
     .join('');
 
-  if (ls && ls.note) {
+  if (!data.myLocationMode && ls && ls.note) {
     el.linksList.innerHTML += `<li class="muted small" style="padding:0 4px;">${ls.note}</li>`;
   }
   el.linksCard.hidden = false;

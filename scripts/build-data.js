@@ -68,6 +68,16 @@ async function main() {
   );
   const stationById = new Map(skytech.stations.map((s) => [s.id, s]));
 
+  // Javno objavimo tudi celoten seznam postaj (brez tokena - ta ostane
+  // samo v okoljski spremenljivki/GitHub secret). To frontend-u omogoči,
+  // da za poljubno GPS točko (npr. "Moja lokacija", ki ni uradno
+  // vzletišče) v brskalniku sam izračuna bližnje žive postaje, namesto da
+  // bi bil omejen na tiste, prevnaprej izračunane za 12 uradnih vzletišč.
+  fs.writeFileSync(
+    path.join(DATA_DIR, 'skytech-stations.json'),
+    JSON.stringify({ generatedAt: skytech.generatedAt || null, stations: skytech.stations }, null, 2)
+  );
+
   const results = [];
   for (const site of sites) {
     process.stdout.write(`Gradim podatke za ${site.name} (${site.id})... `);

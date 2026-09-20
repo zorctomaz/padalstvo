@@ -1,9 +1,11 @@
 # Padalstvo Vreme
 
 Spletna aplikacija (v celoti prilagojena mobilnim napravam) za vremensko napoved
-za **jadralno padalstvo** v Sloveniji. Na podlagi GPS lokacije uporabnika najde
-najbližje znano vzletišče in prikaže vremenske podatke ter iz njih izpeljane
-ocene, pomembne za pilote:
+za **jadralno padalstvo** v Sloveniji. Gumb "📍 Moja lokacija" pokaže napoved
+za TVOJO natančno GPS točko – ne glede na to, ali je uradno vzletišče in ali
+je v bližini potrjena živa postaja (glej razdelek "Moja lokacija" spodaj); v
+padajočem seznamu pa lahko izbereš tudi katero od znanih vzletišč. Aplikacija
+prikaže vremenske podatke ter iz njih izpeljane ocene, pomembne za pilote:
 
 - veter (hitrost/smer/sunki) z oceno primernosti za let,
 - **primerjava smeri vetra z znano primerno smerjo vzleta** (kjer je ta
@@ -185,6 +187,8 @@ src/skytech.js                       Klient za uradni KOK/SkyTech API (žive mer
 src/paragliding.js                   Izpeljane ocene: baza oblakov, ocena vetra, termika, povezave
 public/                              Mobilno prilagojen frontend (vanilla HTML/CSS/JS, brez build koraka)
 public/data/                         Generirano z `npm run build:data` – NI v git repozitoriju (.gitignore)
+public/data/skytech-stations.json    Javni seznam vseh SkyTech postaj (za "Moja lokacija" - glej razdelek spodaj)
+SKYTECH_API_ISSUES.md                Zbirni seznam napak v SkyTech API podatkih za poročanje SkyTech-u
 ```
 
 ## Žive postaje vs. samo napoved (📡 / 📊)
@@ -243,7 +247,43 @@ Gora (druga, veljavna postaja "Kranjska Gora landing", id 15) v resnici
 ~109 km stran. `summarizeNearbyStations` zato izloči vse postaje z
 nadmorsko višino 0 m – noben resničen slovenski padalski vrh ni na nivoju
 morja, zato je ta filter varen pred podobnimi pokvarjenimi vnosi v
-prihodnje.
+prihodnje. Glej `SKYTECH_API_ISSUES.md` za zbirni seznam napak, ki jih
+nameravamo poročati SkyTech-u/KOK-u.
+
+### Moja lokacija (📍) – napoved za tvojo natančno GPS točko
+
+Gumb "📍 Moja lokacija" NE prikaže samo podatkov najbližjega uradnega
+vzletišča, kot da bi bil uporabnik tam – prikaže napoved za njegovo
+DEJANSKO GPS točko, ne glede na to, ali gre za uradno vzletišče in ali
+je v bližini potrjena živa postaja:
+
+- **Večdnevna ARSO napoved** (temperatura/oblačnost/padavine/veter) se
+  še vedno pridobi prek najbližjega ARSO-podprtega mesta (ARSO API
+  podpira le imena krajev, ne poljubnih GPS koordinat – glej opombo o
+  `arsoLocation` zgoraj), a je jasno označena kot "regijski približek",
+  z navedbo vira in razdalje, namesto da bi se pretvarjala, da je
+  uporabnik na tistem vzletišču.
+- **Žive SkyTech postaje v bližini** se preračunajo neposredno iz
+  uporabnikovih GPS koordinat (do 25 km, enak filter/logika kot zgoraj,
+  vključno z zaščito pred pokvarjenimi vnosi), ne iz koordinat
+  najbližjega vzletišča – tudi če v bližini ni nobene žive postaje, se
+  to jasno pove namesto tihega izpusta razdelka.
+- Podatki, ki so specifični za URADNO vzletišče (potrjena primerna smer
+  vzleta, telefonska številka odzivnika, "glavna" dodeljena SkyTech
+  postaja), se v tem načinu NE prikažejo – veljajo namreč za konkretno
+  vzletišče, ne za poljubno točko v njegovi bližini, zato bi bil njihov
+  prikaz zavajajoč.
+
+Tehnično: `scripts/build-data.js` ob vsaki izgradnji zapiše tudi javni
+`public/data/skytech-stations.json` (celoten seznam vseh SkyTech postaj
+z zadnjo meritvijo, brez API tokena – gre za iste javne podatke, ki so
+sicer prikazani po posameznih vzletiščih). `public/js/app.js` ta seznam
+naloži v brskalniku in zanj zrcali `haversineKm`, `rateWind` in
+`rateSkytechDirection` iz `src/paragliding.js` (`computeNearbyStationsForPoint`,
+`rateWindClient`, `rateSkytechDirectionClient`), da lahko izračuna
+bližnje postaje za POLJUBNO GPS točko brez dodatnega strežniškega
+klica – to je edini način, ki deluje tudi na povsem statičnem GitHub
+Pages gostovanju brez žive backend poti.
 
 ## Dodajanje vzletišč
 
