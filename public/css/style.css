@@ -267,6 +267,12 @@ select {
   }
 }
 
+/* Okno postaje/vzletišča se lahko odpre NAD zemljevidom (klik na
+   oznako, medtem ko je zemljevid še odprt) - mora biti nad njim. */
+#historyModalOverlay {
+  z-index: 110;
+}
+
 .modal {
   background: var(--bg-elev);
   border: 1px solid var(--border);

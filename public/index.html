@@ -96,7 +96,10 @@
         <h3 id="historyModalTitle">Postaja</h3>
         <button id="historyModalClose" class="modal-close" type="button" aria-label="Zapri">✕</button>
       </div>
-      <div id="historyModalBody" class="modal-body"></div>
+      <div class="modal-body">
+        <div id="historyModalSnapshot"></div>
+        <div id="historyModalBody"></div>
+      </div>
     </div>
   </div>
 
@@ -109,7 +112,7 @@
       <div class="modal-body">
         <p class="muted small">Tapni/klikni na zemljevid, da postaviš oznako, nato jo po želji povleci in potrdi.</p>
         <div id="mapContainer" class="map-container"></div>
-        <p class="muted small map-legend">🪂 uradno vzletišče · 📡 SkyTech vremenska postaja · klikni oznako za izbiro</p>
+        <p class="muted small map-legend">🪂 uradno vzletišče · 📡 SkyTech vremenska postaja · klikni oznako za podatke in izbiro te lokacije</p>
         <p id="mapCoordsLabel" class="muted small map-coords-label">Izbrana lokacija: —</p>
         <button id="mapConfirmBtn" class="btn btn-primary map-confirm-btn" type="button" disabled>Uporabi to lokacijo</button>
       </div>

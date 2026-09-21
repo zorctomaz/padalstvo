@@ -329,7 +329,14 @@ iz `data/sites.json`) in vseh **SkyTech vremenskih postaj** (📡, iz
 postaj kot pri izračunu bližnjih postaj, glej zgoraj), da lahko
 uporabnik izbere natanko eno od njih namesto slepega tapkanja po
 zemljevidu. Klik na katerokoli oznako takoj postavi izbirno (modro)
-oznako na to točko.
+oznako na to točko IN nad zemljevidom odpre okno s podatki:
+- 📡 postaja → trenutna meritev (veter/sunki/smer/temperatura, isti
+  prikaz kot glavna "Živa postaja" kartica) + graf zgodovine, če je za
+  to postajo na voljo (`openHistoryModal`, deli kodo z gumbom "Postaja"
+  na prvi strani).
+- 🪂 vzletišče → podatki o vzletišču (nadmorska višina, primerna smer
+  vzleta, stanje žive postaje, opombe) + gumb za prikaz polne napovedi
+  na prvi strani (`openSiteInfoModal`).
 
 ### Graf zgodovine postaje (klik na 📡 postajo)
 

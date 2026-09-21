@@ -69,6 +69,7 @@ const el = {
   versionInfo: document.getElementById('versionInfo'),
   historyModalOverlay: document.getElementById('historyModalOverlay'),
   historyModalTitle: document.getElementById('historyModalTitle'),
+  historyModalSnapshot: document.getElementById('historyModalSnapshot'),
   historyModalBody: document.getElementById('historyModalBody'),
   historyModalClose: document.getElementById('historyModalClose'),
   mapPickerBtn: document.getElementById('mapPickerBtn'),
@@ -754,9 +755,38 @@ function closeHistoryModal() {
   state.currentHistoryStationId = null;
 }
 
-function openHistoryModal(stationId, stationName) {
+/**
+ * Prikaz trenutne meritve postaje (isti prikaz kot glavna "📡 Živa
+ * postaja" kartica na prvi strani - veter/sunki/smer/temperatura), a
+ * neposredno iz že naloženega seznama vseh postaj (data/skytech-stations.json)
+ * - uporabljeno za oznake postaj na zemljevidu, ki lahko pripadajo
+ * kateri koli od ~100 postaj, ne le tistim, dodeljenim uradnemu
+ * vzletišču.
+ */
+function renderStationSnapshot(station) {
+  const m = station.measurement;
+  if (!m) return '';
+  const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
+  const ageText = ageMinutes != null
+    ? (ageMinutes <= 1 ? 'pred manj kot minuto' : `pred ${ageMinutes} min`)
+    : '';
+  const wind = rateWindClient(m.windSpeedKmh, m.windGustKmh);
+  const dirRating = rateSkytechDirectionClient(station, m.windDirection);
+  return `
+    <p class="muted small">Trenutna meritev${ageText ? ' · ' + ageText : ''}${station.altitude ? ` · ${station.altitude} m n.v.` : ''}</p>
+    <div class="current-grid">
+      ${metricBox('Veter', m.windSpeedKmh != null ? `${formatWind(m.windSpeedKmh)}${m.windDirection ? ' ' + m.windDirection : ''}` : '—', wind)}
+      ${metricBox('Sunki vetra', formatWind(m.windGustKmh))}
+      ${metricBox('Smer (ocena)', m.windDirection || '—', dirRating)}
+      ${metricBox('Temperatura', m.temperatureC != null ? `${m.temperatureC}°C` : '—')}
+    </div>
+  `;
+}
+
+function openHistoryModal(stationId, stationName, station) {
   state.currentHistoryStationId = stationId;
   el.historyModalTitle.textContent = stationName || 'Postaja';
+  el.historyModalSnapshot.innerHTML = station ? renderStationSnapshot(station) : '';
   el.historyModalBody.innerHTML = '<p class="muted">Nalagam zgodovino…</p>';
   el.historyModalOverlay.hidden = false;
   loadStationHistory(stationId)
@@ -771,6 +801,36 @@ function openHistoryModal(stationId, stationName) {
 }
 
 /**
+ * Prikaz podatkov o uradnem vzletišču (isto kot na prvi strani ob
+ * izbiri vzletišča - nadmorska višina, primerna smer vzleta, stanje
+ * žive postaje, opombe) - uporabljeno za oznake vzletišč na
+ * zemljevidu, v istem modalnem oknu kot postaje.
+ */
+function openSiteInfoModal(site) {
+  state.currentHistoryStationId = null;
+  el.historyModalTitle.textContent = `🪂 ${site.name}`;
+  el.historyModalSnapshot.innerHTML = '';
+  const ls = site.liveStation;
+  const liveText = ls && ls.confirmed
+    ? `📡 Živa postaja: ${ls.phone}${ls.note ? ` — ${ls.note}` : ''}`
+    : '📊 Brez potrjene žive postaje na vzletišču (le ARSO napoved).';
+  el.historyModalBody.innerHTML = `
+    <p class="muted">${site.region} · nadmorska višina vzletišča: ${site.elevation != null ? site.elevation + ' m' : '—'}</p>
+    ${site.launchWindDirections ? `<p>Primerna smer vzleta: <strong>${site.launchWindDirections.join(', ')}</strong></p>` : ''}
+    <p>${liveText}</p>
+    ${site.notes ? `<p class="muted small">${site.notes}</p>` : ''}
+    <button id="siteInfoWeatherBtn" class="btn btn-primary map-confirm-btn" type="button">Pokaži napoved za to vzletišče →</button>
+  `;
+  el.historyModalOverlay.hidden = false;
+  document.getElementById('siteInfoWeatherBtn').addEventListener('click', () => {
+    closeHistoryModal();
+    closeMapPicker();
+    el.siteSelect.value = site.id;
+    loadWeatherForSite(site.id);
+  });
+}
+
+/**
  * Izbira lokacije na interaktivnem zemljevidu (Leaflet + OpenStreetMap
  * ploščice prek CDN) kot alternativa/dopolnilo GPS gumbu "Moja
  * lokacija" - uporabno npr. če GPS ni na voljo/natančen, ali če
@@ -782,7 +842,8 @@ let mapPickerLatLng = null;
 
 /**
  * Oznake uradnih vzletišč (iz state.sites, znane vnaprej) - narisane
- * takoj ob inicializaciji zemljevida, klik nanje izbere to lokacijo.
+ * takoj ob inicializaciji zemljevida. Klik nanje izbere to lokacijo IN
+ * odpre okno s podatki o vzletišču (openSiteInfoModal).
  */
 function addSiteMarkersToMapPicker() {
   const icon = L.divIcon({
@@ -793,11 +854,12 @@ function addSiteMarkersToMapPicker() {
   });
   for (const site of state.sites) {
     if (typeof site.lat !== 'number' || typeof site.lon !== 'number') continue;
-    const badge = site.liveStation && site.liveStation.confirmed ? '📡 živa postaja' : '📊 samo napoved';
     L.marker([site.lat, site.lon], { icon, zIndexOffset: 400 })
       .addTo(mapPickerMap)
-      .bindPopup(`<strong>🪂 ${site.name}</strong><br>${site.region} · uradno vzletišče (${badge})`)
-      .on('click', () => setMapPickerPoint(site.lat, site.lon));
+      .on('click', () => {
+        setMapPickerPoint(site.lat, site.lon);
+        openSiteInfoModal(site);
+      });
   }
 }
 
@@ -827,8 +889,10 @@ async function addStationMarkersToMapPicker() {
     if (ageMinutes == null || ageMinutes > NEARBY_MAX_AGE_MINUTES) continue;
     L.marker([s.lat, s.lon], { icon, zIndexOffset: 300 })
       .addTo(mapPickerMap)
-      .bindPopup(`<strong>📡 ${s.name}</strong><br>SkyTech vremenska postaja`)
-      .on('click', () => setMapPickerPoint(s.lat, s.lon));
+      .on('click', () => {
+        setMapPickerPoint(s.lat, s.lon);
+        openHistoryModal(s.id, s.name, s);
+      });
   }
 }
 
@@ -1098,8 +1162,11 @@ el.mapConfirmBtn.addEventListener('click', () => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!el.historyModalOverlay.hidden) closeHistoryModal();
-  if (!el.mapModalOverlay.hidden) closeMapPicker();
+  if (!el.historyModalOverlay.hidden) {
+    closeHistoryModal();
+  } else if (!el.mapModalOverlay.hidden) {
+    closeMapPicker();
+  }
 });
 
 (async function init() {
