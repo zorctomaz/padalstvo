@@ -21,6 +21,25 @@ const REGION_LABELS = {
 
 const RSS_BASE = 'https://meteo.arso.gov.si/uploads/probase/www/aviation/RSS/termika';
 
+/**
+ * Približne koordinate središč 6 letalskih regij (uporabljene tudi za
+ * ročno dodelitev `aladinRegion` vzletiščem v src/sites.json). Objavljene
+ * tudi javno (glej thermal-regions.json v build-data.js), da lahko
+ * frontend za poljubno GPS točko ("Moja lokacija", zemljevid) sam
+ * izračuna najbližjo regijo - ne sme si izposoditi regije najbližjega
+ * URADNEGA vzletišča, ker je lahko v drugi regiji kot uporabnikova
+ * dejanska točka (npr. Trebnje je v Dolenjski, a najbližje vzletišče
+ * Kum je dodeljeno Štajerski).
+ */
+const REGION_CENTERS = {
+  LES: { lat: 46.36, lon: 14.173 },
+  NGO: { lat: 45.956, lon: 13.646 },
+  LJU: { lat: 46.056, lon: 14.505 },
+  NMO: { lat: 45.803, lon: 15.17 },
+  CEL: { lat: 46.23, lon: 15.267 },
+  MSO: { lat: 46.663, lon: 16.166 },
+};
+
 async function fetchText(url, timeoutMs = 8000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -94,4 +113,4 @@ async function fetchAllThermalRegions() {
   return byCode;
 }
 
-module.exports = { fetchAllThermalRegions, REGION_LABELS };
+module.exports = { fetchAllThermalRegions, REGION_LABELS, REGION_CENTERS };

@@ -32,6 +32,7 @@ const state = {
   windUnit: loadStoredWindUnit(),
   myLocationMode: false,
   allStations: null,
+  thermalRegions: null,
   nightOverride: false,
   stationHistoryCache: new Map(),
   currentHistoryStationId: null,
@@ -276,6 +277,41 @@ async function loadAllStations() {
   return state.allStations;
 }
 
+async function loadThermalRegions() {
+  if (state.thermalRegions) return state.thermalRegions;
+  try {
+    const res = await fetch('data/thermal-regions.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    state.thermalRegions = data.regions || {};
+  } catch (_) {
+    state.thermalRegions = {};
+  }
+  return state.thermalRegions;
+}
+
+/**
+ * Najbližja od 6 ARSO letalskih regij za poljubno GPS točko - NE sme si
+ * izposoditi regije najbližjega URADNEGA vzletišča (glej opombo v
+ * src/arso-thermal.js), ker je lahko v drugi regiji kot uporabnikova
+ * dejanska točka (npr. Trebnje je najbliže Kumu, a Kum je dodeljen
+ * Štajerski, medtem ko je Trebnje dejansko v Dolenjski).
+ */
+function computeNearestThermalRegion(regions, lat, lon) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const code of Object.keys(regions)) {
+    const r = regions[code];
+    if (!r.center) continue;
+    const d = haversineKm(lat, lon, r.center.lat, r.center.lon);
+    if (d < bestDist) {
+      bestDist = d;
+      best = r;
+    }
+  }
+  return best;
+}
+
 function findNearestSite(lat, lon) {
   let best = null;
   let bestDist = Infinity;
@@ -395,6 +431,17 @@ async function showMyLocationWeather(nearest) {
       state.userCoords.lon,
       null
     );
+
+    // Napoved termike mora ustrezati uporabnikovi DEJANSKI točki, ne
+    // regiji, dodeljeni najbližjemu uradnemu vzletišču (glej opombo pri
+    // computeNearestThermalRegion) - zato jo tu preračunamo/prepišemo.
+    const thermalRegions = await loadThermalRegions();
+    const nearestThermalRegion = computeNearestThermalRegion(
+      thermalRegions,
+      state.userCoords.lat,
+      state.userCoords.lon
+    );
+    if (nearestThermalRegion) data.thermalForecastArso = nearestThermalRegion;
 
     state.myLocationMode = true;
     state.currentSiteId = nearest.site.id;

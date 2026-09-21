@@ -19,7 +19,7 @@ const { fetchArsoForecast } = require('../src/arso');
 const { fetchOpendataReport } = require('../src/opendata');
 const { buildParaglidingSummary } = require('../src/paragliding');
 const { fetchAllStations, fetchStationHistory } = require('../src/skytech');
-const { fetchAllThermalRegions } = require('../src/arso-thermal');
+const { fetchAllThermalRegions, REGION_CENTERS } = require('../src/arso-thermal');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
@@ -131,6 +131,25 @@ async function main() {
   const thermalRegions = await fetchAllThermalRegions();
   const thermalOk = Object.values(thermalRegions).filter((r) => r.ok).length;
   console.log(`OK(${thermalOk}/6)`);
+
+  // Javno objavimo tudi vseh 6 regij + njihova središča (isti podatki kot
+  // zgoraj, samo skupaj) - frontend jih uporabi za "Moja lokacija"/klik na
+  // zemljevidu, kjer si NE sme izposoditi regije najbližjega URADNEGA
+  // vzletišča (ta je lahko v drugi regiji kot uporabnikova dejanska
+  // točka), ampak mora sam izračunati najbližjo regijo iz pravih koordinat.
+  fs.writeFileSync(
+    path.join(DATA_DIR, 'thermal-regions.json'),
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        regions: Object.fromEntries(
+          Object.entries(thermalRegions).map(([code, r]) => [code, { ...r, center: REGION_CENTERS[code] || null }])
+        ),
+      },
+      null,
+      2
+    )
+  );
 
   const results = [];
   const relevantStationIds = new Set();
