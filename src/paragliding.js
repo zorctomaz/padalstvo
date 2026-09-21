@@ -323,7 +323,7 @@ function summarizeTimelineEntry(entry, site) {
   };
 }
 
-function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult, skytechStation, allStations }) {
+function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult, skytechStation, allStations, thermalForecastArso }) {
   const arso =
     arsoResult.status === 'fulfilled'
       ? arsoResult.value
@@ -392,6 +392,7 @@ function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult,
     },
     skytech,
     nearbyStations,
+    thermalForecastArso: thermalForecastArso || null,
     nearby: opendata.ok
       ? { rain: opendata.rain, forecast: opendata.forecast, hail: opendata.hail }
       : null,

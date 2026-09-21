@@ -49,6 +49,7 @@ za pilote:
 | **Primernost smeri vetra za vzlet** (`rateLaunchAlignment`) | Napovedano smer vetra primerja s primernimi smermi vzleta – ročno potrjenimi (`launchWindDirections` v `src/sites.json`) **ali**, če teh ni, z uradno oceno "zelene" smeri iz KOK/SkyTech API-ja za povezano postajo | Ročno potrjeno (iz javno dostopnih opisov vzletišč) za Vogel, Kobalo, Lijak in Kovk. Za Krvavec, Golte, Blegoš in Poreznik se smer vzame samodejno iz SkyTech ocene postaje (`launchWindDirectionsSource: "skytech"`). Za preostala vzletišča (Kum, Rogla, Nanos, Grmada) polje ostaja `null` in aplikacija to jasno pove namesto ugibanja. **Pred letom vedno preveri z lokalnim društvom/šolo letenja.** |
 | **Termalno okno in XC ocena** (`estimateThermalWindow`) | Iz dnevnega poteka temperature/oblačnosti/padavin/vetra oceni približne ure aktivne termike | Groba hevristika, ne meteorološki model. Ne upošteva orografije, senc, inverzij ipd. |
 | **Baza oblakov** (`estimateCloudBaseM`) | Klasično pravilo: 125 m na °C razlike med temperaturo in rosiščem | Standarden približek, uporaben za grobo oceno, ne za natančno letalsko planiranje |
+| **Uradna ARSO napoved termike** (`src/arso-thermal.js`) | Prebere uradni RSS vir `meteo.si/met/sl/aviation` (ALADIN model) - max. hitrost dviganj [m/s] + barvna stopnja, za danes in jutri, ločeno po 6 letalskih regijah (Gorenjska/Primorska/Osrednja/Dolenjska/Štajerska/Prekmurska) | Uradna, kvantitativna napoved (ni naša hevristika) - a pokrije le regijo, ne točnega vzletišča, in le 2 dneva. Vsakemu vzletišču je regija ročno dodeljena (`aladinRegion` v `src/sites.json`) po geografski bližini. |
 
 Pomembna tehnična opomba o smeri vetra: ARSO besedilna polja (npr. `dd_shortText`)
 so predvidoma v slovenskih okrajšavah (S = sever, J = jug, V = vzhod, Z = zahod),
@@ -199,6 +200,7 @@ src/fetchUtil.js                     fetch s časovno omejitvijo in predpomnilni
 src/arso.js                          Klient za ARSO napoved po imenu kraja
 src/opendata.js                      Klient za opendata.si GPS poročilo (radar/ALADIN/toča)
 src/skytech.js                       Klient za uradni KOK/SkyTech API (žive meritve vetra po postajah)
+src/arso-thermal.js                  Klient za uradno ARSO napoved termike (RSS po 6 letalskih regijah)
 src/paragliding.js                   Izpeljane ocene: baza oblakov, ocena vetra, termika, povezave
 public/                              Mobilno prilagojen frontend (vanilla HTML/CSS/JS, brez build koraka)
 public/data/                         Generirano z `npm run build:data` – NI v git repozitoriju (.gitignore)

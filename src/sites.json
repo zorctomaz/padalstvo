@@ -18,7 +18,8 @@
       "note": "Avtomatska vremenska postaja (telefonski odzivnik, prek SFFA). Podatki naj bi se ~vsakih 10 min objavljali tudi na skytech.si, a natančne povezave do te postaje nismo mogli preveriti."
     },
     "notes": "Vzletišče pri zgornji postaji gondole Vogel nad Bohinjskim jezerom. Primerna smer vetra: V–SV. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
-    "skytechStationId": 10
+    "skytechStationId": 10,
+    "aladinRegion": "LES"
   },
   {
     "id": "krvavec",
@@ -36,7 +37,8 @@
       "note": "Avtomatska postaja Ambrož pod Krvavcem (telefonski odzivnik, prek SFFA). Lega postaje ni vedno reprezentativna za vzletišče. Natančne povezave na skytech.si nismo mogli preveriti."
     },
     "notes": "Vzletišče na vrhu smučišča Krvavec, dostop z gondolo ali po cesti. Primerna smer vetra ni potrjena – preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
-    "skytechStationId": 16
+    "skytechStationId": 16,
+    "aladinRegion": "LES"
   },
   {
     "id": "kobala-bovec",
@@ -59,7 +61,8 @@
       "note": "Avtomatska vremenska postaja na vzletišču (telefonski odzivnik, prek SFFA). Natančne povezave do postaje na skytech.si nismo mogli preveriti."
     },
     "notes": "Znano tekmovalno vzletišče nad Bovcem, izhodišče za dolge XC prelete. Primerna smer vetra: V, JV, JZ, Z (dve možni smeri vzleta).",
-    "skytechStationId": 11
+    "skytechStationId": 11,
+    "aladinRegion": "NGO"
   },
   {
     "id": "lijak-vipava",
@@ -81,7 +84,8 @@
       "note": "Potrjeno prek uradnega SkyTech API-ja (žive meritve)."
     },
     "notes": "Široko travnato vzletišče, znano po močni burji in dobri termiki. Primerna smer vetra: JZ, J, JV. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
-    "skytechStationId": 47
+    "skytechStationId": 47,
+    "aladinRegion": "NGO"
   },
   {
     "id": "kovk-vipava",
@@ -103,7 +107,8 @@
       "note": "Avtomatska vremenska postaja na vzletišču (telefonski odzivnik, prek SFFA). Natančne povezave do postaje na skytech.si nismo mogli preveriti."
     },
     "notes": "Vzletišče nad Vipavsko dolino, priljubljeno za XC lete proti morju. Primerna smer vetra: J, JZ, Z. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
-    "skytechStationId": 13
+    "skytechStationId": 13,
+    "aladinRegion": "NGO"
   },
   {
     "id": "golte",
@@ -121,7 +126,8 @@
       "phone": null,
       "note": "Potrjeno prek uradnega SkyTech API-ja (žive meritve)."
     },
-    "skytechStationId": 54
+    "skytechStationId": 54,
+    "aladinRegion": "CEL"
   },
   {
     "id": "kum",
@@ -139,7 +145,8 @@
       "phone": null,
       "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
     },
-    "skytechStationId": null
+    "skytechStationId": null,
+    "aladinRegion": "CEL"
   },
   {
     "id": "rogla",
@@ -157,7 +164,8 @@
       "phone": null,
       "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
     },
-    "skytechStationId": null
+    "skytechStationId": null,
+    "aladinRegion": "CEL"
   },
   {
     "id": "blegos",
@@ -175,7 +183,8 @@
       "phone": null,
       "note": "Potrjeno prek uradnega SkyTech API-ja (žive meritve)."
     },
-    "skytechStationId": 4
+    "skytechStationId": 4,
+    "aladinRegion": "LES"
   },
   {
     "id": "nanos",
@@ -193,7 +202,8 @@
       "phone": null,
       "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
     },
-    "skytechStationId": null
+    "skytechStationId": null,
+    "aladinRegion": "NGO"
   },
   {
     "id": "porezen",
@@ -211,7 +221,8 @@
       "phone": null,
       "note": "Potrjeno prek uradnega SkyTech API-ja (žive meritve)."
     },
-    "skytechStationId": 30
+    "skytechStationId": 30,
+    "aladinRegion": "LES"
   },
   {
     "id": "ljubljana-grmada",
@@ -229,6 +240,7 @@
       "phone": null,
       "note": "Za to vzletišče nismo našli potrjenega telefonskega/skytech vira."
     },
-    "skytechStationId": null
+    "skytechStationId": null,
+    "aladinRegion": "LJU"
   }
 ]

@@ -56,6 +56,9 @@ const el = {
   currentSiteName: document.getElementById('currentSiteName'),
   currentSiteMeta: document.getElementById('currentSiteMeta'),
   currentGrid: document.getElementById('currentGrid'),
+  arsoThermalCard: document.getElementById('arsoThermalCard'),
+  arsoThermalMeta: document.getElementById('arsoThermalMeta'),
+  arsoThermalList: document.getElementById('arsoThermalList'),
   nearbyCard: document.getElementById('nearbyCard'),
   nearbyContent: document.getElementById('nearbyContent'),
   forecastSection: document.getElementById('forecastSection'),
@@ -950,6 +953,34 @@ function closeMapPicker() {
   el.mapModalOverlay.hidden = true;
 }
 
+/**
+ * Uradna ARSO napoved termike (meteo.si/met/sl/aviation) - ločena od
+ * naše lastne hevristike (estimateThermalIndex/estimateThermalWindow),
+ * ki jo dopolnjuje: ARSO pokrije le danes/jutri, a z dejansko
+ * kvantitativno oceno (max. hitrost dviganj v m/s + uradna barvna
+ * stopnja), namesto našega grobega ugibanja iz temperature/oblačnosti.
+ */
+function renderArsoThermal(data) {
+  const t = data.thermalForecastArso;
+  if (!t || !t.ok || !t.items || t.items.length === 0) {
+    el.arsoThermalCard.hidden = true;
+    return;
+  }
+  el.arsoThermalMeta.textContent = `Regija: ${t.regionLabel}`;
+  el.arsoThermalList.innerHTML = t.items
+    .map(
+      (item) => `
+    <div class="metric">
+      <div class="label">${item.date}</div>
+      <div class="value">${item.climbMs} m/s</div>
+      <div class="thermal-swatch" style="background:${item.color}"></div>
+    </div>
+  `
+    )
+    .join('');
+  el.arsoThermalCard.hidden = false;
+}
+
 function renderNearby(data) {
   if (!data.nearby) {
     el.nearbyCard.hidden = true;
@@ -1094,6 +1125,7 @@ function renderWeather(data) {
   renderSkytech(data);
   renderCurrent(data);
   renderNearbyStations(data);
+  renderArsoThermal(data);
   renderNearby(data);
   renderForecast(data);
   renderLinks(data);

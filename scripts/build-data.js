@@ -19,6 +19,7 @@ const { fetchArsoForecast } = require('../src/arso');
 const { fetchOpendataReport } = require('../src/opendata');
 const { buildParaglidingSummary } = require('../src/paragliding');
 const { fetchAllStations, fetchStationHistory } = require('../src/skytech');
+const { fetchAllThermalRegions } = require('../src/arso-thermal');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
@@ -59,13 +60,22 @@ function addCacheBusting(version) {
   fs.writeFileSync(indexPath, html);
 }
 
-async function buildSite(site, stationById, allStations) {
+async function buildSite(site, stationById, allStations, thermalRegions) {
   const [arsoResult, opendataResult] = await Promise.allSettled([
     fetchArsoForecast(site.arsoLocation),
     fetchOpendataReport(site.lat, site.lon),
   ]);
   const skytechStation = site.skytechStationId != null ? stationById.get(site.skytechStationId) || null : null;
-  const summary = buildParaglidingSummary({ site, distanceKm: null, arsoResult, opendataResult, skytechStation, allStations });
+  const thermalForecastArso = site.aladinRegion ? thermalRegions[site.aladinRegion] || null : null;
+  const summary = buildParaglidingSummary({
+    site,
+    distanceKm: null,
+    arsoResult,
+    opendataResult,
+    skytechStation,
+    allStations,
+    thermalForecastArso,
+  });
   return summary;
 }
 
@@ -114,12 +124,20 @@ async function main() {
     JSON.stringify({ generatedAt: skytech.generatedAt || null, stations: skytech.stations }, null, 2)
   );
 
+  // En sam klic za vsako od 6 letalskih regij (glej src/arso-thermal.js),
+  // nato jih po site.aladinRegion razdelimo vzletiščem - stran priporoča
+  // ločene RSS vire po regiji, ne po posamezni točki.
+  process.stdout.write('Pridobivam uradno ARSO napoved termike (6 regij)... ');
+  const thermalRegions = await fetchAllThermalRegions();
+  const thermalOk = Object.values(thermalRegions).filter((r) => r.ok).length;
+  console.log(`OK(${thermalOk}/6)`);
+
   const results = [];
   const relevantStationIds = new Set();
   for (const site of sites) {
     process.stdout.write(`Gradim podatke za ${site.name} (${site.id})... `);
     try {
-      const summary = await buildSite(site, stationById, skytech.stations);
+      const summary = await buildSite(site, stationById, skytech.stations, thermalRegions);
       fs.writeFileSync(
         path.join(WEATHER_DIR, `${site.id}.json`),
         JSON.stringify(summary, null, 2)
