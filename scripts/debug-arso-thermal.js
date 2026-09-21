@@ -32,10 +32,21 @@ function extractSrcs(html, pattern) {
 }
 
 async function main() {
+  // Najdeno v prejšnjem teku: RSS viri "Napoved termike" po regiji.
+  // LES=Gorenjska, NGO=Primorska, LJU=Osrednja, NMO=Dolenjska (predvidoma
+  // CEL=Štajerska/Celje, MSO=Prekmurska/Murska Sobota - preverimo spodaj).
+  const rssUrl = 'https://meteo.arso.gov.si/uploads/probase/www/aviation/RSS/termikaLES.xml';
+  console.log('\n=== RSS: ' + rssUrl + ' ===');
+  try {
+    const { ok, status, text } = await fetchText(rssUrl);
+    console.log('status:', status, 'ok:', ok, 'length:', text.length);
+    console.log(text);
+  } catch (err) {
+    console.log('NAPAKA:', err.message);
+  }
+
   const candidates = [
     'https://meteo.arso.gov.si/met/sl/aviation/',
-    'https://meteo.arso.gov.si/uploads/probase/www/fproduct/text/sl/aviation_termika.html',
-    'https://meteo.arso.gov.si/uploads/probase/www/fproduct/text/sl/aladin_termika.html',
   ];
 
   for (const url of candidates) {
