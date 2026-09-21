@@ -645,7 +645,17 @@ function renderNearbyStations(data) {
  * {time, value} v kronološkem vrstnem redu; vrzeli (value === null)
  * prekinejo črto namesto lažnega interpoliranja.
  */
-function buildLineChartSvg({ series, series2, width = 320, height = 130, color = '#4f8cff', color2 = '#f5a524', unit = '' }) {
+function buildLineChartSvg({
+  series,
+  series2,
+  width = 320,
+  height = 130,
+  color = '#4f8cff',
+  color2 = '#f5a524',
+  unit = '',
+  yLabelFormatter,
+}) {
+  const formatY = yLabelFormatter || ((v) => `${Math.round(v * 10) / 10}${unit}`);
   const padding = { top: 14, right: 8, bottom: 20, left: 4 };
   const innerW = width - padding.left - padding.right;
   const innerH = height - padding.top - padding.bottom;
@@ -693,8 +703,8 @@ function buildLineChartSvg({ series, series2, width = 320, height = 130, color =
   return `
     <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none" class="history-chart">
       <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#22304a" stroke-width="1" />
-      <text x="${padding.left}" y="${padding.top - 4}" font-size="10" fill="#9db0cc">${Math.round(max * 10) / 10}${unit}</text>
-      <text x="${padding.left}" y="${height - padding.bottom - 2}" font-size="10" fill="#9db0cc">${Math.round(min * 10) / 10}${unit}</text>
+      <text x="${padding.left}" y="${padding.top - 4}" font-size="10" fill="#9db0cc">${formatY(max)}</text>
+      <text x="${padding.left}" y="${height - padding.bottom - 2}" font-size="10" fill="#9db0cc">${formatY(min)}</text>
       ${series2 ? `<path d="${pathFor(series2)}" fill="none" stroke="${color2}" stroke-width="1.5" stroke-dasharray="3,3" />` : ''}
       <path d="${pathFor(series)}" fill="none" stroke="${color}" stroke-width="2" />
       <text x="${padding.left}" y="${height - 4}" font-size="9" fill="#9db0cc">${fmtTime(firstTime)}</text>
@@ -1030,51 +1040,33 @@ function renderArsoThermal(data) {
 
 /**
  * Podrobnosti uradne ARSO napovedi termike (klik na kartico) - isto
- * modalno okno kot za postaje/vzletišča (historyModalOverlay), a brez
- * grafa: za vsak dan datum izdaje, m/s in barvna stopnja, ter povezava
- * na uradno ARSO stran za to regijo/dan.
+ * modalno okno kot za postaje/vzletišča (historyModalOverlay): za vsak
+ * dan datum izdaje, m/s in barvna stopnja ter povezava na uradno ARSO
+ * stran za to regijo/dan, pod tem pa graf "po urah" (naša ocena, glej
+ * renderThermalHourlyEstimate spodaj).
  */
-const THERMAL_LEVEL_COLOR_HEX = { gray: '#6b7a94', blue: '#4f8cff', green: '#34c778', orange: '#f5a524' };
 const THERMAL_LEVEL_RANK = { gray: 1, blue: 1, green: 2, orange: 3 };
+const THERMAL_LEVEL_LABELS = { 1: 'šibka', 2: 'dobra', 3: 'ostra' };
 
 /**
  * Graf "moč termike po urah" - NI uradni ARSO podatek (tega ARSO ne
  * objavlja strojno berljivo, glej raziskavo v git zgodovini), ampak naša
- * lastna hevristika (estimateThermalIndex v src/paragliding.js),
- * izrisana kot stolpci (3 kvalitativne stopnje: šibka/dobra/ostra),
- * barvana enako kot obstoječe "Termika" oznake na kartici napovedi.
+ * lastna hevristika (estimateThermalIndex v src/paragliding.js), izrisana
+ * v ISTI obliki kot obstoječi grafi vetra/temperature pri postajah
+ * (buildLineChartSvg) - zvezna črta namesto stolpcev, z besedilnimi
+ * oznakami na Y osi (šibka/dobra/ostra) namesto številk, saj gre za 3
+ * kvalitativne stopnje, ne za merjeno fizikalno količino.
  */
-function buildThermalBarsSvg(entries, width = 320, height = 110) {
-  const padding = { top: 10, right: 8, bottom: 20, left: 4 };
-  const innerW = width - padding.left - padding.right;
-  const innerH = height - padding.top - padding.bottom;
-  const usable = entries.filter((e) => e.time);
-  if (usable.length === 0) return '<p class="muted small">Ni podatkov za graf.</p>';
-
-  const n = usable.length;
-  const barW = innerW / n;
-  const maxLevel = 3;
-  const bars = usable
-    .map((e, i) => {
-      const color = e.thermal && e.thermal.color;
-      const level = THERMAL_LEVEL_RANK[color] || 0;
-      if (level === 0) return '';
-      const barH = (level / maxLevel) * innerH;
-      const x = padding.left + i * barW + barW * 0.15;
-      const y = padding.top + innerH - barH;
-      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barW * 0.7).toFixed(1)}" height="${barH.toFixed(1)}" fill="${THERMAL_LEVEL_COLOR_HEX[color]}" rx="2" />`;
-    })
-    .join('');
-
-  const fmtTime = (t) => new Date(t).toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
-  return `
-    <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none" class="history-chart">
-      <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#22304a" stroke-width="1" />
-      ${bars}
-      <text x="${padding.left}" y="${height - 4}" font-size="9" fill="#9db0cc">${fmtTime(usable[0].time)}</text>
-      <text x="${width - padding.right}" y="${height - 4}" font-size="9" fill="#9db0cc" text-anchor="end">${fmtTime(usable[n - 1].time)}</text>
-    </svg>
-  `;
+function buildThermalLineSvg(entries) {
+  const series = entries
+    .filter((e) => e.time)
+    .map((e) => ({ time: e.time, value: THERMAL_LEVEL_RANK[e.thermal && e.thermal.color] || null }));
+  if (series.length === 0) return '<p class="muted small">Ni podatkov za graf.</p>';
+  return buildLineChartSvg({
+    series,
+    color: '#f5a524',
+    yLabelFormatter: (v) => THERMAL_LEVEL_LABELS[Math.min(3, Math.max(1, Math.round(v)))] || '',
+  });
 }
 
 /**
@@ -1089,25 +1081,17 @@ function renderThermalHourlyEstimate() {
   const days = forecast.slice(0, 2).filter((d) => d && d.timeline && d.timeline.length > 0);
   if (days.length === 0) return '';
 
-  const charts = days
+  return days
     .map((day) => {
       const entries = day.timeline.map((e) => ({ time: e.time, thermal: e.paragliding && e.paragliding.thermal }));
       return `
-        <h4 class="muted small" style="margin:16px 0 6px;">Naša ocena po urah — ${formatDayLabel(day.date)} (ni uradni ARSO podatek)</h4>
-        ${buildThermalBarsSvg(entries)}
+        <div class="chart-block">
+          <h4>Naša ocena po urah — ${formatDayLabel(day.date)} (ni uradni ARSO podatek)</h4>
+          ${buildThermalLineSvg(entries)}
+        </div>
       `;
     })
     .join('');
-
-  return `
-    ${charts}
-    <div class="chart-legend">
-      <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.blue}"></span>šibka</span>
-      <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.green}"></span>dobra</span>
-      <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.orange}"></span>lahko ostra</span>
-      <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.gray}"></span>oblačno/šibka</span>
-    </div>
-  `;
 }
 
 function openArsoThermalDetailModal(t) {
