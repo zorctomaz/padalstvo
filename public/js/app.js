@@ -1034,14 +1034,75 @@ function renderArsoThermal(data) {
  * grafa: za vsak dan datum izdaje, m/s in barvna stopnja, ter povezava
  * na uradno ARSO stran za to regijo/dan.
  */
+const THERMAL_LEVEL_COLOR_HEX = { gray: '#6b7a94', blue: '#4f8cff', green: '#34c778', orange: '#f5a524' };
+const THERMAL_LEVEL_RANK = { gray: 1, blue: 1, green: 2, orange: 3 };
+
+/**
+ * Graf "moč termike po urah" - NI uradni ARSO podatek (tega ARSO ne
+ * objavlja strojno berljivo, glej raziskavo v git zgodovini), ampak naša
+ * lastna hevristika (estimateThermalIndex v src/paragliding.js),
+ * izrisana kot stolpci (3 kvalitativne stopnje: šibka/dobra/ostra),
+ * barvana enako kot obstoječe "Termika" oznake na kartici napovedi.
+ */
+function buildThermalBarsSvg(entries, width = 320, height = 110) {
+  const padding = { top: 10, right: 8, bottom: 20, left: 4 };
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+  const usable = entries.filter((e) => e.time);
+  if (usable.length === 0) return '<p class="muted small">Ni podatkov za graf.</p>';
+
+  const n = usable.length;
+  const barW = innerW / n;
+  const maxLevel = 3;
+  const bars = usable
+    .map((e, i) => {
+      const color = e.thermal && e.thermal.color;
+      const level = THERMAL_LEVEL_RANK[color] || 0;
+      if (level === 0) return '';
+      const barH = (level / maxLevel) * innerH;
+      const x = padding.left + i * barW + barW * 0.15;
+      const y = padding.top + innerH - barH;
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barW * 0.7).toFixed(1)}" height="${barH.toFixed(1)}" fill="${THERMAL_LEVEL_COLOR_HEX[color]}" rx="2" />`;
+    })
+    .join('');
+
+  const fmtTime = (t) => new Date(t).toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
+  return `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none" class="history-chart">
+      <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#22304a" stroke-width="1" />
+      ${bars}
+      <text x="${padding.left}" y="${height - 4}" font-size="9" fill="#9db0cc">${fmtTime(usable[0].time)}</text>
+      <text x="${width - padding.right}" y="${height - 4}" font-size="9" fill="#9db0cc" text-anchor="end">${fmtTime(usable[n - 1].time)}</text>
+    </svg>
+  `;
+}
+
+function renderThermalHourlyEstimate() {
+  const day = state.weather && state.weather.forecast && state.weather.forecast[state.activeDayIndex];
+  if (!day || !day.timeline || day.timeline.length === 0) return '';
+  const entries = day.timeline.map((e) => ({ time: e.time, thermal: e.paragliding && e.paragliding.thermal }));
+  return `
+    <h4 class="muted small" style="margin:16px 0 6px;">Naša ocena po urah — ${formatDayLabel(day.date)} (ni uradni ARSO podatek)</h4>
+    ${buildThermalBarsSvg(entries)}
+    <div class="chart-legend">
+      <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.blue}"></span>šibka</span>
+      <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.green}"></span>dobra</span>
+      <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.orange}"></span>lahko ostra</span>
+      <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.gray}"></span>oblačno/šibka</span>
+    </div>
+  `;
+}
+
 function openArsoThermalDetailModal(t) {
   if (!t || !t.items || t.items.length === 0) return;
   state.currentHistoryStationId = null;
   el.historyModalTitle.textContent = `🌡️ Napoved termike — ${t.regionLabel}`;
   el.historyModalSnapshot.innerHTML = '';
-  el.historyModalBody.innerHTML = t.items
-    .map(
-      (item) => `
+  el.historyModalBody.innerHTML =
+    '<h4 class="muted small" style="margin:0 0 6px;">Uradna ARSO napoved</h4>' +
+    t.items
+      .map(
+        (item) => `
     <div class="metric" style="margin-bottom:10px;">
       <div class="label">${item.date}</div>
       <div class="value">${item.climbMs} m/s</div>
@@ -1050,8 +1111,9 @@ function openArsoThermalDetailModal(t) {
       ${item.link ? `<a href="${item.link}" target="_blank" rel="noopener">Poglej na uradni ARSO strani ↗</a>` : ''}
     </div>
   `
-    )
-    .join('');
+      )
+      .join('') +
+    renderThermalHourlyEstimate();
   el.historyModalOverlay.hidden = false;
 }
 
