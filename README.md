@@ -323,6 +323,14 @@ izključno prek `<script>`/`<link>` značk s SRI (`integrity`) preverjanjem
 – brez build koraka, brez npm odvisnosti. Če CDN ni dosegljiv (offline,
 firewall), gumb to jasno pove namesto da bi se aplikacija zrušila.
 
+Zemljevid ob odprtju prikaže tudi oznake vseh **uradnih vzletišč** (🪂,
+iz `data/sites.json`) in vseh **SkyTech vremenskih postaj** (📡, iz
+`data/skytech-stations.json` – enako izločanje pokvarjenih/zastarelih
+postaj kot pri izračunu bližnjih postaj, glej zgoraj), da lahko
+uporabnik izbere natanko eno od njih namesto slepega tapkanja po
+zemljevidu. Klik na katerokoli oznako takoj postavi izbirno (modro)
+oznako na to točko.
+
 ### Graf zgodovine postaje (klik na 📡 postajo)
 
 Klik na glavno "📡 Živa postaja" kartico ali na katerokoli vrstico v

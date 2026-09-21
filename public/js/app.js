@@ -780,6 +780,58 @@ let mapPickerMap = null;
 let mapPickerMarker = null;
 let mapPickerLatLng = null;
 
+/**
+ * Oznake uradnih vzletišč (iz state.sites, znane vnaprej) - narisane
+ * takoj ob inicializaciji zemljevida, klik nanje izbere to lokacijo.
+ */
+function addSiteMarkersToMapPicker() {
+  const icon = L.divIcon({
+    html: '<div class="map-pin map-pin-site">🪂</div>',
+    className: 'map-pin-wrapper',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+  for (const site of state.sites) {
+    if (typeof site.lat !== 'number' || typeof site.lon !== 'number') continue;
+    const badge = site.liveStation && site.liveStation.confirmed ? '📡 živa postaja' : '📊 samo napoved';
+    L.marker([site.lat, site.lon], { icon, zIndexOffset: 400 })
+      .addTo(mapPickerMap)
+      .bindPopup(`<strong>🪂 ${site.name}</strong><br>${site.region} · uradno vzletišče (${badge})`)
+      .on('click', () => setMapPickerPoint(site.lat, site.lon));
+  }
+}
+
+/**
+ * Oznake vseh SkyTech vremenskih postaj (ne le uradnih vzletišč) -
+ * naložene asinhrono (ista datoteka kot za "Moja lokacija" bližnje
+ * postaje). Izloči znane pokvarjene privzete koordinate (altitude 0)
+ * in zastarele meritve (>24h) - glej SKYTECH_API_ISSUES.md in
+ * computeNearbyStationsForPoint zgoraj.
+ */
+async function addStationMarkersToMapPicker() {
+  const stations = await loadAllStations();
+  if (!mapPickerMap) return; // uporabnik je medtem zaprl modal
+  const icon = L.divIcon({
+    html: '<div class="map-pin map-pin-station">📡</div>',
+    className: 'map-pin-wrapper',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+  const now = Date.now();
+  for (const s of stations) {
+    if (typeof s.lat !== 'number' || typeof s.lon !== 'number') continue;
+    if (s.altitude === 0) continue;
+    const ageMinutes = s.measurement && s.measurement.time
+      ? Math.round((now - new Date(s.measurement.time).getTime()) / 60000)
+      : null;
+    if (ageMinutes == null || ageMinutes > NEARBY_MAX_AGE_MINUTES) continue;
+    L.marker([s.lat, s.lon], { icon, zIndexOffset: 300 })
+      .addTo(mapPickerMap)
+      .bindPopup(`<strong>📡 ${s.name}</strong><br>SkyTech vremenska postaja`)
+      .on('click', () => setMapPickerPoint(s.lat, s.lon));
+  }
+}
+
 function initMapPicker() {
   if (mapPickerMap || typeof L === 'undefined') return;
   const center = state.userCoords
@@ -791,6 +843,9 @@ function initMapPicker() {
     maxZoom: 18,
   }).addTo(mapPickerMap);
   mapPickerMap.on('click', (e) => setMapPickerPoint(e.latlng.lat, e.latlng.lng));
+
+  addSiteMarkersToMapPicker();
+  addStationMarkersToMapPicker();
 
   if (state.userCoords) {
     setMapPickerPoint(state.userCoords.lat, state.userCoords.lon);

@@ -354,8 +354,37 @@ select {
   border: 1px solid var(--border);
 }
 
+.map-legend {
+  margin: 6px 0 0;
+}
+
 .map-coords-label {
   margin: 0 0 10px;
+}
+
+.map-pin-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.map-pin {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  background: var(--bg-elev);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.map-pin-station {
+  width: 22px;
+  height: 22px;
+  font-size: 0.8rem;
+  border-color: var(--green);
 }
 
 .map-confirm-btn {
