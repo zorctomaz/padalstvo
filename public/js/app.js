@@ -640,6 +640,47 @@ function renderNearbyStations(data) {
 }
 
 /**
+ * Za vsako 3-urno mejo (00:00, 03:00, 06:00 ...) znotraj časovnega
+ * razpona `series` poišče indeks NAJBLIŽJE dejanske točke (podatki niso
+ * nujno poravnani natanko na mejo). Uporabljeno za oznake na časovni osi
+ * grafov (buildLineChartSvg) - deluje enako dobro za ARSO podatke,
+ * poravnane natanko na 3h, kot za SkyTech ~10-minutne meritve.
+ */
+function pickThreeHourTicks(series) {
+  const withTime = series
+    .map((p, i) => ({ i, t: p.time ? new Date(p.time).getTime() : null }))
+    .filter((p) => p.t !== null);
+  if (withTime.length === 0) return [];
+
+  const start = withTime[0].t;
+  const end = withTime[withTime.length - 1].t;
+  const boundary = new Date(start);
+  boundary.setMinutes(0, 0, 0);
+  boundary.setHours(Math.floor(boundary.getHours() / 3) * 3);
+
+  const picked = [];
+  const usedIdx = new Set();
+  while (boundary.getTime() <= end) {
+    const target = boundary.getTime();
+    let best = withTime[0];
+    let bestDiff = Math.abs(best.t - target);
+    for (const p of withTime) {
+      const diff = Math.abs(p.t - target);
+      if (diff < bestDiff) {
+        best = p;
+        bestDiff = diff;
+      }
+    }
+    if (!usedIdx.has(best.i)) {
+      usedIdx.add(best.i);
+      picked.push({ i: best.i, time: series[best.i].time });
+    }
+    boundary.setHours(boundary.getHours() + 3);
+  }
+  return picked;
+}
+
+/**
  * Preprost SVG graf ene ali dveh časovnih vrst, brez zunanjih knjižnic
  * (aplikacija nima build koraka). `series`/`series2` sta seznama
  * {time, value} v kronološkem vrstnem redu; vrzeli (value === null)
@@ -697,18 +738,36 @@ function buildLineChartSvg({
   }
 
   const fmtTime = (t) => (t ? new Date(t).toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' }) : '');
-  const firstTime = series[0] && series[0].time;
-  const lastTime = series[n - 1] && series[n - 1].time;
+
+  // Oznake na časovni osi vsake 3 ure (3.00, 6.00, 9.00 ...), ne le prva/
+  // zadnja točka - tako je os berljiva ne glede na razpon grafa (uro
+  // gradiva podatkov o postajah, dan ARSO napovedi ipd.). Podatki niso
+  // nujno poravnani natanko na 3-urno mejo (npr. SkyTech poroča ~vsakih
+  // 10 min) - zato za vsako 3-urno mejo znotraj razpona poiščemo NAJBLIŽJO
+  // dejansko točko, namesto da bi filtrirali po `getHours() % 3 === 0`
+  // (kar bi pri ~10-minutnih podatkih napačno ujelo VSE točke znotraj cele
+  // ure, deljive s 3, ne le eno na mejo).
+  const baselineY = height - padding.bottom;
+  const tickIdx = pickThreeHourTicks(series);
+  const ticks = tickIdx
+    .map(({ i, time }) => {
+      const x = xAt(i);
+      const anchor = x < padding.left + 15 ? 'start' : x > width - padding.right - 15 ? 'end' : 'middle';
+      return `
+        <line x1="${x.toFixed(1)}" y1="${baselineY.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(baselineY - 4).toFixed(1)}" stroke="#22304a" stroke-width="1" />
+        <text x="${x.toFixed(1)}" y="${height - 4}" font-size="9" fill="#9db0cc" text-anchor="${anchor}">${fmtTime(time)}</text>
+      `;
+    })
+    .join('');
 
   return `
     <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none" class="history-chart">
-      <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#22304a" stroke-width="1" />
+      <line x1="${padding.left}" y1="${baselineY}" x2="${width - padding.right}" y2="${baselineY}" stroke="#22304a" stroke-width="1" />
       <text x="${padding.left}" y="${padding.top - 4}" font-size="10" fill="#9db0cc">${formatY(max)}</text>
       <text x="${padding.left}" y="${height - padding.bottom - 2}" font-size="10" fill="#9db0cc">${formatY(min)}</text>
       ${series2 ? `<path d="${pathFor(series2)}" fill="none" stroke="${color2}" stroke-width="1.5" stroke-dasharray="3,3" />` : ''}
       <path d="${pathFor(series)}" fill="none" stroke="${color}" stroke-width="2" />
-      <text x="${padding.left}" y="${height - 4}" font-size="9" fill="#9db0cc">${fmtTime(firstTime)}</text>
-      <text x="${width - padding.right}" y="${height - 4}" font-size="9" fill="#9db0cc" text-anchor="end">${fmtTime(lastTime)}</text>
+      ${ticks}
     </svg>
   `;
 }
