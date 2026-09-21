@@ -981,6 +981,33 @@ function renderArsoThermal(data) {
   el.arsoThermalCard.hidden = false;
 }
 
+/**
+ * Podrobnosti uradne ARSO napovedi termike (klik na kartico) - isto
+ * modalno okno kot za postaje/vzletišča (historyModalOverlay), a brez
+ * grafa: za vsak dan datum izdaje, m/s in barvna stopnja, ter povezava
+ * na uradno ARSO stran za to regijo/dan.
+ */
+function openArsoThermalDetailModal(t) {
+  if (!t || !t.items || t.items.length === 0) return;
+  state.currentHistoryStationId = null;
+  el.historyModalTitle.textContent = `🌡️ Napoved termike — ${t.regionLabel}`;
+  el.historyModalSnapshot.innerHTML = '';
+  el.historyModalBody.innerHTML = t.items
+    .map(
+      (item) => `
+    <div class="metric" style="margin-bottom:10px;">
+      <div class="label">${item.date}</div>
+      <div class="value">${item.climbMs} m/s</div>
+      <div class="thermal-swatch" style="background:${item.color}"></div>
+      ${item.issued ? `<p class="muted small" style="margin-top:8px;">Izdano: ${item.issued}</p>` : ''}
+      ${item.link ? `<a href="${item.link}" target="_blank" rel="noopener">Poglej na uradni ARSO strani ↗</a>` : ''}
+    </div>
+  `
+    )
+    .join('');
+  el.historyModalOverlay.hidden = false;
+}
+
 function renderNearby(data) {
   if (!data.nearby) {
     el.nearbyCard.hidden = true;
@@ -1170,6 +1197,17 @@ el.skytechCard.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     el.skytechCard.click();
+  }
+});
+el.arsoThermalCard.addEventListener('click', () => {
+  if (state.weather && state.weather.thermalForecastArso) {
+    openArsoThermalDetailModal(state.weather.thermalForecastArso);
+  }
+});
+el.arsoThermalCard.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    el.arsoThermalCard.click();
   }
 });
 el.nearbyStationsList.addEventListener('click', (e) => {

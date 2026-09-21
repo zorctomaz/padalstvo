@@ -51,10 +51,14 @@ function parseThermalRss(xml) {
     const dateMatch = titleMatch && /za (\d{2}\.\d{2}\.\d{4})/.exec(titleMatch[1]);
     const rowMatch = /<tr><td>[^<]*<\/td><td>([\d.,]+)<\/td><td[^>]*bgcolor=(#[0-9A-Fa-f]{6})/i.exec(block);
     if (!dateMatch || !rowMatch) continue;
+    const linkMatch = /<link>([^<]*)<\/link>/.exec(block);
+    const issuedMatch = /Izdano: ([^<]*)/.exec(block);
     items.push({
       date: dateMatch[1],
       climbMs: parseFloat(rowMatch[1].replace(',', '.')),
       color: rowMatch[2].toUpperCase(),
+      link: linkMatch ? linkMatch[1] : null,
+      issued: issuedMatch ? issuedMatch[1].trim() : null,
     });
   }
   return items;
