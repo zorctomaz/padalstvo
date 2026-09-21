@@ -43,6 +43,9 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
+      - name: Začasno - preišči ARSO uradno napoved termike (meteo.si/letalstvo)
+        run: node scripts/debug-arso-thermal.js
+
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
         with:
