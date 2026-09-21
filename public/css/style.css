@@ -122,6 +122,19 @@ p {
   opacity: 0.85;
 }
 
+.btn-secondary {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 14px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.btn-secondary:active {
+  opacity: 0.85;
+}
+
 .btn-flashlight {
   background: var(--bg-elev);
   border: 1px solid var(--border);
@@ -330,6 +343,28 @@ select {
   height: 10px;
   border-radius: 2px;
   display: inline-block;
+}
+
+.map-container {
+  width: 100%;
+  height: 320px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 10px 0;
+  border: 1px solid var(--border);
+}
+
+.map-coords-label {
+  margin: 0 0 10px;
+}
+
+.map-confirm-btn {
+  width: 100%;
+}
+
+.map-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .current-grid {

@@ -71,6 +71,12 @@ const el = {
   historyModalTitle: document.getElementById('historyModalTitle'),
   historyModalBody: document.getElementById('historyModalBody'),
   historyModalClose: document.getElementById('historyModalClose'),
+  mapPickerBtn: document.getElementById('mapPickerBtn'),
+  mapModalOverlay: document.getElementById('mapModalOverlay'),
+  mapModalClose: document.getElementById('mapModalClose'),
+  mapContainer: document.getElementById('mapContainer'),
+  mapCoordsLabel: document.getElementById('mapCoordsLabel'),
+  mapConfirmBtn: document.getElementById('mapConfirmBtn'),
 };
 
 /**
@@ -320,35 +326,38 @@ async function loadMeta() {
   }
 }
 
+/**
+ * Skupna pot za "uporabi to GPS točko kot mojo lokacijo" - uporabljena
+ * tako pri pravem GPS-u (requestGeolocation) kot pri ročni izbiri na
+ * zemljevidu (openMapPicker/potrditev).
+ */
+function useLocation(lat, lon, altitude) {
+  state.userCoords = { lat, lon, altitude: altitude ?? null };
+  setStatus(null);
+  const nearest = findNearestSite(lat, lon);
+  if (nearest.site) {
+    el.siteSelect.value = nearest.site.id;
+    el.distanceInfo.textContent =
+      `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)} ` +
+      `· najbližji vir ARSO napovedi: ${nearest.site.name} (${nearest.distanceKm} km)`;
+    showMyLocationWeather(nearest);
+  } else {
+    el.distanceInfo.textContent =
+      `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)} ` +
+      `– ni znanih vzletišč v bližini.`;
+  }
+}
+
 function requestGeolocation() {
   if (!('geolocation' in navigator)) {
-    setStatus('Brskalnik ne podpira GPS lokacije. Izberite vzletišče ročno.', 'error');
+    setStatus('Brskalnik ne podpira GPS lokacije. Izberite vzletišče ročno ali na zemljevidu.', 'error');
     return;
   }
   setStatus('Iščem tvojo lokacijo…');
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      state.userCoords = {
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
-        altitude: pos.coords.altitude,
-      };
-      setStatus(null);
-      const nearest = findNearestSite(state.userCoords.lat, state.userCoords.lon);
-      if (nearest.site) {
-        el.siteSelect.value = nearest.site.id;
-        el.distanceInfo.textContent =
-          `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
-          `· najbližji vir ARSO napovedi: ${nearest.site.name} (${nearest.distanceKm} km)`;
-        showMyLocationWeather(nearest);
-      } else {
-        el.distanceInfo.textContent =
-          `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
-          `– ni znanih vzletišč v bližini.`;
-      }
-    },
+    (pos) => useLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.altitude),
     (err) => {
-      setStatus('Lokacije ni bilo mogoče pridobiti (' + err.message + '). Izberite vzletišče ročno.', 'error');
+      setStatus('Lokacije ni bilo mogoče pridobiti (' + err.message + '). Izberite vzletišče ročno ali na zemljevidu.', 'error');
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 5 * 60 * 1000 }
   );
@@ -761,6 +770,67 @@ function openHistoryModal(stationId, stationName) {
     });
 }
 
+/**
+ * Izbira lokacije na interaktivnem zemljevidu (Leaflet + OpenStreetMap
+ * ploščice prek CDN) kot alternativa/dopolnilo GPS gumbu "Moja
+ * lokacija" - uporabno npr. če GPS ni na voljo/natančen, ali če
+ * uporabnik želi preveriti napoved za drugo mesto, ne kjer trenutno je.
+ */
+let mapPickerMap = null;
+let mapPickerMarker = null;
+let mapPickerLatLng = null;
+
+function initMapPicker() {
+  if (mapPickerMap || typeof L === 'undefined') return;
+  const center = state.userCoords
+    ? [state.userCoords.lat, state.userCoords.lon]
+    : [46.05, 14.9]; // približno središče Slovenije
+  mapPickerMap = L.map(el.mapContainer).setView(center, state.userCoords ? 11 : 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+    maxZoom: 18,
+  }).addTo(mapPickerMap);
+  mapPickerMap.on('click', (e) => setMapPickerPoint(e.latlng.lat, e.latlng.lng));
+
+  if (state.userCoords) {
+    setMapPickerPoint(state.userCoords.lat, state.userCoords.lon);
+  }
+}
+
+function setMapPickerPoint(lat, lon) {
+  mapPickerLatLng = { lat, lon };
+  if (mapPickerMarker) {
+    mapPickerMarker.setLatLng([lat, lon]);
+  } else {
+    mapPickerMarker = L.marker([lat, lon], { draggable: true }).addTo(mapPickerMap);
+    mapPickerMarker.on('dragend', () => {
+      const p = mapPickerMarker.getLatLng();
+      mapPickerLatLng = { lat: p.lat, lon: p.lng };
+      el.mapCoordsLabel.textContent = `Izbrana lokacija: ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;
+    });
+  }
+  el.mapCoordsLabel.textContent = `Izbrana lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  el.mapConfirmBtn.disabled = false;
+}
+
+function openMapPicker() {
+  if (typeof L === 'undefined') {
+    setStatus('Zemljevida ni bilo mogoče naložiti (ni internetne povezave do OpenStreetMap). Poskusi gumb "Moja lokacija" ali izberi vzletišče ročno.', 'error');
+    return;
+  }
+  el.mapModalOverlay.hidden = false;
+  // Leaflet potrebuje viden (ne hidden/display:none) vsebnik za pravilno
+  // izmero velikosti - zato inicializacija/invalidateSize šele po prikazu.
+  requestAnimationFrame(() => {
+    initMapPicker();
+    mapPickerMap.invalidateSize();
+  });
+}
+
+function closeMapPicker() {
+  el.mapModalOverlay.hidden = true;
+}
+
 function renderNearby(data) {
   if (!data.nearby) {
     el.nearbyCard.hidden = true;
@@ -960,8 +1030,21 @@ el.historyModalClose.addEventListener('click', closeHistoryModal);
 el.historyModalOverlay.addEventListener('click', (e) => {
   if (e.target === el.historyModalOverlay) closeHistoryModal();
 });
+el.mapPickerBtn.addEventListener('click', openMapPicker);
+el.mapModalClose.addEventListener('click', closeMapPicker);
+el.mapModalOverlay.addEventListener('click', (e) => {
+  if (e.target === el.mapModalOverlay) closeMapPicker();
+});
+el.mapConfirmBtn.addEventListener('click', () => {
+  if (!mapPickerLatLng) return;
+  const { lat, lon } = mapPickerLatLng;
+  closeMapPicker();
+  useLocation(lat, lon, null);
+});
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !el.historyModalOverlay.hidden) closeHistoryModal();
+  if (e.key !== 'Escape') return;
+  if (!el.historyModalOverlay.hidden) closeHistoryModal();
+  if (!el.mapModalOverlay.hidden) closeMapPicker();
 });
 
 (async function init() {

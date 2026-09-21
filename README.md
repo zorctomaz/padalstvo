@@ -3,9 +3,12 @@
 Spletna aplikacija (v celoti prilagojena mobilnim napravam) za vremensko napoved
 za **jadralno padalstvo** v Sloveniji. Gumb "📍 Moja lokacija" pokaže napoved
 za TVOJO natančno GPS točko – ne glede na to, ali je uradno vzletišče in ali
-je v bližini potrjena živa postaja (glej razdelek "Moja lokacija" spodaj); v
-padajočem seznamu pa lahko izbereš tudi katero od znanih vzletišč. Aplikacija
-prikaže vremenske podatke ter iz njih izpeljane ocene, pomembne za pilote:
+je v bližini potrjena živa postaja (glej razdelek "Moja lokacija" spodaj);
+gumb "🗺️" poleg njega omogoči izbiro poljubne lokacije na interaktivnem
+zemljevidu (npr. če GPS ni na voljo ali želiš preveriti napoved za drug
+kraj); v padajočem seznamu pa lahko izbereš tudi katero od znanih vzletišč.
+Aplikacija prikaže vremenske podatke ter iz njih izpeljane ocene, pomembne
+za pilote:
 
 - veter (hitrost/smer/sunki) z oceno primernosti za let,
 - **primerjava smeri vetra z znano primerno smerjo vzleta** (kjer je ta
@@ -300,6 +303,25 @@ naloži v brskalniku in zanj zrcali `haversineKm`, `rateWind` in
 bližnje postaje za POLJUBNO GPS točko brez dodatnega strežniškega
 klica – to je edini način, ki deluje tudi na povsem statičnem GitHub
 Pages gostovanju brez žive backend poti.
+
+### Izbira lokacije na zemljevidu (🗺️)
+
+Gumb "🗺️" poleg "Moja lokacija" odpre modalno okno z interaktivnim
+zemljevidom ([Leaflet](https://leafletjs.com/) + [OpenStreetMap](https://www.openstreetmap.org/)
+ploščice, naloženi prek CDN – `unpkg.com/leaflet@1.9.4`). Tap/klik na
+zemljevid postavi oznako (lahko jo povlečeš za natančnejšo izbiro),
+gumb "Uporabi to lokacijo" nato zažene isto pot kot pravi GPS
+(`useLocation(lat, lon)` – skupna funkcija za oba vira, glej
+`public/js/app.js`), torej isti "Moja lokacija" način (glej zgoraj), le
+z ročno izbranimi koordinatami namesto pravega GPS-a. Uporabno, kadar
+GPS ni na voljo/natančen, ali če želiš preveriti napoved za povsem drug
+kraj, ne kjer se trenutno nahajaš.
+
+Ker gre za edino zunanjo knjižnico v projektu (za pravi interaktivni
+zemljevid ni smiselno pisati lastne implementacije), je naložena
+izključno prek `<script>`/`<link>` značk s SRI (`integrity`) preverjanjem
+– brez build koraka, brez npm odvisnosti. Če CDN ni dosegljiv (offline,
+firewall), gumb to jasno pove namesto da bi se aplikacija zrušila.
 
 ### Graf zgodovine postaje (klik na 📡 postajo)
 
