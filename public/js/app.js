@@ -1077,13 +1077,30 @@ function buildThermalBarsSvg(entries, width = 320, height = 110) {
   `;
 }
 
+/**
+ * Cel dan (vse ure, ne le okrog trenutno izbranega dneva v spodnjih
+ * zavihkih) za DANES IN JUTRI - isti obseg kot uradna ARSO napoved
+ * zgoraj (forecast[0]/[1]), ne glede na to, kateri dan je uporabnik
+ * nazadnje izbral v večdnevni napovedi na glavni strani.
+ */
 function renderThermalHourlyEstimate() {
-  const day = state.weather && state.weather.forecast && state.weather.forecast[state.activeDayIndex];
-  if (!day || !day.timeline || day.timeline.length === 0) return '';
-  const entries = day.timeline.map((e) => ({ time: e.time, thermal: e.paragliding && e.paragliding.thermal }));
+  const forecast = state.weather && state.weather.forecast;
+  if (!forecast || forecast.length === 0) return '';
+  const days = forecast.slice(0, 2).filter((d) => d && d.timeline && d.timeline.length > 0);
+  if (days.length === 0) return '';
+
+  const charts = days
+    .map((day) => {
+      const entries = day.timeline.map((e) => ({ time: e.time, thermal: e.paragliding && e.paragliding.thermal }));
+      return `
+        <h4 class="muted small" style="margin:16px 0 6px;">Naša ocena po urah — ${formatDayLabel(day.date)} (ni uradni ARSO podatek)</h4>
+        ${buildThermalBarsSvg(entries)}
+      `;
+    })
+    .join('');
+
   return `
-    <h4 class="muted small" style="margin:16px 0 6px;">Naša ocena po urah — ${formatDayLabel(day.date)} (ni uradni ARSO podatek)</h4>
-    ${buildThermalBarsSvg(entries)}
+    ${charts}
     <div class="chart-legend">
       <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.blue}"></span>šibka</span>
       <span><span class="swatch" style="background:${THERMAL_LEVEL_COLOR_HEX.green}"></span>dobra</span>
