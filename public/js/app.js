@@ -921,10 +921,7 @@ function pickHourlyIndices(series) {
 /**
  * Vrstica puščic smeri vetra nad grafom hitrosti - vsaka puščica kaže,
  * OD KOD piha veter (npr. puščica navzgor = veter piha od severa),
- * poravnana z isto časovno osjo kot graf zgoraj. Vsak vnos ima bodisi
- * `.direction` (angleška SkyTech kratica, glej COMPASS_TO_DEG) bodisi
- * `.directionDeg` (surova stopinja, npr. iz Open-Meteo/ARSO) - slednja
- * omogoča gladko vrtenje puščice, ne le 8 diskretnih smeri.
+ * poravnana z isto časovno osjo kot graf zgoraj.
  */
 function buildDirectionArrowsSvg(series, width = 320, height = 28) {
   const padding = { left: 4, right: 8 };
@@ -936,11 +933,8 @@ function buildDirectionArrowsSvg(series, width = 320, height = 28) {
 
   const glyphs = pickHourlyIndices(series)
     .map((i) => {
-      const item = series[i];
-      const deg = item.directionDeg !== undefined && item.directionDeg !== null
-        ? item.directionDeg
-        : COMPASS_TO_DEG[item.direction];
-      if (deg === undefined || deg === null) return '';
+      const deg = COMPASS_TO_DEG[series[i].direction];
+      if (deg === undefined) return '';
       const cx = xAt(i).toFixed(1);
       return `<text x="${cx}" y="${cy}" font-size="13" fill="#9db0cc" text-anchor="middle" transform="rotate(${deg} ${cx} ${cy - 4})">↑</text>`;
     })
@@ -1351,25 +1345,30 @@ function windArrow(direction) {
 }
 
 /**
- * Veter po višini (tlačni nivoji/hPa) - ARSO tega ne objavlja strojno
- * berljivo (preverjeno prek GitHub Actions: napovedni API vrne le
- * prizemne vrednosti, letalska stran SIGWX/GAFOR ponuja le grafične/
- * besedilne produkte). Open-Meteo (api.open-meteo.com) je brezplačen,
- * brez API ključa, z odprtim CORS-om (preverjeno prek GitHub Actions -
- * Access-Control-Allow-Origin: *), zato ga pokličemo neposredno iz
- * brskalnika, brez strežniške predpriprave (poljubna GPS točka pri
+ * Veter (in temperatura) po višini (tlačni nivoji/hPa) - ARSO tega ne
+ * objavlja strojno berljivo (preverjeno prek GitHub Actions: napovedni
+ * API vrne le prizemne vrednosti, letalska stran SIGWX/GAFOR ponuja le
+ * grafične/besedilne produkte). Open-Meteo (api.open-meteo.com) je
+ * brezplačen, brez API ključa, z odprtim CORS-om (preverjeno prek GitHub
+ * Actions - Access-Control-Allow-Origin: *), zato ga pokličemo neposredno
+ * iz brskalnika, brez strežniške predpriprave (poljubna GPS točka pri
  * "Moja lokacija" je ni mogoče vnaprej zgraditi za vsako možnost).
  *
- * Nadmorske višine tlačnih nivojev so približki po standardni atmosferi
- * (ISA barometrična formula), zaokroženi na 10 m - dovolj natančno za
- * grobo orientacijo, ne za natančno navigacijo.
+ * Prikaz posnema tabelo iz ARSO-jeve gorske vremenske aplikacije
+ * ("Vreme v gorah in hribih") - nadmorska višina v vrsticah, čas (vsake
+ * 3 ure, naslednja 2 dni) v vodoravno drsnih stolpcih. Izbranih je 6
+ * "okroglih" tlačnih nivojev (950/900/850/800/700/600 hPa), katerih
+ * nadmorska višina po standardni atmosferi (ISA) najbližje ustreza
+ * 500/1000/1500/2000/3000/4200 m - Open-Meteo ne podpira poljubnega hPa
+ * koraka, le standardni nabor (975/950/925/900/850/800/700/600/500 ...).
  */
 const WIND_ALOFT_LEVELS = [
-  { hpa: 1000, altitudeM: 110 },
-  { hpa: 925, altitudeM: 760 },
-  { hpa: 850, altitudeM: 1460 },
-  { hpa: 700, altitudeM: 3010 },
-  { hpa: 600, altitudeM: 4210 },
+  { hpa: 950, altitudeM: 500 },
+  { hpa: 900, altitudeM: 1000 },
+  { hpa: 850, altitudeM: 1500 },
+  { hpa: 800, altitudeM: 2000 },
+  { hpa: 700, altitudeM: 3000 },
+  { hpa: 600, altitudeM: 4200 },
 ];
 
 /**
@@ -1377,10 +1376,12 @@ const WIND_ALOFT_LEVELS = [
  * dneva - Open-Meteo `hourly` polje je zagotovljeno pravo urno/zaporedno
  * od lokalne polnoči naprej (timezone=auto), zato indeksni korak (i += 3)
  * zadostuje - ni treba iskati najbližje točke kot pri neenakomerni
- * SkyTech zgodovini (glej pickThreeHourTicks/buildLineChartSvg zgoraj).
+ * SkyTech zgodovini (glej pickThreeHourTicks zgoraj).
  */
 async function fetchWindAloft(lat, lon) {
-  const params = WIND_ALOFT_LEVELS.flatMap((l) => [`wind_speed_${l.hpa}hPa`, `wind_direction_${l.hpa}hPa`]).join(',');
+  const params = WIND_ALOFT_LEVELS
+    .flatMap((l) => [`temperature_${l.hpa}hPa`, `wind_speed_${l.hpa}hPa`, `wind_direction_${l.hpa}hPa`])
+    .join(',');
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&timezone=auto&forecast_days=2`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -1390,17 +1391,84 @@ async function fetchWindAloft(lat, lon) {
   for (let i = 0; i < times.length; i += 3) idx.push(i);
 
   return {
-    levels: WIND_ALOFT_LEVELS.map((l) => {
-      const speedArr = json.hourly[`wind_speed_${l.hpa}hPa`];
-      const dirArr = json.hourly[`wind_direction_${l.hpa}hPa`];
-      return {
-        hpa: l.hpa,
-        altitudeM: l.altitudeM,
-        series: idx.map((i) => ({ time: times[i], value: speedArr[i] })),
-        dirSeries: idx.map((i) => ({ time: times[i], directionDeg: dirArr[i] })),
-      };
-    }),
+    times: idx.map((i) => times[i]),
+    levels: WIND_ALOFT_LEVELS.map((l) => ({
+      hpa: l.hpa,
+      altitudeM: l.altitudeM,
+      temps: idx.map((i) => json.hourly[`temperature_${l.hpa}hPa`][i]),
+      speeds: idx.map((i) => json.hourly[`wind_speed_${l.hpa}hPa`][i]),
+      dirs: idx.map((i) => json.hourly[`wind_direction_${l.hpa}hPa`][i]),
+    })),
   };
+}
+
+/**
+ * Barva glede na jakost vetra po višini - ločena lestvica od
+ * rateWindClient (tista je umerjena za prizemni jadralni polet 8-30 km/h,
+ * tu pa gre lahko za jetstream čez 100 km/h) - groba orientacija:
+ * moder=mirno, rumen=zmerno, oranžen=močno, rdeč=zelo močno.
+ */
+function windAloftSpeedClass(kmh) {
+  if (kmh === null || kmh === undefined) return '';
+  if (kmh >= 50) return 'wa-red';
+  if (kmh >= 30) return 'wa-orange';
+  if (kmh >= 15) return 'wa-yellow';
+  return 'wa-blue';
+}
+
+function formatWindAloftColHeader(timeStr) {
+  const d = new Date(timeStr);
+  let day = d.toLocaleDateString('sl-SI', { weekday: 'short' }).replace(/\.$/, '');
+  day = day.charAt(0).toUpperCase() + day.slice(1);
+  const hour = String(d.getHours()).padStart(2, '0');
+  return `<div class="wa-day">${day}</div><div class="wa-hour">${hour}</div>`;
+}
+
+function buildWindAloftTable(aloft, windSpeedFormatter, unitLabel) {
+  const colCount = aloft.times.length;
+  const headerRow = `<tr><th></th>${aloft.times.map((t) => `<th>${formatWindAloftColHeader(t)}</th>`).join('')}</tr>`;
+
+  const tempRows = aloft.levels
+    .map(
+      (l) => `
+        <tr>
+          <th>~${l.altitudeM} m</th>
+          ${l.temps.map((t) => `<td>${t !== null && t !== undefined ? Math.round(t) + '°' : '—'}</td>`).join('')}
+        </tr>
+      `
+    )
+    .join('');
+
+  const windRows = aloft.levels
+    .map((l) => {
+      const cells = l.speeds
+        .map((s, i) => {
+          const deg = l.dirs[i];
+          const cls = windAloftSpeedClass(s);
+          const arrow = deg !== null && deg !== undefined
+            ? `<span class="wa-arrow" style="transform:rotate(${deg}deg)">↑</span>`
+            : '';
+          const speedText = s !== null && s !== undefined ? windSpeedFormatter(s) : '—';
+          return `<td class="${cls}">${arrow}<br>${speedText}</td>`;
+        })
+        .join('');
+      return `<tr><th>~${l.altitudeM} m</th>${cells}</tr>`;
+    })
+    .join('');
+
+  return `
+    <div class="wind-aloft-table-wrap">
+      <table class="wind-aloft-table">
+        <thead>${headerRow}</thead>
+        <tbody>
+          <tr class="wa-section"><th colspan="${colCount + 1}">Temperatura (°C)</th></tr>
+          ${tempRows}
+          <tr class="wa-section"><th colspan="${colCount + 1}">Veter (${unitLabel}) · ↑ = od kod piha</th></tr>
+          ${windRows}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 async function renderWindAloft(data) {
@@ -1428,19 +1496,8 @@ async function renderWindAloft(data) {
     const aloft = await fetchWindAloft(coords.lat, coords.lon);
     if (state.windAloftRequestToken !== requestToken) return; // uporabnik je medtem zamenjal lokacijo
     const unitLabel = (WIND_UNITS[state.windUnit] || WIND_UNITS.kmh).label;
-    el.windAloftMeta.textContent = `Vir: Open-Meteo (ne ARSO) · naslednja 2 dni, vsake 3 ure`;
-    el.windAloftList.innerHTML = aloft.levels
-      .map((l) => {
-        const series = l.series.map((p) => ({ time: p.time, value: convertWindValue(p.value) }));
-        return `
-          <div class="chart-block">
-            <h4>${l.hpa} hPa (~${l.altitudeM} m) · veter (${unitLabel})</h4>
-            ${buildDirectionArrowsSvg(l.dirSeries)}
-            ${buildLineChartSvg({ series, unit: '' })}
-          </div>
-        `;
-      })
-      .join('') + '<p class="muted small">↑ = smer, od koder piha veter (sever = puščica navzgor).</p>';
+    el.windAloftMeta.textContent = 'Vir: Open-Meteo (ne ARSO) · naslednja 2 dni, vsake 3 ure';
+    el.windAloftList.innerHTML = buildWindAloftTable(aloft, (kmh) => Math.round(convertWindValue(kmh)), unitLabel);
   } catch (err) {
     if (state.windAloftRequestToken !== requestToken) return;
     el.windAloftMeta.textContent = 'Podatkov trenutno ni bilo mogoče naložiti.';

@@ -393,15 +393,23 @@ podvojeno kot ostala logika) – puščica kaže, OD KOD piha veter (npr.
 ### Veter po višini (🌬️)
 
 Prominenten razdelek takoj pod izbiro vzletišča/lokacije (na obeh
-straneh) prikaže dejanske podatke – ne le povezavo – za veter na petih
-tlačnih nivojih (1000/925/850/700/600 hPa, s približno nadmorsko višino
-po standardni atmosferi: ~110/760/1460/3010/4210 m). ARSO tega ne
-objavlja strojno berljivo (preverjeno prek GitHub Actions: napovedni API
-vrne le prizemne vrednosti; letalska stran SIGWX/GAFOR ponuja le
-grafične/besedilne produkte, brez JSON/XML/RSS vira) – zato podatke
-neposredno iz brskalnika pridobimo od **Open-Meteo** (`api.open-meteo.com`,
-brez API ključa, odprt CORS – `Access-Control-Allow-Origin: *`, potrjeno
-prek GitHub Actions z eksplicitno `Origin` glavo v zahtevi).
+straneh) prikaže dejanske podatke – ne le povezavo – za temperaturo in
+veter na šestih tlačnih nivojih. ARSO tega ne objavlja strojno berljivo
+(preverjeno prek GitHub Actions: napovedni API vrne le prizemne
+vrednosti; letalska stran SIGWX/GAFOR ponuja le grafične/besedilne
+produkte, brez JSON/XML/RSS vira) – zato podatke neposredno iz
+brskalnika pridobimo od **Open-Meteo** (`api.open-meteo.com`, brez API
+ključa, odprt CORS – `Access-Control-Allow-Origin: *`, potrjeno prek
+GitHub Actions z eksplicitno `Origin` glavo v zahtevi; potrjeno tudi, da
+poleg vetra vrne tudi temperaturo po nivojih, `temperature_XXXhPa`).
+
+Prikaz (tabela: nadmorska višina v vrsticah, čas v vodoravno drsnih
+stolpcih) posnema uporabnikov posnetek ARSO-jeve gorske vremenske
+aplikacije ("Vreme v gorah in hribih"). `WIND_ALOFT_LEVELS` uporablja 6
+"okroglih" tlačnih nivojev (950/900/850/800/700/600 hPa), katerih
+nadmorska višina po standardni atmosferi (ISA) najbližje ustreza
+500/1000/1500/2000/3000/4200 m – Open-Meteo ne podpira poljubnega hPa
+koraka, le standardni nabor.
 
 Ker je "Moja lokacija" poljubna GPS točka (ni je mogoče vnaprej zgraditi
 za vsako možnost, za razliko od 36 ARSO krajev zgoraj), ni strežniške
@@ -414,14 +422,17 @@ je zajamčeno pravo urno zaporedje od lokalne polnoči naprej, zato za
 "vsake 3 ure" preprosto vzamemo vsak 3. indeks (00.00, 03.00, 06.00 ...) –
 ni treba iskati najbližje točke kot pri neenakomerni SkyTech zgodovini.
 
-Za vsak od petih nivojev se izriše en `chart-block` (isti gradnik kot
-graf zgodovine postaje): vrstica puščic smeri (`buildDirectionArrowsSvg`,
-razširjen za surove stopinje – `.directionDeg` – poleg obstoječih
-angleških SkyTech kratic) nad linijskim grafom hitrosti (`buildLineChartSvg`,
-z oznakami vsake 3 ure). `state.windAloftRequestToken` prepreči, da bi
-počasnejši/starejši klic (npr. po hitri menjavi vzletišča) prepisal
-novejši rezultat. Pod grafi ostane povezava na **Windy.com** za podroben
-interaktiven profil, ki ga grafi ne poskušajo nadomestiti.
+`buildWindAloftTable` izriše eno tabelo z dvema razdelkoma (Temperatura,
+Veter) – prvi stolpec (nadmorska višina) je `position: sticky`, da ostane
+viden med vodoravnim drsenjem po 16 časovnih stolpcih (2 dni × 8 vsake 3
+ure). Vsaka celica vetra prikaže puščico (`transform: rotate(<stopinja>deg)`
+– gladko, brez zaokroževanja na 8 smeri, ker gre za surovo Open-Meteo
+stopinjo) in hitrost, obarvano po štiristopenjski lestvici (`windAloftSpeedClass`
+– modra/rumena/oranžna/rdeča, ločena od `rateWindClient`, ki je umerjena za
+prizemni polet 8–30 km/h, ne za morebiten jetstream čez 100 km/h na višjih
+nivojih). `state.windAloftRequestToken` prepreči, da bi počasnejši/starejši
+klic (npr. po hitri menjavi vzletišča) prepisal novejši rezultat. Pod
+tabelo ostane povezava na **Windy.com** za podroben interaktiven profil.
 
 Gumb "🗺️" poleg "Moja lokacija" odpre modalno okno z interaktivnim
 zemljevidom ([Leaflet](https://leafletjs.com/) + [OpenStreetMap](https://www.openstreetmap.org/)

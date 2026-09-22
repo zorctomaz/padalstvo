@@ -459,6 +459,59 @@ select:focus {
   margin-top: 8px;
 }
 
+/* Tabela vetra po višini - enako kot na prvi strani (glej style.css),
+   nadmorska višina v vrsticah, čas (vsake 3 ure, naslednja 2 dni) v
+   vodoravno drsnih stolpcih. */
+.wind-aloft-table-wrap {
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 2px solid var(--cyan-dim);
+}
+
+.wind-aloft-table {
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.wind-aloft-table th,
+.wind-aloft-table td {
+  padding: 6px 10px;
+  text-align: center;
+  border-bottom: 1px dotted var(--cyan-dim);
+}
+
+.wind-aloft-table thead th {
+  color: var(--cyan-dim);
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.wind-aloft-table th:first-child,
+.wind-aloft-table td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--dos-blue);
+  text-align: left;
+}
+
+.wind-aloft-table .wa-section th {
+  background: var(--dos-blue-dark);
+  color: var(--yellow);
+  text-align: left;
+  font-size: 1rem;
+  padding-top: 12px;
+}
+
+.wa-arrow {
+  display: inline-block;
+}
+
+.wa-blue { color: var(--cyan); }
+.wa-yellow { color: var(--yellow); }
+.wa-orange { color: var(--orange); }
+.wa-red { color: var(--red); }
+
 /* Zemljevid za izbiro lokacije (Leaflet) */
 .map-container {
   width: 100%;

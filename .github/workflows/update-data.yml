@@ -38,9 +38,6 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
-      - name: DEBUG - preveri Open-Meteo temperaturo po nivojih
-        run: node scripts/debug-open-meteo-temp.js
-
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si, SkyTech)
         env:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
