@@ -38,6 +38,9 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
+      - name: DEBUG - preveri veter na višini
+        run: node scripts/debug-wind-aloft.js
+
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si, SkyTech)
         env:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
