@@ -38,9 +38,6 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
-      - name: DEBUG - Trebnje napoved po dnevih
-        run: node scripts/debug-trebnje-forecast.js
-
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si, SkyTech)
         env:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
