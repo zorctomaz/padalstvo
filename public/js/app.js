@@ -1112,11 +1112,26 @@ function addSiteMarkersToMapPicker() {
  * in zastarele meritve (>24h) - glej SKYTECH_API_ISSUES.md in
  * computeNearbyStationsForPoint zgoraj.
  */
+/**
+ * Vse SkyTech postaje na zemljevidu (ne le tiste z meritvijo v zadnjih
+ * 24h) - izloči samo znane pokvarjene privzete koordinate (altitude 0,
+ * glej SKYTECH_API_ISSUES.md), ker bi te sicer prikazale postajo na
+ * povsem napačni lokaciji. Postaje brez sveže meritve so vizualno
+ * ločene (sivi, bolj prosojen pin - .map-pin-station-stale), da je jasno,
+ * da trenutno morda ne poročajo; klik nanje še vedno odpre podrobnosti
+ * (zadnja znana meritev, če obstaja).
+ */
 async function addStationMarkersToMapPicker() {
   const stations = await loadAllStations();
   if (!mapPickerMap) return; // uporabnik je medtem zaprl modal
-  const icon = L.divIcon({
+  const liveIcon = L.divIcon({
     html: '<div class="map-pin map-pin-station">📡</div>',
+    className: 'map-pin-wrapper',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+  const staleIcon = L.divIcon({
+    html: '<div class="map-pin map-pin-station map-pin-station-stale">📡</div>',
     className: 'map-pin-wrapper',
     iconSize: [22, 22],
     iconAnchor: [11, 11],
@@ -1128,8 +1143,8 @@ async function addStationMarkersToMapPicker() {
     const ageMinutes = s.measurement && s.measurement.time
       ? Math.round((now - new Date(s.measurement.time).getTime()) / 60000)
       : null;
-    if (ageMinutes == null || ageMinutes > NEARBY_MAX_AGE_MINUTES) continue;
-    L.marker([s.lat, s.lon], { icon, zIndexOffset: 300 })
+    const isLive = ageMinutes != null && ageMinutes <= NEARBY_MAX_AGE_MINUTES;
+    L.marker([s.lat, s.lon], { icon: isLive ? liveIcon : staleIcon, zIndexOffset: isLive ? 300 : 200 })
       .addTo(mapPickerMap)
       .on('click', () => {
         mapPickerSelectedStation = s;

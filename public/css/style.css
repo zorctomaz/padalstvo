@@ -459,6 +459,14 @@ select {
   border-color: var(--green);
 }
 
+/* Postaja brez meritve v zadnjih 24h - vseeno prikazana na zemljevidu
+   (uporabnik je zahteval VSE SkyTech postaje, ne le žive), a vizualno
+   ločena, da je jasno, da trenutno morda ne poroča. */
+.map-pin-station-stale {
+  border-color: var(--gray);
+  opacity: 0.7;
+}
+
 .map-confirm-btn {
   width: 100%;
 }

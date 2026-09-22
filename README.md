@@ -452,16 +452,24 @@ izključno prek `<script>`/`<link>` značk s SRI (`integrity`) preverjanjem
 firewall), gumb to jasno pove namesto da bi se aplikacija zrušila.
 
 Zemljevid ob odprtju prikaže tudi oznake vseh **uradnih vzletišč** (🪂,
-iz `data/sites.json`) in vseh **SkyTech vremenskih postaj** (📡, iz
-`data/skytech-stations.json` – enako izločanje pokvarjenih/zastarelih
-postaj kot pri izračunu bližnjih postaj, glej zgoraj), da lahko
-uporabnik izbere natanko eno od njih namesto slepega tapkanja po
-zemljevidu. Klik na katerokoli oznako takoj postavi izbirno (modro)
+iz `data/sites.json`) in **VSEH SkyTech vremenskih postaj** (📡, iz
+`data/skytech-stations.json` – vseh ~62, ne le tistih z meritvijo v
+zadnjih 24h), da lahko uporabnik izbere natanko eno od njih namesto
+slepega tapkanja po zemljevidu. Edino izločeno so postaje z znanimi
+pokvarjenimi privzetimi koordinatami (`altitude === 0`, glej
+SKYTECH_API_ISSUES.md) – te bi sicer prikazale postajo na povsem napačni
+lokaciji. Postaje brez sveže meritve (>24h) so vizualno ločene (bledejši,
+sivi pin – `.map-pin-station-stale`), da je jasno, da trenutno morda ne
+poročajo, a jih uporabnik še vedno vidi in lahko klikne (npr. za zadnjo
+znano meritev). Klik na katerokoli oznako takoj postavi izbirno (modro)
 oznako na to točko IN nad zemljevidom odpre okno s podatki:
 - 📡 postaja → trenutna meritev (veter/sunki/smer/temperatura, isti
   prikaz kot glavna "Živa postaja" kartica) + graf zgodovine, če je za
   to postajo na voljo (`openHistoryModal`, deli kodo z gumbom "Postaja"
-  na prvi strani).
+  na prvi strani) – zgodovina je vnaprej zgrajena le za postaje, povezane
+  z enim od 12 vzletišč (glej razdelek "Graf zgodovine postaje" spodaj),
+  zato je za marsikatero od zdaj dodatno prikazanih (oddaljenih) postaj
+  morda ni na voljo, čeprav je trenutna meritev vseeno prikazana.
 - 🪂 vzletišče → podatki o vzletišču (nadmorska višina, primerna smer
   vzleta, stanje žive postaje, opombe) + gumb za prikaz polne napovedi
   na prvi strani (`openSiteInfoModal`).
