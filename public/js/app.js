@@ -65,6 +65,7 @@ const el = {
   nearbyCard: document.getElementById('nearbyCard'),
   nearbyContent: document.getElementById('nearbyContent'),
   forecastSection: document.getElementById('forecastSection'),
+  forecastSourceInfo: document.getElementById('forecastSourceInfo'),
   dayTabs: document.getElementById('dayTabs'),
   xcSummary: document.getElementById('xcSummary'),
   timeline: document.getElementById('timeline'),
@@ -1313,11 +1314,31 @@ function renderNearby(data) {
   el.nearbyCard.hidden = false;
 }
 
+/**
+ * ARSO napoved (data.forecast[].timeline[].windDirection) uporablja
+ * slovenske smerne okrajšave (glej SI_DIRECTION_TO_DEG v
+ * src/paragliding.js: S=sever/0°, V=vzhod/90°, J=jug/180°, Z=zahod/270°,
+ * standardna kompasna orientacija - sever gor, vzhod desno). Puščica kaže,
+ * OD KOD piha veter (npr. S → ↑, "od severa") - enaka konvencija kot pri
+ * puščicah smeri v zgodovini postaje (glej COMPASS_TO_DEG/
+ * buildDirectionArrowsSvg zgoraj, ki pa uporablja angleške SkyTech kratice).
+ */
+const WIND_ARROW_BY_SI_DIRECTION = {
+  S: '↑', SSV: '↑', SV: '↗', VSV: '↗', V: '→', VJV: '→', JV: '↘', JJV: '↘',
+  J: '↓', JJZ: '↓', JZ: '↙', ZJZ: '↙', Z: '←', ZSZ: '←', SZ: '↖', SSZ: '↖',
+};
+
+function windArrow(direction) {
+  return direction ? (WIND_ARROW_BY_SI_DIRECTION[direction] || '') : '';
+}
+
 function renderForecast(data) {
   if (!data.forecast || data.forecast.length === 0) {
     el.forecastSection.hidden = true;
     return;
   }
+  const arsoSourceName = data.myLocationMode ? data.arsoLocationName : (data.site && data.site.arsoLocation);
+  el.forecastSourceInfo.textContent = arsoSourceName ? `Vir: ARSO napoved za ${arsoSourceName}` : '';
   state.activeDayIndex = 0;
   el.dayTabs.innerHTML = data.forecast
     .map((day, i) => `<button class="day-tab${i === 0 ? ' active' : ''}" data-index="${i}">${formatDayLabel(day.date)}</button>`)
@@ -1376,7 +1397,7 @@ function renderTimeline(day) {
           <div class="timeline-time">${formatTime(entry.time)}</div>
           <div class="timeline-detail">
             ${entry.temperatureC != null ? entry.temperatureC + '°C' : '—'} ·
-            ${entry.windSpeedKmh != null ? formatWind(entry.windSpeedKmh) : '—'}${entry.windDirection ? ' ' + entry.windDirection : ''}
+            ${entry.windSpeedKmh != null ? formatWind(entry.windSpeedKmh) : '—'}${entry.windDirection ? ' ' + entry.windDirection + ' ' + windArrow(entry.windDirection) : ''}
             ${entry.windGustKmh != null ? ' (sunki ' + formatWind(entry.windGustKmh) + ')' : ''} ·
             ${entry.cloudCover || ''}
           </div>

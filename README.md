@@ -378,7 +378,16 @@ v brskalniku iz tega manifesta izbere najbližji kraj DEJANSKI GPS točki,
 po `slug`-u) in z njo prepiše `data.forecast` ter povezavo na ARSO-jev
 graf napovedi – enako v `public/js/app.js` in `public/js/preprosto.js`.
 
-### Izbira lokacije na zemljevidu (🗺️)
+Nad večdnevno napovedjo (`#forecastSourceInfo` na prvi strani,
+`#forecastMeta` na poenostavljeni podstrani) je izpisan ARSO **kraj**, za
+katerega napoved dejansko velja (`data.arsoLocationName` v načinu "Moja
+lokacija", sicer `data.site.arsoLocation` – slednje mora izpostaviti tudi
+`buildParaglidingSummary`, glej `src/paragliding.js`). Vsak vnos v urnem
+pregledu (prva stran) in vsak dan v tabeli (poenostavljena podstran, ob
+najmočnejšem vetru tistega dne) poleg besedilne smeri vetra prikaže tudi
+**puščico** (`windArrow`/`WIND_ARROW_BY_SI_DIRECTION` v obeh JS datotekah,
+podvojeno kot ostala logika) – puščica kaže, OD KOD piha veter (npr.
+"S" → ↑, "od severa"; standardna kompasna orientacija, sever gor).
 
 Gumb "🗺️" poleg "Moja lokacija" odpre modalno okno z interaktivnim
 zemljevidom ([Leaflet](https://leafletjs.com/) + [OpenStreetMap](https://www.openstreetmap.org/)

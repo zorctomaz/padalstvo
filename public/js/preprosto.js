@@ -42,6 +42,7 @@ const el = {
   nearbyBlock: document.getElementById('nearbyBlock'),
   nearbyList: document.getElementById('nearbyList'),
   forecastBlock: document.getElementById('forecastBlock'),
+  forecastMeta: document.getElementById('forecastMeta'),
   forecastBody: document.getElementById('forecastBody'),
   linksBlock: document.getElementById('linksBlock'),
   linksList: document.getElementById('linksList'),
@@ -257,6 +258,20 @@ function metricBox(label, value, pill) {
       ${pill ? `<div class="${pillClass(pill.color)}">${pill.label}</div>` : ''}
     </div>
   `;
+}
+
+/**
+ * Enako kot v app.js - ARSO napoved uporablja slovenske smerne okrajšave
+ * (S=sever/0°, V=vzhod/90°, J=jug/180°, Z=zahod/270°, standardna kompasna
+ * orientacija). Puščica kaže, OD KOD piha veter (npr. S → ↑, "od severa").
+ */
+const WIND_ARROW_BY_SI_DIRECTION = {
+  S: '↑', SSV: '↑', SV: '↗', VSV: '↗', V: '→', VJV: '→', JV: '↘', JJV: '↘',
+  J: '↓', JJZ: '↓', JZ: '↙', ZJZ: '↙', Z: '←', ZSZ: '←', SZ: '↖', SSZ: '↖',
+};
+
+function windArrow(direction) {
+  return direction ? (WIND_ARROW_BY_SI_DIRECTION[direction] || '') : '';
 }
 
 /**
@@ -784,20 +799,30 @@ function renderForecast(data) {
     el.forecastBlock.hidden = true;
     return;
   }
+  const arsoSourceName = data.myLocationMode ? data.arsoLocationName : (data.site && data.site.arsoLocation);
+  el.forecastMeta.textContent = arsoSourceName ? `Vir: ARSO napoved za ${arsoSourceName}` : '';
   el.forecastBody.innerHTML = data.forecast
     .map((day) => {
       const temps = day.timeline.map((e) => e.temperatureC).filter((t) => t !== null && t !== undefined);
-      const winds = day.timeline.map((e) => e.windSpeedKmh).filter((w) => w !== null && w !== undefined);
-      const tMin = temps.length ? Math.round(Math.min(...temps)) : null;
-      const tMax = temps.length ? Math.round(Math.max(...temps)) : null;
-      const wMax = winds.length ? Math.round(Math.max(...winds)) : null;
       const rain = day.timeline.some((e) => e.precipitationMm !== null && e.precipitationMm !== undefined && e.precipitationMm > 1);
       const xc = day.thermalWindow && day.thermalWindow.xc;
+      // Smer vetra ob najmočnejšem vetru čez dan - reprezentativna smer,
+      // saj se čez dan lahko spreminja (glej WIND_ARROW_BY_SI_DIRECTION).
+      let windPeak = null;
+      for (const e of day.timeline) {
+        if (e.windSpeedKmh == null) continue;
+        if (!windPeak || e.windSpeedKmh > windPeak.windSpeedKmh) windPeak = e;
+      }
+      const tMin = temps.length ? Math.round(Math.min(...temps)) : null;
+      const tMax = temps.length ? Math.round(Math.max(...temps)) : null;
+      const windText = windPeak
+        ? `do ${Math.round(windPeak.windSpeedKmh)} km/h${windPeak.windDirection ? ' ' + windArrow(windPeak.windDirection) : ''}`
+        : '—';
       return `
         <tr>
           <td>${formatDayLabel(day.date)}</td>
           <td>${tMin !== null ? tMin + '–' + tMax + '°C' : '—'}</td>
-          <td>${wMax !== null ? 'do ' + wMax + ' km/h' : '—'}</td>
+          <td>${windText}</td>
           <td>${xc ? `<span class="${pillClass(xc.color)}">${xc.label}</span>` : '—'}</td>
           <td>${rain ? '🌧️' : '—'}</td>
         </tr>
