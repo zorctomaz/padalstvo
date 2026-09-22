@@ -38,6 +38,9 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
+      - name: DEBUG - preveri podprte ARSO lokacije
+        run: node scripts/debug-arso-locations.js
+
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si, SkyTech)
         env:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
