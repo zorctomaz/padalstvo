@@ -167,6 +167,13 @@ select:focus {
   color: var(--dos-blue);
 }
 
+/* .btn-big postavi display:block, ki bi sicer prevladal nad privzetim
+   UA pravilom [hidden]{display:none} (enaka specifičnost, avtorski slog
+   zmaga) - brez tega bi bil element viden kljub atributu hidden. */
+.btn-big[hidden] {
+  display: none;
+}
+
 .status-box {
   margin: 0 10px 16px;
   padding: 12px 14px;

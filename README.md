@@ -40,7 +40,7 @@ za pilote:
 | **ARSO letalsko vreme** – `meteo.si/met/sl/aviation/` | GAFOR, SIGWX, karte vetra na višini | Aplikacija povezuje neposredno na uradno stran (grafični/besedilni produkti, primerni za odpiranje, ne za avtomatsko razčlenjevanje) |
 | **SFFA telefonski odzivniki** | Žive vremenske postaje (veter v realnem času) na nekaterih vzletiščih | Za vzletišča s potrjeno postajo aplikacija prikaže telefonsko številko odzivnika (vir: SFFA – Zveza za prosto letenje) kot dodaten/varnostni vir |
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
-| **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model | Dodatna povezava na koordinato vzletišča – ARSO/meteo.si javno ne objavlja strojno berljivih kart vetra na višini, zato je Windy pragmatična dopolnitev |
+| **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model | Prominenten gumb "🌬️ Veter na višini" takoj pod izbiro vzletišča/lokacije (na koordinato vzletišča ali, v načinu "Moja lokacija", uporabnikovo dejansko GPS točko) – ARSO/meteo.si javno ne objavlja strojno berljivih kart vetra na višini (preverjeno prek GitHub Actions: napovedni API vrne le prizemne vrednosti, letalska stran SIGWX/GAFOR ponuja le grafične/besedilne produkte, brez JSON/XML/RSS vira), zato je Windy edini praktični vir |
 
 ### Ocene, specifične za jadralno padalstvo
 

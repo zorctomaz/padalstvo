@@ -64,6 +64,8 @@ const el = {
   arsoThermalList: document.getElementById('arsoThermalList'),
   nearbyCard: document.getElementById('nearbyCard'),
   nearbyContent: document.getElementById('nearbyContent'),
+  windAloftCard: document.getElementById('windAloftCard'),
+  windAloftLink: document.getElementById('windAloftLink'),
   forecastSection: document.getElementById('forecastSection'),
   forecastSourceInfo: document.getElementById('forecastSourceInfo'),
   dayTabs: document.getElementById('dayTabs'),
@@ -539,6 +541,13 @@ async function showMyLocationWeather(nearest, station) {
         arsoSourceLabel = `${nearestArso.location.name} (${nearestArso.distanceKm} km)`;
       }
     }
+    // Windy potrebuje natančne koordinate - v načinu "Moja lokacija" naj
+    // kaže veter na višini za uporabnikovo dejansko točko, ne za
+    // najbližje uradno vzletišče.
+    data.links = {
+      ...data.links,
+      windAloft: `https://www.windy.com/${state.userCoords.lat}/${state.userCoords.lon}?wind,${state.userCoords.lat},${state.userCoords.lon},10`,
+    };
     el.distanceInfo.textContent = station
       ? `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
         `· izbrana živa postaja: ${station.name} · ARSO napoved: ${arsoSourceLabel}`
@@ -1452,8 +1461,26 @@ function renderSources(data) {
   }
 }
 
+/**
+ * Prominentna povezava na Windy.com (veter po višinah/hPa nivojih) - ARSO
+ * te podatke ne objavlja strojno berljivo (preverjeno prek GitHub Actions:
+ * napovedni API vrne le prizemne vrednosti, letalska stran pa nima
+ * dostopnega vira - SIGWX/GAFOR so grafični produkti), zato je Windy edini
+ * praktični vir. Doslej je bila ta povezava zakopana na dnu seznama
+ * povezav; zdaj je lasten gumb takoj pod izbiro vzletišča.
+ */
+function renderWindAloft(data) {
+  if (!data.links || !data.links.windAloft) {
+    el.windAloftCard.hidden = true;
+    return;
+  }
+  el.windAloftLink.href = data.links.windAloft;
+  el.windAloftCard.hidden = false;
+}
+
 function renderWeather(data) {
   state.weather = data;
+  renderWindAloft(data);
   renderSkytech(data);
   renderCurrent(data);
   renderNearbyStations(data);

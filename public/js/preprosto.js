@@ -29,6 +29,7 @@ const el = {
   siteSelect: document.getElementById('siteSelect'),
   locateBtn: document.getElementById('locateBtn'),
   mapPickerBtn: document.getElementById('mapPickerBtn'),
+  windAloftLink: document.getElementById('windAloftLink'),
   statusBox: document.getElementById('statusBox'),
   currentBlock: document.getElementById('currentBlock'),
   siteName: document.getElementById('siteName'),
@@ -849,8 +850,23 @@ function renderLinks(data) {
   el.linksBlock.hidden = false;
 }
 
+/**
+ * Enako kot v app.js - prominenten gumb na vrhu namesto zakopane povezave
+ * na dnu seznama (ARSO ne objavlja vetra po višini strojno berljivo,
+ * preverjeno prek GitHub Actions, zato je Windy edini praktični vir).
+ */
+function renderWindAloft(data) {
+  if (!data.links || !data.links.windAloft) {
+    el.windAloftLink.hidden = true;
+    return;
+  }
+  el.windAloftLink.href = data.links.windAloft;
+  el.windAloftLink.hidden = false;
+}
+
 function renderAll(data) {
   state.lastData = data;
+  renderWindAloft(data);
   renderCurrent(data);
   renderThermal(data);
   renderNearby(data);
@@ -936,6 +952,13 @@ async function showMyLocationWeather(nearest, station) {
         };
       }
     }
+    // Windy potrebuje natančne koordinate - v načinu "Moja lokacija" naj
+    // kaže veter na višini za uporabnikovo dejansko točko, ne za
+    // najbližje uradno vzletišče.
+    data.links = {
+      ...data.links,
+      windAloft: `https://www.windy.com/${state.userCoords.lat}/${state.userCoords.lon}?wind,${state.userCoords.lat},${state.userCoords.lon},10`,
+    };
 
     renderAll(data);
     setStatus(null);
