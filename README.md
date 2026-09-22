@@ -333,11 +333,14 @@ DEJANSKO GPS točko, ne glede na to, ali gre za uradno vzletišče in ali
 je v bližini potrjena živa postaja:
 
 - **Večdnevna ARSO napoved** (temperatura/oblačnost/padavine/veter) se
-  še vedno pridobi prek najbližjega ARSO-podprtega mesta (ARSO API
-  podpira le imena krajev, ne poljubnih GPS koordinat – glej opombo o
-  `arsoLocation` zgoraj), a je jasno označena kot "regijski približek",
-  z navedbo vira in razdalje, namesto da bi se pretvarjala, da je
-  uporabnik na tistem vzletišču.
+  pridobi prek ARSO-podprtega mesta, ki je najbližje uporabnikovi
+  DEJANSKI GPS točki (ARSO API podpira le imena krajev, ne poljubnih GPS
+  koordinat – glej opombo o `arsoLocation` zgoraj) – NE prek mesta,
+  dodeljenega najbližjemu URADNEMU vzletišču (`site.arsoLocation` je
+  izbran za to vzletišče in ni nujno najbližji poljubni drugi točki v
+  okolici – enak vzorec popravka kot pri ARSO regiji termike spodaj).
+  Prikaz je jasno označen kot "regijski približek", z navedbo
+  dejanskega vira in razdalje.
 - **Žive SkyTech postaje v bližini** se preračunajo neposredno iz
   uporabnikovih GPS koordinat (do 25 km, enak filter/logika kot zgoraj,
   vključno z zaščito pred pokvarjenimi vnosi), ne iz koordinat
@@ -359,6 +362,21 @@ naloži v brskalniku in zanj zrcali `haversineKm`, `rateWind` in
 bližnje postaje za POLJUBNO GPS točko brez dodatnega strežniškega
 klica – to je edini način, ki deluje tudi na povsem statičnem GitHub
 Pages gostovanju brez žive backend poti.
+
+Enak vzorec za samo ARSO napoved: `src/arso-locations.js` (`ARSO_LOCATIONS`)
+vsebuje 36 krajev, za katere je ARSO-jev napovedni API dejansko potrjeno
+podprt (preizkušeno prek GitHub Actions – glej opombo v datoteki, katerih
+~10 preizkušenih kandidatov je vrnilo HTTP 404), vsak s približnimi
+koordinatami. `scripts/build-data.js` (`buildArsoLocations`) ob vsaki
+izgradnji za VSAK od teh krajev pridobi napoved (`fetchArsoForecast` +
+`buildGenericLocationForecast` iz `src/paragliding.js` – enak povzetek kot
+za vzletišče, le brez podatkov, vezanih nanj) in jo zapiše v
+`public/data/arso/<slug>.json`, ter majhen manifest (ime/slug/koordinate/
+uspešnost) v `public/data/arso-locations.json`. `computeNearestArsoLocation`
+v brskalniku iz tega manifesta izbere najbližji kraj DEJANSKI GPS točki,
+`loadArsoLocationForecast` lenobno naloži njegovo napoved (predpomnjeno
+po `slug`-u) in z njo prepiše `data.forecast` ter povezavo na ARSO-jev
+graf napovedi – enako v `public/js/app.js` in `public/js/preprosto.js`.
 
 ### Izbira lokacije na zemljevidu (🗺️)
 

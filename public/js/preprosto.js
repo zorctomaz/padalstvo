@@ -18,6 +18,8 @@ const state = {
   userCoords: null,
   allStations: null,
   thermalRegions: null,
+  arsoLocations: null,
+  arsoLocationForecastCache: new Map(),
   lastData: null,
   stationHistoryCache: new Map(),
   currentHistoryStationId: null,
@@ -181,6 +183,55 @@ function computeNearestThermalRegion(regions, lat, lon) {
     }
   }
   return best;
+}
+
+async function loadArsoLocations() {
+  if (state.arsoLocations) return state.arsoLocations;
+  try {
+    const res = await fetch('data/arso-locations.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    state.arsoLocations = data.locations || [];
+  } catch (_) {
+    state.arsoLocations = [];
+  }
+  return state.arsoLocations;
+}
+
+/**
+ * Enako kot v app.js - NE sme si izposoditi ARSO kraja, dodeljenega
+ * najbližjemu URADNEMU vzletišču (site.arsoLocation je izbran za to
+ * vzletišče, ni nujno najbližji poljubni drugi točki v okolici), ampak
+ * najde najbližji ARSO-podprt kraj (glej src/arso-locations.js) iz prave
+ * GPS točke.
+ */
+function computeNearestArsoLocation(locations, lat, lon) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const loc of locations) {
+    if (loc.ok === false) continue;
+    const d = haversineKm(lat, lon, loc.lat, loc.lon);
+    if (d < bestDist) {
+      bestDist = d;
+      best = loc;
+    }
+  }
+  return best ? { location: best, distanceKm: Math.round(bestDist * 10) / 10 } : null;
+}
+
+async function loadArsoLocationForecast(slug) {
+  if (state.arsoLocationForecastCache.has(slug)) {
+    return state.arsoLocationForecastCache.get(slug);
+  }
+  try {
+    const res = await fetch(`data/arso/${slug}.json`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    state.arsoLocationForecastCache.set(slug, data);
+    return data;
+  } catch (_) {
+    return null;
+  }
 }
 
 function pillClass(color) {
@@ -647,10 +698,12 @@ function closeMapPicker() {
 
 function renderCurrent(data) {
   el.siteName.textContent = data.myLocationMode ? '📍 Tvoja lokacija' : data.site.name;
+  const arsoSourceName = data.arsoLocationName || data.site.name;
+  const arsoSourceKm = data.arsoLocationDistanceKm != null ? data.arsoLocationDistanceKm : data.distanceKm;
   const regionText = data.myLocationMode
     ? data.stationMode
-      ? `izbrana živa postaja: ${data.skytech.stationName}`
-      : `najbližji vir ARSO napovedi: ${data.site.name} (${data.distanceKm} km)`
+      ? `izbrana živa postaja: ${data.skytech.stationName} · ARSO napoved: ${arsoSourceName} (${arsoSourceKm} km)`
+      : `najbližji vir ARSO napovedi: ${arsoSourceName} (${arsoSourceKm} km)`
     : `${data.site.region} · ${data.site.elevation} m n.v.`;
   el.siteMeta.textContent = regionText;
 
@@ -839,6 +892,25 @@ async function showMyLocationWeather(nearest, station) {
     const thermalRegions = await loadThermalRegions();
     const nearestThermalRegion = computeNearestThermalRegion(thermalRegions, state.userCoords.lat, state.userCoords.lon);
     if (nearestThermalRegion) data.thermalForecastArso = nearestThermalRegion;
+
+    // Uradna ARSO napoved (temperatura/veter/padavine/večdnevna tabela)
+    // mora ustrezati uporabnikovi DEJANSKI točki, ne najbližjemu URADNEMU
+    // vzletišču - zato jo tu prepišemo z napovedjo za najbližji ARSO-podprt
+    // kraj (glej computeNearestArsoLocation zgoraj in src/arso-locations.js).
+    const arsoLocations = await loadArsoLocations();
+    const nearestArso = computeNearestArsoLocation(arsoLocations, state.userCoords.lat, state.userCoords.lon);
+    if (nearestArso) {
+      const forecast = await loadArsoLocationForecast(nearestArso.location.slug);
+      if (forecast && forecast.ok) {
+        data.forecast = forecast.days;
+        data.arsoLocationName = nearestArso.location.name;
+        data.arsoLocationDistanceKm = nearestArso.distanceKm;
+        data.links = {
+          ...data.links,
+          arsoForecastPage: `https://vreme.arso.gov.si/napoved/${encodeURIComponent(nearestArso.location.name)}/graf`,
+        };
+      }
+    }
 
     renderAll(data);
     setStatus(null);

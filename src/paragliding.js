@@ -323,6 +323,44 @@ function summarizeTimelineEntry(entry, site) {
   };
 }
 
+/**
+ * Enak povzetek kot buildParaglidingSummary().forecast, a za en sam ARSO
+ * "kraj" (glej src/arso-locations.js), NE za konkretno vzletišče - torej
+ * brez podatkov, ki so vezani na vzletišče (potrjena primerna smer
+ * vzleta, nadmorska višina vzletišča). launchWindDirections zato ostane
+ * null (rateLaunchAlignment vrne "ni potrjena" - v "Moja lokacija"
+ * načinu se ta podatek itak ne prikaže), elevation pa 0 (baza oblakov se
+ * prikaže kot višina n.m., ne "nad vzletiščem" - glej klicatelja).
+ *
+ * Uporabljeno za "Moja lokacija"/izbiro na zemljevidu: uradna ARSO
+ * napoved naj se prikaže za NAJBLIŽJI ARSO-podprt kraj glede na
+ * uporabnikovo dejansko GPS točko, ne za kraj, ki je (iz drugih
+ * razlogov, npr. bližine drugemu vzletišču) dodeljen najbližjemu
+ * URADNEMU vzletišču.
+ */
+function buildGenericLocationForecast(arsoResult, locationMeta) {
+  const genericSite = { elevation: 0, launchWindDirections: null };
+  const days = (arsoResult.days || []).map((day) => {
+    const timeline = day.timeline.map((entry) => summarizeTimelineEntry(entry, genericSite));
+    return {
+      date: day.date,
+      timeline,
+      thermalWindow: estimateThermalWindow({ timeline }),
+    };
+  });
+  return {
+    name: locationMeta.name,
+    slug: locationMeta.slug,
+    lat: locationMeta.lat,
+    lon: locationMeta.lon,
+    generatedAt: new Date().toISOString(),
+    ok: arsoResult.ok,
+    sourceUrl: arsoResult.sourceUrl,
+    error: arsoResult.ok ? null : (arsoResult.error || 'Ni podatkov iz ARSO napovedi.'),
+    days,
+  };
+}
+
 function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult, skytechStation, allStations, thermalForecastArso }) {
   const arso =
     arsoResult.status === 'fulfilled'
@@ -409,6 +447,7 @@ function buildParaglidingSummary({ site, distanceKm, arsoResult, opendataResult,
 
 module.exports = {
   buildParaglidingSummary,
+  buildGenericLocationForecast,
   estimateCloudBaseM,
   rateWind,
   estimateThermalIndex,

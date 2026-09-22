@@ -33,6 +33,8 @@ const state = {
   myLocationMode: false,
   allStations: null,
   thermalRegions: null,
+  arsoLocations: null,
+  arsoLocationForecastCache: new Map(),
   nightOverride: false,
   stationHistoryCache: new Map(),
   currentHistoryStationId: null,
@@ -325,6 +327,55 @@ function findNearestSite(lat, lon) {
   return { site: best, distanceKm: Math.round(bestDist * 10) / 10 };
 }
 
+async function loadArsoLocations() {
+  if (state.arsoLocations) return state.arsoLocations;
+  try {
+    const res = await fetch('data/arso-locations.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    state.arsoLocations = data.locations || [];
+  } catch (_) {
+    state.arsoLocations = [];
+  }
+  return state.arsoLocations;
+}
+
+/**
+ * Najbližji ARSO-podprt kraj (glej src/arso-locations.js) za poljubno GPS
+ * točko - NE sme si izposoditi kraja, dodeljenega najbližjemu URADNEMU
+ * vzletišču (site.arsoLocation je izbran za to vzletišče, ni nujno
+ * najbližji poljubni drugi točki v okolici - isti vzorec popravka kot pri
+ * computeNearestThermalRegion zgoraj).
+ */
+function computeNearestArsoLocation(locations, lat, lon) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const loc of locations) {
+    if (loc.ok === false) continue;
+    const d = haversineKm(lat, lon, loc.lat, loc.lon);
+    if (d < bestDist) {
+      bestDist = d;
+      best = loc;
+    }
+  }
+  return best ? { location: best, distanceKm: Math.round(bestDist * 10) / 10 } : null;
+}
+
+async function loadArsoLocationForecast(slug) {
+  if (state.arsoLocationForecastCache.has(slug)) {
+    return state.arsoLocationForecastCache.get(slug);
+  }
+  try {
+    const res = await fetch(`data/arso/${slug}.json`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    state.arsoLocationForecastCache.set(slug, data);
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
 function setStatus(message, type) {
   if (!message) {
     el.statusBox.hidden = true;
@@ -377,11 +428,10 @@ function useLocation(lat, lon, altitude, station) {
   const nearest = findNearestSite(lat, lon);
   if (nearest.site) {
     el.siteSelect.value = nearest.site.id;
-    el.distanceInfo.textContent = station
-      ? `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)} ` +
-        `· izbrana živa postaja: ${station.name}`
-      : `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)} ` +
-        `· najbližji vir ARSO napovedi: ${nearest.site.name} (${nearest.distanceKm} km)`;
+    // Končno besedilo (z natančnim virom ARSO napovedi) se izpiše šele v
+    // showMyLocationWeather, ko je znan najbližji ARSO-podprt kraj - do
+    // takrat prikažemo le koordinate.
+    el.distanceInfo.textContent = `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
     showMyLocationWeather(nearest, station);
   } else {
     el.distanceInfo.textContent =
@@ -468,6 +518,32 @@ async function showMyLocationWeather(nearest, station) {
     );
     if (nearestThermalRegion) data.thermalForecastArso = nearestThermalRegion;
 
+    // Uradna ARSO napoved (temperatura/veter/padavine/večdnevna tabela)
+    // mora ustrezati uporabnikovi DEJANSKI točki, ne najbližjemu URADNEMU
+    // vzletišču - zato jo tu prepišemo z napovedjo za najbližji ARSO-podprt
+    // kraj (glej computeNearestArsoLocation zgoraj in src/arso-locations.js).
+    const arsoLocations = await loadArsoLocations();
+    const nearestArso = computeNearestArsoLocation(arsoLocations, state.userCoords.lat, state.userCoords.lon);
+    let arsoSourceLabel = `${nearest.site.name} (${nearest.distanceKm} km)`;
+    if (nearestArso) {
+      const forecast = await loadArsoLocationForecast(nearestArso.location.slug);
+      if (forecast && forecast.ok) {
+        data.forecast = forecast.days;
+        data.arsoLocationName = nearestArso.location.name;
+        data.arsoLocationDistanceKm = nearestArso.distanceKm;
+        data.links = {
+          ...data.links,
+          arsoForecastPage: `https://vreme.arso.gov.si/napoved/${encodeURIComponent(nearestArso.location.name)}/graf`,
+        };
+        arsoSourceLabel = `${nearestArso.location.name} (${nearestArso.distanceKm} km)`;
+      }
+    }
+    el.distanceInfo.textContent = station
+      ? `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
+        `· izbrana živa postaja: ${station.name} · ARSO napoved: ${arsoSourceLabel}`
+      : `📍 Tvoja lokacija: ${state.userCoords.lat.toFixed(4)}, ${state.userCoords.lon.toFixed(4)} ` +
+        `· najbližji vir ARSO napovedi: ${arsoSourceLabel}`;
+
     state.myLocationMode = true;
     state.currentSiteId = nearest.site.id;
     renderWeather(data);
@@ -530,8 +606,10 @@ function renderCurrent(data) {
       ? `${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}` +
         (coords.altitude != null ? ` · ${Math.round(coords.altitude)} m n.m. (GPS)` : '')
       : '';
+    const arsoSourceName = data.arsoLocationName || data.site.name;
+    const arsoSourceKm = data.arsoLocationDistanceKm != null ? data.arsoLocationDistanceKm : data.distanceKm;
     el.currentSiteMeta.textContent +=
-      ` · napoved je regijski približek (vir: ${data.site.name}, ${data.distanceKm} km stran) – ` +
+      ` · napoved je regijski približek (vir: ${arsoSourceName}, ${arsoSourceKm} km stran) – ` +
       'ni nujno uradno vzletišče niti ni v bližini potrjena žive postaje.';
   } else {
     el.currentSiteName.textContent = `${data.site.name} (${data.site.elevation} m)`;

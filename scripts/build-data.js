@@ -17,13 +17,15 @@ const { execSync } = require('child_process');
 const sites = require('../src/sites.json');
 const { fetchArsoForecast } = require('../src/arso');
 const { fetchOpendataReport } = require('../src/opendata');
-const { buildParaglidingSummary } = require('../src/paragliding');
+const { buildParaglidingSummary, buildGenericLocationForecast } = require('../src/paragliding');
 const { fetchAllStations, fetchStationHistory } = require('../src/skytech');
 const { fetchAllThermalRegions, REGION_CENTERS } = require('../src/arso-thermal');
+const { ARSO_LOCATIONS } = require('../src/arso-locations');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
 const HISTORY_DIR = path.join(DATA_DIR, 'history');
+const ARSO_DIR = path.join(DATA_DIR, 'arso');
 const HISTORY_LEN = 100; // API max (glej src/skytech.js) - ~16-17h pri poročanju vsakih ~10 min, ne polnih 24h
 
 /**
@@ -76,6 +78,37 @@ async function buildSite(site, stationById, allStations, thermalRegions) {
     thermalForecastArso,
   });
   return summary;
+}
+
+/**
+ * Napoved za vsak ARSO-podprt kraj posebej (glej src/arso-locations.js),
+ * NE za posamezno vzletišče - za "Moja lokacija"/izbiro na zemljevidu,
+ * kjer mora biti uradna ARSO napoved prikazana za kraj, ki je najbližji
+ * uporabnikovi DEJANSKI GPS točki, ne za kraj, ki je dodeljen najbližjemu
+ * URADNEMU vzletišču (site.arsoLocation je izbran za to vzletišče, ni
+ * nujno najbližji poljubni drugi točki v okolici).
+ *
+ * fetchArsoForecast() rezultate predpomni po URL-ju (glej src/fetchUtil.js,
+ * TTL 10 min > trajanje celotne izgradnje) - klici za imena, ki jih
+ * uporablja tudi kakšno vzletišče (npr. "Ljubljana"), zato ne podvojijo
+ * omrežnega klica.
+ */
+async function buildArsoLocations() {
+  fs.mkdirSync(ARSO_DIR, { recursive: true });
+  const manifest = [];
+  let ok = 0;
+  for (const loc of ARSO_LOCATIONS) {
+    const arsoResult = await fetchArsoForecast(loc.name);
+    const forecast = buildGenericLocationForecast(arsoResult, loc);
+    fs.writeFileSync(path.join(ARSO_DIR, `${loc.slug}.json`), JSON.stringify(forecast, null, 2));
+    manifest.push({ name: loc.name, slug: loc.slug, lat: loc.lat, lon: loc.lon, ok: forecast.ok });
+    if (forecast.ok) ok++;
+  }
+  fs.writeFileSync(
+    path.join(DATA_DIR, 'arso-locations.json'),
+    JSON.stringify({ generatedAt: new Date().toISOString(), locations: manifest }, null, 2)
+  );
+  return { ok, total: ARSO_LOCATIONS.length };
 }
 
 async function buildStationHistories(stationIds) {
@@ -151,6 +184,10 @@ async function main() {
       2
     )
   );
+
+  process.stdout.write(`Pridobivam ARSO napoved za ${ARSO_LOCATIONS.length} podprtih krajev (za "Moja lokacija")... `);
+  const arsoLocationsResult = await buildArsoLocations();
+  console.log(`OK(${arsoLocationsResult.ok}/${arsoLocationsResult.total})`);
 
   const results = [];
   const relevantStationIds = new Set();
