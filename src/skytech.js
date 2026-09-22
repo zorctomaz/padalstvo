@@ -100,11 +100,14 @@ async function fetchAllStations() {
 /**
  * Zgodovina meritev ene postaje (primer uporabe 2 v dokumentaciji:
  * `?id=<postaja>&len=<n>`), za prikaz grafa vetra/temperature zadnjih
- * nekaj ur. Postaje poročajo ~vsakih 10 min, zato `len=48` pokrije
- * približno zadnjih 8 ur. API vrne najnovejšo meritev prvo – tu jih
- * obrnemo v kronološki vrstni red (najstarejša prva), primeren za graf.
+ * nekaj ur. API dokumentacija navaja `len` največ 100 - to NI dovolj za
+ * polnih 24h (postaje poročajo ~vsakih 10 min, torej 100 meritev pokrije
+ * približno 16-17h, ne celega dneva; API ne ponuja straničenja za starejše
+ * podatke, zato več kot ene same zahteve ne pomaga). Uporabljamo torej
+ * maksimalno dovoljeno vrednost. API vrne najnovejšo meritev prvo – tu
+ * jih obrnemo v kronološki vrstni red (najstarejša prva), primeren za graf.
  */
-async function fetchStationHistory(stationId, len = 48) {
+async function fetchStationHistory(stationId, len = 100) {
   const token = process.env.SKYTECH_API_TOKEN;
   if (!token) {
     return {

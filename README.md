@@ -351,10 +351,12 @@ sunki) in temperature za zadnjih nekaj ur** za tisto postajo.
   (do 100, privzeto 20), potrjeno iz uradne dokumentacije. Postaje
   poročajo približno vsakih 10 minut.
 - `src/skytech.js` (`fetchStationHistory`) ob vsaki izgradnji pridobi
-  zadnjih 48 meritev (~8 ur) za vsako postajo, ki se dejansko kjerkoli
-  prikaže (glavna dodeljena + vse "bližnje" pri katerem koli od 12
-  vzletišč) – ne za vseh 62, da po nepotrebnem ne obremenimo omejitve
-  klicev API-ja (60/min na token). `scripts/build-data.js` jih zapiše v
+  zadnjih 100 meritev (API maksimum, ~16-17 ur pri poročanju vsakih
+  ~10 min - NE polnih 24h, ker API ne podpira straničenja za starejše
+  podatke) za vsako postajo, ki se dejansko kjerkoli prikaže (glavna
+  dodeljena + vse "bližnje" pri katerem koli od 12 vzletišč) – ne za
+  vseh 62, da po nepotrebnem ne obremenimo omejitve klicev API-ja
+  (60/min na token). `scripts/build-data.js` jih zapiše v
   `public/data/history/<stationId>.json`.
 - Frontend (`public/js/app.js`) ob kliku na postajo lenobno (`fetch`,
   predpomnjeno v `state.stationHistoryCache`) naloži ustrezno datoteko in

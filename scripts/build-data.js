@@ -24,7 +24,7 @@ const { fetchAllThermalRegions, REGION_CENTERS } = require('../src/arso-thermal'
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
 const HISTORY_DIR = path.join(DATA_DIR, 'history');
-const HISTORY_LEN = 48; // ~8h pri poročanju vsakih ~10 min
+const HISTORY_LEN = 100; // API max (glej src/skytech.js) - ~16-17h pri poročanju vsakih ~10 min, ne polnih 24h
 
 /**
  * Kratka identifikacija trenutno objavljenega koda (git commit), da
