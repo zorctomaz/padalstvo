@@ -237,6 +237,19 @@ spremembi teh funkcij v `app.js` (npr. nov popravek natančnosti) je
 smiselno preveriti, ali je enak popravek potreben tudi v
 `preprosto.js`.
 
+**Vizualni slog** te podstrani sledi matični strani **fotra.net**
+(padalstvo.fotra.net je njena poddomena) - retro DOS/CRT terminal
+estetika: pisava **VT323** (Google Fonts, monospace), barvna paleta
+"DOS modra" ozadje (`#0000AA`), cian obroba/poudarki (`#55FFFF`), rumen
+naslov s sijajem (`#FFFF55`), dvojna cian obroba okoli osrednjega
+"screen" vsebnika, rahlo CRT scanline prekritje. Barve/pisava so
+prevzete neposredno iz fotra.net (preiskano prek začasnega GitHub
+Actions debug skripta, glej git zgodovino - peskovnik agenta nima
+neposrednega dostopa do fotra.net). Glavna stran (`index.html`/
+`style.css`) namenoma ostane v svojem obstoječem (nevezanem na
+fotra.net) slogu - uporabnik je slog fotra.net zahteval izrecno za to
+podstran.
+
 ## Žive postaje vs. samo napoved (📡 / 📊)
 
 Izbirni seznam vzletišč loči tista s **potrjeno živo vremensko postajo**
