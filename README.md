@@ -394,6 +394,22 @@ oznako na to točko IN nad zemljevidom odpre okno s podatki:
   vzleta, stanje žive postaje, opombe) + gumb za prikaz polne napovedi
   na prvi strani (`openSiteInfoModal`).
 
+Če uporabnik izbere postajo (📡) na zemljevidu in nato potrdi "Uporabi to
+lokacijo", se njena živa meritev prikaže kot glavni podatek – aplikacija
+je NE zavrže v prid splošne ARSO napovedi za najbližje vzletišče, saj je
+podatek že ima. Tehnično: klik na oznako postaje si zapomni izbrano
+postajo (`mapPickerSelectedStation`, počiščeno ob kliku na vzletišče,
+poljubno točko na zemljevidu ali premiku oznake), ki gre skupaj z
+GPS koordinatami v `useLocation`/`showMyLocationWeather`. Ti iz izbrane
+postaje sestavita sintetičen `skytech` objekt (isti `rateWindClient`/
+`rateSkytechDirectionClient` kot za bližnje postaje) in nastavita
+`stationMode`, kar `renderSkytech` (glavna stran) oz. `renderCurrent`
+(enostavna podstran) prepozna kot izjemo od sicer veljavnega pravila
+"v načinu Moja lokacija se žive postaje ne prikažejo kot glavni podatek"
+– izbrana postaja je namreč natančno to, po čemer je uporabnik segel, ne
+približek. Izbrana postaja se posledično tudi izloči iz seznama "bližnjih
+postaj" (da se ne podvaja).
+
 ### Graf zgodovine postaje (klik na 📡 postajo)
 
 Klik na glavno "📡 Živa postaja" kartico ali na katerokoli vrstico v

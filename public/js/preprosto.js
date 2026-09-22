@@ -133,10 +133,16 @@ const NEARBY_MAX_AGE_MINUTES = 24 * 60;
  * lokacija"/zemljevid) izloči pokvarjene privzete koordinate (altitude 0)
  * in zastarele meritve, glej SKYTECH_API_ISSUES.md.
  */
-function computeNearbyStationsForPoint(stations, lat, lon) {
+function computeNearbyStationsForPoint(stations, lat, lon, excludeId) {
   if (!Array.isArray(stations)) return [];
   return stations
-    .filter((s) => typeof s.lat === 'number' && typeof s.lon === 'number' && s.altitude !== 0 && s.measurement)
+    .filter((s) =>
+      s.id !== excludeId &&
+      typeof s.lat === 'number' &&
+      typeof s.lon === 'number' &&
+      s.altitude !== 0 &&
+      s.measurement
+    )
     .map((s) => {
       const m = s.measurement;
       const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
@@ -535,6 +541,10 @@ function openArsoThermalDetailModal() {
 let mapPickerMap = null;
 let mapPickerMarker = null;
 let mapPickerLatLng = null;
+// Postaja, izbrana s klikom na njeno 📡 oznako (ne generični klik po
+// zemljevidu) - ob potrditvi lokacije njeno živo meritev prikažemo namesto
+// splošne ARSO napovedi za najbližje vzletišče.
+let mapPickerSelectedStation = null;
 
 function addSiteMarkersToMapPicker() {
   const icon = L.divIcon({
@@ -547,7 +557,10 @@ function addSiteMarkersToMapPicker() {
     if (typeof site.lat !== 'number' || typeof site.lon !== 'number') continue;
     L.marker([site.lat, site.lon], { icon, zIndexOffset: 400 })
       .addTo(mapPickerMap)
-      .on('click', () => setMapPickerPoint(site.lat, site.lon));
+      .on('click', () => {
+        mapPickerSelectedStation = null;
+        setMapPickerPoint(site.lat, site.lon);
+      });
   }
 }
 
@@ -569,6 +582,7 @@ async function addStationMarkersToMapPicker() {
     L.marker([s.lat, s.lon], { icon, zIndexOffset: 300 })
       .addTo(mapPickerMap)
       .on('click', () => {
+        mapPickerSelectedStation = s;
         setMapPickerPoint(s.lat, s.lon);
         openHistoryModal(s.id, s.name, s);
       });
@@ -583,7 +597,10 @@ function initMapPicker() {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
     maxZoom: 18,
   }).addTo(mapPickerMap);
-  mapPickerMap.on('click', (e) => setMapPickerPoint(e.latlng.lat, e.latlng.lng));
+  mapPickerMap.on('click', (e) => {
+    mapPickerSelectedStation = null;
+    setMapPickerPoint(e.latlng.lat, e.latlng.lng);
+  });
 
   addSiteMarkersToMapPicker();
   addStationMarkersToMapPicker();
@@ -602,6 +619,7 @@ function setMapPickerPoint(lat, lon) {
     mapPickerMarker.on('dragend', () => {
       const p = mapPickerMarker.getLatLng();
       mapPickerLatLng = { lat: p.lat, lon: p.lng };
+      mapPickerSelectedStation = null;
       el.mapCoordsLabel.textContent = `Izbrana lokacija: ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;
     });
   }
@@ -630,13 +648,15 @@ function closeMapPicker() {
 function renderCurrent(data) {
   el.siteName.textContent = data.myLocationMode ? '📍 Tvoja lokacija' : data.site.name;
   const regionText = data.myLocationMode
-    ? `najbližji vir ARSO napovedi: ${data.site.name} (${data.distanceKm} km)`
+    ? data.stationMode
+      ? `izbrana živa postaja: ${data.skytech.stationName}`
+      : `najbližji vir ARSO napovedi: ${data.site.name} (${data.distanceKm} km)`
     : `${data.site.region} · ${data.site.elevation} m n.v.`;
   el.siteMeta.textContent = regionText;
 
   const sk = data.skytech;
   const firstEntry = data.forecast[0] && data.forecast[0].timeline[0];
-  const useLive = sk && !data.myLocationMode && sk.hasMeasurement;
+  const useLive = sk && sk.hasMeasurement && (data.stationMode || !data.myLocationMode);
   const windSpeed = useLive ? sk.windSpeedKmh : firstEntry ? firstEntry.windSpeedKmh : null;
   const windGust = useLive ? sk.windGustKmh : firstEntry ? firstEntry.windGustKmh : null;
   const windDir = useLive ? sk.windDirection : firstEntry ? firstEntry.windDirection : null;
@@ -654,7 +674,7 @@ function renderCurrent(data) {
 
   const verdictParts = [];
   if (windRating) verdictParts.push(`<span class="${pillClass(windRating.color)}">${windRating.label}</span>`);
-  if (dirRating && !data.myLocationMode) verdictParts.push(`<span class="${pillClass(dirRating.color)}">${dirRating.label}</span>`);
+  if (dirRating && (data.stationMode || !data.myLocationMode)) verdictParts.push(`<span class="${pillClass(dirRating.color)}">${dirRating.label}</span>`);
   el.verdicts.innerHTML = verdictParts.join('') + `<p class="meta" style="margin-top:10px;">Vir: ${source}</p>`;
 
   if (useLive) {
@@ -775,7 +795,12 @@ async function loadWeatherForSite(siteId) {
   }
 }
 
-async function showMyLocationWeather(nearest) {
+/**
+ * Če je uporabnik na zemljevidu izbral konkretno živo postajo (station),
+ * njeno meritev prikažemo kot glavni "trenutno" podatek namesto splošne
+ * ARSO napovedi za najbližje vzletišče - podatek že imamo.
+ */
+async function showMyLocationWeather(nearest, station) {
   setStatus('Nalagam vremenske podatke…');
   try {
     const res = await fetch(`data/weather/${nearest.site.id}.json`, { cache: 'no-store' });
@@ -786,7 +811,30 @@ async function showMyLocationWeather(nearest) {
     data.myLocationMode = true;
 
     const allStations = await loadAllStations();
-    data.nearbyStations = computeNearbyStationsForPoint(allStations, state.userCoords.lat, state.userCoords.lon);
+    data.nearbyStations = computeNearbyStationsForPoint(
+      allStations,
+      state.userCoords.lat,
+      state.userCoords.lon,
+      station ? station.id : null
+    );
+
+    if (station && station.measurement) {
+      const m = station.measurement;
+      const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
+      data.skytech = {
+        hasMeasurement: true,
+        stationId: station.id,
+        stationName: station.name,
+        ageMinutes,
+        windSpeedKmh: m.windSpeedKmh,
+        windGustKmh: m.windGustKmh,
+        windDirection: m.windDirection,
+        temperatureC: m.temperatureC,
+        wind: rateWindClient(m.windSpeedKmh, m.windGustKmh),
+        directionRating: rateSkytechDirectionClient(station, m.windDirection),
+      };
+      data.stationMode = true;
+    }
 
     const thermalRegions = await loadThermalRegions();
     const nearestThermalRegion = computeNearestThermalRegion(thermalRegions, state.userCoords.lat, state.userCoords.lon);
@@ -804,12 +852,12 @@ async function showMyLocationWeather(nearest) {
  * ali z izbiro na zemljevidu (mapConfirmBtn), isti vzorec kot useLocation
  * v app.js.
  */
-function useLocation(lat, lon) {
+function useLocation(lat, lon, station) {
   state.userCoords = { lat, lon };
   const nearest = findNearestSite(lat, lon);
   if (nearest.site) {
     el.siteSelect.value = nearest.site.id;
-    showMyLocationWeather(nearest);
+    showMyLocationWeather(nearest, station);
   } else {
     setStatus('Ni najdenega bližnjega vzletišča.', 'error');
   }
@@ -843,8 +891,9 @@ el.mapModalOverlay.addEventListener('click', (e) => {
 el.mapConfirmBtn.addEventListener('click', () => {
   if (!mapPickerLatLng) return;
   const { lat, lon } = mapPickerLatLng;
+  const station = mapPickerSelectedStation;
   closeMapPicker();
-  useLocation(lat, lon);
+  useLocation(lat, lon, station);
 });
 
 el.currentBlock.addEventListener('click', () => {

@@ -371,16 +371,18 @@ async function loadMeta() {
  * tako pri pravem GPS-u (requestGeolocation) kot pri ročni izbiri na
  * zemljevidu (openMapPicker/potrditev).
  */
-function useLocation(lat, lon, altitude) {
+function useLocation(lat, lon, altitude, station) {
   state.userCoords = { lat, lon, altitude: altitude ?? null };
   setStatus(null);
   const nearest = findNearestSite(lat, lon);
   if (nearest.site) {
     el.siteSelect.value = nearest.site.id;
-    el.distanceInfo.textContent =
-      `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)} ` +
-      `· najbližji vir ARSO napovedi: ${nearest.site.name} (${nearest.distanceKm} km)`;
-    showMyLocationWeather(nearest);
+    el.distanceInfo.textContent = station
+      ? `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)} ` +
+        `· izbrana živa postaja: ${station.name}`
+      : `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)} ` +
+        `· najbližji vir ARSO napovedi: ${nearest.site.name} (${nearest.distanceKm} km)`;
+    showMyLocationWeather(nearest, station);
   } else {
     el.distanceInfo.textContent =
       `📍 Tvoja lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)} ` +
@@ -412,8 +414,13 @@ function requestGeolocation() {
  * predpostavlja, da je uporabnik na uradnem vzletišču, in ne prikazuje
  * njegove telefonske odzivniške številke/primerne smeri vzleta, ki
  * veljata samo za to vzletišče.
+ *
+ * Če je uporabnik na zemljevidu izbral konkretno živo postajo (station),
+ * njeno meritev prikažemo kot glavni "trenutno" podatek namesto splošne
+ * ARSO napovedi za najbližje vzletišče - podatek že imamo, zakaj bi
+ * uporabniku namesto tega prikazali manj natančen regijski približek.
  */
-async function showMyLocationWeather(nearest) {
+async function showMyLocationWeather(nearest, station) {
   setStatus('Nalagam vremenske podatke…');
   try {
     const res = await fetch(`data/weather/${nearest.site.id}.json`, { cache: 'no-store' });
@@ -429,8 +436,26 @@ async function showMyLocationWeather(nearest) {
       allStations,
       state.userCoords.lat,
       state.userCoords.lon,
-      null
+      station ? station.id : null
     );
+
+    if (station && station.measurement) {
+      const m = station.measurement;
+      const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
+      data.skytech = {
+        hasMeasurement: true,
+        stationId: station.id,
+        stationName: station.name,
+        ageMinutes,
+        windSpeedKmh: m.windSpeedKmh,
+        windGustKmh: m.windGustKmh,
+        windDirection: m.windDirection,
+        temperatureC: m.temperatureC,
+        wind: rateWindClient(m.windSpeedKmh, m.windGustKmh),
+        directionRating: rateSkytechDirectionClient(station, m.windDirection),
+      };
+      data.stationMode = true;
+    }
 
     // Napoved termike mora ustrezati uporabnikovi DEJANSKI točki, ne
     // regiji, dodeljeni najbližjemu uradnemu vzletišču (glej opombo pri
@@ -560,11 +585,13 @@ function renderCurrent(data) {
 }
 
 function renderSkytech(data) {
-  if (data.myLocationMode) {
+  if (data.myLocationMode && !data.stationMode) {
     // Dodeljena "glavna" postaja pripada uradnemu vzletišču, ne nujno
     // uporabnikovi natančni točki - v tem načinu je edini relevanten
     // prikaz spodnji seznam "žive postaje v bližini tvoje lokacije",
-    // izračunan iz pravih GPS koordinat uporabnika.
+    // izračunan iz pravih GPS koordinat uporabnika. Izjema: če je
+    // uporabnik na zemljevidu izrecno izbral konkretno postajo
+    // (data.stationMode), njeno meritev prikažemo tu kot glavni podatek.
     el.skytechCard.hidden = true;
     return;
   }
@@ -958,6 +985,10 @@ function openSiteInfoModal(site) {
 let mapPickerMap = null;
 let mapPickerMarker = null;
 let mapPickerLatLng = null;
+// Postaja, izbrana s klikom na njeno 📡 oznako na zemljevidu (ne z
+// generičnim klikom po zemljevidu) - ob potrditvi lokacije njeno živo
+// meritev prikažemo namesto splošne ARSO napovedi za najbližje vzletišče.
+let mapPickerSelectedStation = null;
 
 /**
  * Oznake uradnih vzletišč (iz state.sites, znane vnaprej) - narisane
@@ -976,6 +1007,7 @@ function addSiteMarkersToMapPicker() {
     L.marker([site.lat, site.lon], { icon, zIndexOffset: 400 })
       .addTo(mapPickerMap)
       .on('click', () => {
+        mapPickerSelectedStation = null;
         setMapPickerPoint(site.lat, site.lon);
         openSiteInfoModal(site);
       });
@@ -1009,6 +1041,7 @@ async function addStationMarkersToMapPicker() {
     L.marker([s.lat, s.lon], { icon, zIndexOffset: 300 })
       .addTo(mapPickerMap)
       .on('click', () => {
+        mapPickerSelectedStation = s;
         setMapPickerPoint(s.lat, s.lon);
         openHistoryModal(s.id, s.name, s);
       });
@@ -1025,7 +1058,10 @@ function initMapPicker() {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
     maxZoom: 18,
   }).addTo(mapPickerMap);
-  mapPickerMap.on('click', (e) => setMapPickerPoint(e.latlng.lat, e.latlng.lng));
+  mapPickerMap.on('click', (e) => {
+    mapPickerSelectedStation = null;
+    setMapPickerPoint(e.latlng.lat, e.latlng.lng);
+  });
 
   addSiteMarkersToMapPicker();
   addStationMarkersToMapPicker();
@@ -1044,6 +1080,7 @@ function setMapPickerPoint(lat, lon) {
     mapPickerMarker.on('dragend', () => {
       const p = mapPickerMarker.getLatLng();
       mapPickerLatLng = { lat: p.lat, lon: p.lng };
+      mapPickerSelectedStation = null;
       el.mapCoordsLabel.textContent = `Izbrana lokacija: ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;
     });
   }
@@ -1396,8 +1433,9 @@ el.mapModalOverlay.addEventListener('click', (e) => {
 el.mapConfirmBtn.addEventListener('click', () => {
   if (!mapPickerLatLng) return;
   const { lat, lon } = mapPickerLatLng;
+  const station = mapPickerSelectedStation;
   closeMapPicker();
-  useLocation(lat, lon, null);
+  useLocation(lat, lon, null, station);
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
