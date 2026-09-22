@@ -38,8 +38,8 @@ jobs:
       - name: Namesti odvisnosti
         run: npm ci
 
-      - name: DEBUG - preveri Open-Meteo veter po višini
-        run: node scripts/debug-open-meteo.js
+      - name: DEBUG - preveri Open-Meteo CORS
+        run: node scripts/debug-open-meteo-cors.js
 
       - name: Zgradi statične vremenske podatke (ARSO, opendata.si, SkyTech)
         env:
