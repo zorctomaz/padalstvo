@@ -279,21 +279,6 @@ function windArrow(direction) {
   return direction ? (WIND_ARROW_BY_SI_DIRECTION[direction] || '') : '';
 }
 
-function formatTime(timeStr) {
-  if (!timeStr) return '—';
-  const d = new Date(timeStr);
-  if (Number.isNaN(d.getTime())) return timeStr;
-  return d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
-}
-
-const SI_OCTANTS_BY_DEG = ['S', 'SV', 'V', 'JV', 'J', 'JZ', 'Z', 'SZ'];
-
-function degToSiOctant(deg) {
-  if (deg === null || deg === undefined || Number.isNaN(deg)) return null;
-  const idx = Math.round(((deg % 360) + 360) % 360 / 45) % 8;
-  return SI_OCTANTS_BY_DEG[idx];
-}
-
 /**
  * Enako kot v app.js - veter po višini (tlačni nivoji) iz Open-Meteo
  * (brez API ključa, odprt CORS - preverjeno prek GitHub Actions), ker
@@ -308,31 +293,31 @@ const WIND_ALOFT_LEVELS = [
   { hpa: 600, altitudeM: 4210 },
 ];
 
+/**
+ * Vsak 3. urni vnos (00.00, 03.00, 06.00 ... lokalno) za naslednja dva
+ * dneva - glej opombo v app.js (ista logika, podvojena kot drugod).
+ */
 async function fetchWindAloft(lat, lon) {
   const params = WIND_ALOFT_LEVELS.flatMap((l) => [`wind_speed_${l.hpa}hPa`, `wind_direction_${l.hpa}hPa`]).join(',');
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&timezone=auto&forecast_days=1`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&timezone=auto&forecast_days=2`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const json = await res.json();
   const times = json.hourly.time;
-  const now = Date.now();
-  let bestIdx = 0;
-  let bestDiff = Infinity;
-  for (let i = 0; i < times.length; i++) {
-    const diff = Math.abs(new Date(times[i]).getTime() - now);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestIdx = i;
-    }
-  }
+  const idx = [];
+  for (let i = 0; i < times.length; i += 3) idx.push(i);
+
   return {
-    time: times[bestIdx],
-    levels: WIND_ALOFT_LEVELS.map((l) => ({
-      hpa: l.hpa,
-      altitudeM: l.altitudeM,
-      windSpeedKmh: json.hourly[`wind_speed_${l.hpa}hPa`][bestIdx],
-      windDirectionDeg: json.hourly[`wind_direction_${l.hpa}hPa`][bestIdx],
-    })),
+    levels: WIND_ALOFT_LEVELS.map((l) => {
+      const speedArr = json.hourly[`wind_speed_${l.hpa}hPa`];
+      const dirArr = json.hourly[`wind_direction_${l.hpa}hPa`];
+      return {
+        hpa: l.hpa,
+        altitudeM: l.altitudeM,
+        series: idx.map((i) => ({ time: times[i], value: speedArr[i] })),
+        dirSeries: idx.map((i) => ({ time: times[i], directionDeg: dirArr[i] })),
+      };
+    }),
   };
 }
 
@@ -360,18 +345,16 @@ async function renderWindAloft(data) {
   try {
     const aloft = await fetchWindAloft(coords.lat, coords.lon);
     if (state.windAloftRequestToken !== requestToken) return;
-    el.windAloftMeta.textContent = `Vir: Open-Meteo (ne ARSO) · trenutno (${formatTime(aloft.time)})`;
+    el.windAloftMeta.textContent = 'Vir: Open-Meteo (ne ARSO) · naslednja 2 dni, vsake 3 ure';
     el.windAloftList.innerHTML = aloft.levels
-      .map((l) => {
-        const octant = degToSiOctant(l.windDirectionDeg);
-        return `
-          <li>
-            <span>~${l.altitudeM} m (${l.hpa} hPa)</span>
-            <span>${formatWind(l.windSpeedKmh)}${octant ? ' ' + octant + ' ' + windArrow(octant) : ''}</span>
-          </li>
-        `;
-      })
-      .join('');
+      .map((l) => `
+        <div class="chart-block">
+          <h4>${l.hpa} hPa (~${l.altitudeM} m) · veter (km/h)</h4>
+          ${buildDirectionArrowsSvg(l.dirSeries)}
+          ${buildLineChartSvg({ series: l.series, unit: '' })}
+        </div>
+      `)
+      .join('') + '<p class="meta small">↑ = smer, od koder piha veter (sever = puščica navzgor).</p>';
   } catch (err) {
     if (state.windAloftRequestToken !== requestToken) return;
     el.windAloftMeta.textContent = 'Podatkov trenutno ni bilo mogoče naložiti.';
@@ -540,8 +523,11 @@ function buildDirectionArrowsSvg(series, width = 320, height = 28) {
 
   const glyphs = pickHourlyIndices(series)
     .map((i) => {
-      const deg = COMPASS_TO_DEG[series[i].direction];
-      if (deg === undefined) return '';
+      const item = series[i];
+      const deg = item.directionDeg !== undefined && item.directionDeg !== null
+        ? item.directionDeg
+        : COMPASS_TO_DEG[item.direction];
+      if (deg === undefined || deg === null) return '';
       const cx = xAt(i).toFixed(1);
       return `<text x="${cx}" y="${cy}" font-size="14" fill="#55ffff" text-anchor="middle" transform="rotate(${deg} ${cx} ${cy - 4})">↑</text>`;
     })

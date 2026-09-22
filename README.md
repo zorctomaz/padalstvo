@@ -409,13 +409,19 @@ predpriprave – `fetchWindAloft(lat, lon)` v `public/js/app.js` in
 `public/js/preprosto.js` (podvojeno, enak vzorec kot drugod) kliče
 Open-Meteo neposredno za trenutno izbrano vzletišče ali uporabnikovo
 dejansko točko (`data.myLocationMode` ? uporabnikove koordinate :
-koordinate vzletišča), poišče najbližjo urno vrednost trenutnemu času in
-prikaže tabelo (višina/nivo, hitrost, smer + puščica – `degToSiOctant`/
-`windArrow`, ista konvencija kot drugod). `state.windAloftRequestToken`
-prepreči, da bi počasnejši/starejši klic (npr. po hitri menjavi
-vzletišča) prepisal novejši rezultat. Pod tabelo ostane povezava na
-**Windy.com** za podroben interaktiven profil/graf, ki ga tabela ne
-poskuša nadomestiti.
+koordinate vzletišča), z `forecast_days=2`. Open-Meteo-jevo `hourly` polje
+je zajamčeno pravo urno zaporedje od lokalne polnoči naprej, zato za
+"vsake 3 ure" preprosto vzamemo vsak 3. indeks (00.00, 03.00, 06.00 ...) –
+ni treba iskati najbližje točke kot pri neenakomerni SkyTech zgodovini.
+
+Za vsak od petih nivojev se izriše en `chart-block` (isti gradnik kot
+graf zgodovine postaje): vrstica puščic smeri (`buildDirectionArrowsSvg`,
+razširjen za surove stopinje – `.directionDeg` – poleg obstoječih
+angleških SkyTech kratic) nad linijskim grafom hitrosti (`buildLineChartSvg`,
+z oznakami vsake 3 ure). `state.windAloftRequestToken` prepreči, da bi
+počasnejši/starejši klic (npr. po hitri menjavi vzletišča) prepisal
+novejši rezultat. Pod grafi ostane povezava na **Windy.com** za podroben
+interaktiven profil, ki ga grafi ne poskušajo nadomestiti.
 
 Gumb "🗺️" poleg "Moja lokacija" odpre modalno okno z interaktivnim
 zemljevidom ([Leaflet](https://leafletjs.com/) + [OpenStreetMap](https://www.openstreetmap.org/)
