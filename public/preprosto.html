@@ -23,25 +23,28 @@
   <label for="siteSelect">Vzletišče</label>
   <select id="siteSelect"></select>
   <button id="locateBtn" class="btn-big" type="button">📍 Uporabi mojo lokacijo</button>
+  <button id="mapPickerBtn" class="btn-big" type="button">🗺️ Izberi na zemljevidu</button>
 
   <section id="statusBox" class="status-box" hidden></section>
 
-  <section id="currentBlock" class="block" hidden>
+  <section id="currentBlock" class="block" hidden role="button" tabindex="0">
     <h2 id="siteName">—</h2>
     <p id="siteMeta" class="meta"></p>
     <div class="big-row" id="currentStats"></div>
     <div id="verdicts"></div>
+    <p id="currentHint" class="meta small" hidden>Klikni za podrobnosti in graf ↗</p>
   </section>
 
-  <section id="thermalBlock" class="block" hidden>
+  <section id="thermalBlock" class="block clickable" hidden role="button" tabindex="0">
     <h2>🌡️ Termika (uradna ARSO napoved)</h2>
     <p class="meta" id="thermalMeta"></p>
     <div class="big-row" id="thermalStats"></div>
+    <p class="meta small">Klikni za podrobnosti in graf po urah ↗</p>
   </section>
 
   <section id="nearbyBlock" class="block" hidden>
     <h2>📡 Postaje v bližini</h2>
-    <ul id="nearbyList" class="simple-list"></ul>
+    <ul id="nearbyList" class="simple-list clickable-list"></ul>
   </section>
 
   <section id="forecastBlock" class="block" hidden>
@@ -73,6 +76,36 @@
   </footer>
 </div>
 
+  <div id="historyModalOverlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
+      <div class="modal-header">
+        <h3 id="historyModalTitle">Postaja</h3>
+        <button id="historyModalClose" class="modal-close" type="button" aria-label="Zapri">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="historyModalSnapshot"></div>
+        <div id="historyModalBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mapModalOverlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mapModalTitle">
+      <div class="modal-header">
+        <h3 id="mapModalTitle">Izberi lokacijo na zemljevidu</h3>
+        <button id="mapModalClose" class="modal-close" type="button" aria-label="Zapri">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="meta small">🪂 vzletišče · 📡 postaja · klikni oznako ali poljubno točko</p>
+        <div id="mapContainer" class="map-container"></div>
+        <p id="mapCoordsLabel" class="meta small">Izbrana lokacija: —</p>
+        <button id="mapConfirmBtn" class="btn-big" type="button" disabled>Uporabi to lokacijo</button>
+      </div>
+    </div>
+  </div>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="js/preprosto.js"></script>
 </body>
 </html>

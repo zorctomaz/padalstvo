@@ -218,10 +218,23 @@ Gumb "🔎 Enostavno" na vrhu glavne strani vodi na poenostavljeno
 podstran z **istimi podatki**, a manj razporejeno: en sam konsolidiran
 blok na vzletišče (veter, sunki, smer, temperatura, ocene, uradna ARSO
 termika, bližnje postaje, kompaktna tabela večdnevne napovedi,
-povezave) namesto več ločenih kartic, z večjimi pisavami. Brez
-zemljevida, brez modalov z grafi zgodovine in brez izbire enote vetra
-(vedno km/h) - te funkcije ostanejo na glavni strani ("← Napredni
-pogled" v glavi podstrani).
+povezave) namesto več ločenih kartic, z večjimi pisavami. Brez izbire
+enote vetra (vedno km/h) - to ostane samo na glavni strani ("←
+Napredni pogled" v glavi podstrani).
+
+Podstran ima tudi **izbiro lokacije na zemljevidu** (🗺️, Leaflet +
+OpenStreetMap - ista SRI-pinjena CDN skripta kot glavna stran) in
+**podrobnosti ob kliku**:
+- klik na trenutno kartico (če prikazuje živo SkyTech meritev) ali na
+  vrstico v seznamu bližnjih postaj odpre okno s trenutno meritvijo
+  (veter/sunki/smer/temperatura + ocene) in grafom vetra/temperature
+  zadnjih ur (isti gradniki kot glavna stran - `buildLineChartSvg`,
+  oznake na osi vsake 3 ure, puščice smeri vetra po urah);
+- klik na kartico termike odpre uradno ARSO napoved (danes/jutri) + naš
+  graf "po urah" (glej razdelek "Uradna ARSO napoved termike" spodaj za
+  razlago, zakaj to ni uradni podatek);
+- klik na oznako postaje na zemljevidu odpre isto okno neposredno z
+  zemljevida.
 
 Bere **iste JSON datoteke** iz `/data/`, ki jih zgradi
 `scripts/build-data.js` - brez dodatnega strežniškega klica ali

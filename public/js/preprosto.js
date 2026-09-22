@@ -2,11 +2,15 @@
 
 /**
  * Poenostavljena podstran - iste podatke kot glavna stran (app.js), a
- * manj razporejeno: manj ločenih kartic/interakcij (brez zemljevida,
- * brez modalov z grafi zgodovine, brez izbire enote), večje pisave, en
- * konsolidiran blok na vzletišče. Bere ISTE JSON datoteke iz /data/,
- * ki jih zgradi scripts/build-data.js - brez dodatnega strežniškega
- * klica ali podvajanja podatkovnega cevovoda.
+ * manj razporejeno: en konsolidiran blok na vzletišče, večje pisave,
+ * brez izbire enote vetra (vedno km/h). Bere ISTE JSON datoteke iz
+ * /data/, ki jih zgradi scripts/build-data.js - brez dodatnega
+ * strežniškega klica ali podvajanja podatkovnega cevovoda.
+ *
+ * Izbira lokacije na zemljevidu in podrobnosti ob kliku na postajo/
+ * termiko so namenoma ločena implementacija od app.js (ista logika,
+ * kopirana in prilagojena - glej opombo pri computeNearbyStationsForPoint
+ * zgoraj v README.md zakaj datoteki nista deljeni).
  */
 
 const state = {
@@ -14,17 +18,22 @@ const state = {
   userCoords: null,
   allStations: null,
   thermalRegions: null,
+  lastData: null,
+  stationHistoryCache: new Map(),
+  currentHistoryStationId: null,
 };
 
 const el = {
   siteSelect: document.getElementById('siteSelect'),
   locateBtn: document.getElementById('locateBtn'),
+  mapPickerBtn: document.getElementById('mapPickerBtn'),
   statusBox: document.getElementById('statusBox'),
   currentBlock: document.getElementById('currentBlock'),
   siteName: document.getElementById('siteName'),
   siteMeta: document.getElementById('siteMeta'),
   currentStats: document.getElementById('currentStats'),
   verdicts: document.getElementById('verdicts'),
+  currentHint: document.getElementById('currentHint'),
   thermalBlock: document.getElementById('thermalBlock'),
   thermalMeta: document.getElementById('thermalMeta'),
   thermalStats: document.getElementById('thermalStats'),
@@ -35,6 +44,16 @@ const el = {
   linksBlock: document.getElementById('linksBlock'),
   linksList: document.getElementById('linksList'),
   disclaimerBox: document.getElementById('disclaimerBox'),
+  historyModalOverlay: document.getElementById('historyModalOverlay'),
+  historyModalTitle: document.getElementById('historyModalTitle'),
+  historyModalSnapshot: document.getElementById('historyModalSnapshot'),
+  historyModalBody: document.getElementById('historyModalBody'),
+  historyModalClose: document.getElementById('historyModalClose'),
+  mapModalOverlay: document.getElementById('mapModalOverlay'),
+  mapModalClose: document.getElementById('mapModalClose'),
+  mapContainer: document.getElementById('mapContainer'),
+  mapCoordsLabel: document.getElementById('mapCoordsLabel'),
+  mapConfirmBtn: document.getElementById('mapConfirmBtn'),
 };
 
 function setStatus(message, type) {
@@ -111,8 +130,8 @@ const NEARBY_MAX_AGE_MINUTES = 24 * 60;
 
 /**
  * Enako kot v app.js (glavna stran) - za poljubno GPS točko ("Moja
- * lokacija") izloči pokvarjene privzete koordinate (altitude 0) in
- * zastarele meritve, glej SKYTECH_API_ISSUES.md.
+ * lokacija"/zemljevid) izloči pokvarjene privzete koordinate (altitude 0)
+ * in zastarele meritve, glej SKYTECH_API_ISSUES.md.
  */
 function computeNearbyStationsForPoint(stations, lat, lon) {
   if (!Array.isArray(stations)) return [];
@@ -123,6 +142,7 @@ function computeNearbyStationsForPoint(stations, lat, lon) {
       const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
       return {
         distanceKm: Math.round(haversineKm(lat, lon, s.lat, s.lon) * 10) / 10,
+        stationId: s.id,
         stationName: s.name,
         time: m.time,
         ageMinutes,
@@ -168,6 +188,445 @@ function formatDayLabel(dateStr) {
   return d.toLocaleDateString('sl-SI', { weekday: 'short', day: 'numeric', month: 'numeric' });
 }
 
+function formatWind(v) {
+  return v !== null && v !== undefined ? Math.round(v) + ' km/h' : '—';
+}
+
+function metricBox(label, value, pill) {
+  return `
+    <div class="big-stat">
+      <div class="label">${label}</div>
+      <div class="value">${value}</div>
+      ${pill ? `<div class="${pillClass(pill.color)}">${pill.label}</div>` : ''}
+    </div>
+  `;
+}
+
+/**
+ * Enako kot rateWindClient/rateSkytechDirectionClient v app.js - groba
+ * ocena vetra/smeri, izračunana v brskalniku iz že javno objavljenih
+ * podatkov (data/skytech-stations.json), brez dodatnega API klica.
+ */
+function rateWindClient(windSpeedKmh, windGustKmh) {
+  if (windSpeedKmh === null || windSpeedKmh === undefined) {
+    return { label: 'Ni podatka o vetru', color: 'gray' };
+  }
+  const gustSpread = windGustKmh != null ? windGustKmh - windSpeedKmh : 0;
+  if (windSpeedKmh > 30) return { label: 'Neprimerno za letenje (premočan veter)', color: 'red' };
+  if (windSpeedKmh > 20 || gustSpread > 15) return { label: 'Močan/sunkovit veter – samo izkušeni piloti', color: 'orange' };
+  if (windSpeedKmh >= 8) return { label: 'Ugodno za letenje', color: 'green' };
+  return { label: 'Šibek/miren veter', color: 'blue' };
+}
+
+function rateSkytechDirectionClient(station, compassDirection) {
+  if (!station || !compassDirection) return { label: 'Ni podatka o smeri', color: 'gray' };
+  if (station.directionsGreen && station.directionsGreen.includes(compassDirection)) {
+    return { label: `Smer (${compassDirection}) ustreza postaji`, color: 'green' };
+  }
+  if (station.directionsYellow && station.directionsYellow.includes(compassDirection)) {
+    return { label: `Smer (${compassDirection}) mejna`, color: 'orange' };
+  }
+  if (station.directionsRed && station.directionsRed.includes(compassDirection)) {
+    return { label: `Smer (${compassDirection}) neprimerna`, color: 'red' };
+  }
+  return { label: `Smer (${compassDirection}) ni razvrščena`, color: 'gray' };
+}
+
+/* ---------- Grafi (isti gradniki kot app.js: buildLineChartSvg + oznake vsake 3 ure) ---------- */
+
+function pickThreeHourTicks(series) {
+  const withTime = series
+    .map((p, i) => ({ i, t: p.time ? new Date(p.time).getTime() : null }))
+    .filter((p) => p.t !== null);
+  if (withTime.length === 0) return [];
+
+  const start = withTime[0].t;
+  const end = withTime[withTime.length - 1].t;
+  const boundary = new Date(start);
+  boundary.setMinutes(0, 0, 0);
+  boundary.setHours(Math.floor(boundary.getHours() / 3) * 3);
+
+  const picked = [];
+  const usedIdx = new Set();
+  while (boundary.getTime() <= end) {
+    const target = boundary.getTime();
+    let best = withTime[0];
+    let bestDiff = Math.abs(best.t - target);
+    for (const p of withTime) {
+      const diff = Math.abs(p.t - target);
+      if (diff < bestDiff) {
+        best = p;
+        bestDiff = diff;
+      }
+    }
+    if (!usedIdx.has(best.i)) {
+      usedIdx.add(best.i);
+      picked.push({ i: best.i, time: series[best.i].time });
+    }
+    boundary.setHours(boundary.getHours() + 3);
+  }
+  return picked;
+}
+
+function buildLineChartSvg({ series, series2, width = 320, height = 130, color = '#55ffff', color2 = '#ffaa00', unit = '', yLabelFormatter }) {
+  const formatY = yLabelFormatter || ((v) => `${Math.round(v * 10) / 10}${unit}`);
+  const padding = { top: 14, right: 8, bottom: 20, left: 4 };
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+
+  const allValues = series
+    .concat(series2 || [])
+    .map((p) => p.value)
+    .filter((v) => v !== null && v !== undefined);
+  if (allValues.length === 0) {
+    return '<p class="meta small">Ni podatkov za graf.</p>';
+  }
+  let min = Math.min(...allValues);
+  let max = Math.max(...allValues);
+  if (min === max) {
+    min -= 1;
+    max += 1;
+  }
+  const pad = (max - min) * 0.12;
+  const scaleMin = min - pad;
+  const scaleMax = max + pad;
+
+  const n = series.length;
+  const xAt = (i) => padding.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const yAt = (v) => padding.top + innerH - ((v - scaleMin) / (scaleMax - scaleMin)) * innerH;
+
+  function pathFor(pts) {
+    let d = '';
+    let needMove = true;
+    pts.forEach((p, i) => {
+      if (p.value === null || p.value === undefined) {
+        needMove = true;
+        return;
+      }
+      const cmd = needMove ? 'M' : 'L';
+      d += `${cmd}${xAt(i).toFixed(1)},${yAt(p.value).toFixed(1)} `;
+      needMove = false;
+    });
+    return d.trim();
+  }
+
+  const fmtTime = (t) => (t ? new Date(t).toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' }) : '');
+  const baselineY = height - padding.bottom;
+  const tickIdx = pickThreeHourTicks(series);
+  const ticks = tickIdx
+    .map(({ i, time }) => {
+      const x = xAt(i);
+      const anchor = x < padding.left + 15 ? 'start' : x > width - padding.right - 15 ? 'end' : 'middle';
+      return `
+        <line x1="${x.toFixed(1)}" y1="${baselineY.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(baselineY - 4).toFixed(1)}" stroke="#00aaaa" stroke-width="1" />
+        <text x="${x.toFixed(1)}" y="${height - 4}" font-size="11" fill="#55ffff" text-anchor="${anchor}">${fmtTime(time)}</text>
+      `;
+    })
+    .join('');
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none" class="history-chart">
+      <line x1="${padding.left}" y1="${baselineY}" x2="${width - padding.right}" y2="${baselineY}" stroke="#00aaaa" stroke-width="1" />
+      <text x="${padding.left}" y="${padding.top - 4}" font-size="12" fill="#55ffff">${formatY(max)}</text>
+      <text x="${padding.left}" y="${height - padding.bottom - 2}" font-size="12" fill="#55ffff">${formatY(min)}</text>
+      ${series2 ? `<path d="${pathFor(series2)}" fill="none" stroke="${color2}" stroke-width="1.5" stroke-dasharray="3,3" />` : ''}
+      <path d="${pathFor(series)}" fill="none" stroke="${color}" stroke-width="2" />
+      ${ticks}
+    </svg>
+  `;
+}
+
+const COMPASS_TO_DEG = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
+
+function pickHourlyIndices(series) {
+  const indices = [];
+  let lastHourKey = null;
+  series.forEach((p, i) => {
+    if (!p.time) return;
+    const d = new Date(p.time);
+    const hourKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
+    if (hourKey !== lastHourKey) {
+      indices.push(i);
+      lastHourKey = hourKey;
+    }
+  });
+  return indices;
+}
+
+function buildDirectionArrowsSvg(series, width = 320, height = 28) {
+  const padding = { left: 4, right: 8 };
+  const innerW = width - padding.left - padding.right;
+  const n = series.length;
+  if (n === 0) return '';
+  const xAt = (i) => padding.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const cy = height / 2 + 4;
+
+  const glyphs = pickHourlyIndices(series)
+    .map((i) => {
+      const deg = COMPASS_TO_DEG[series[i].direction];
+      if (deg === undefined) return '';
+      const cx = xAt(i).toFixed(1);
+      return `<text x="${cx}" y="${cy}" font-size="14" fill="#55ffff" text-anchor="middle" transform="rotate(${deg} ${cx} ${cy - 4})">↑</text>`;
+    })
+    .join('');
+
+  if (!glyphs) return '';
+  return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" class="history-chart-arrows">${glyphs}</svg>`;
+}
+
+/* ---------- Podrobnosti postaje (klik na trenutno postajo ali vrstico v bližini) ---------- */
+
+function renderStationSnapshot(station) {
+  const m = station.measurement;
+  if (!m) return '';
+  const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
+  const ageText = ageMinutes != null ? (ageMinutes <= 1 ? 'pred manj kot minuto' : `pred ${ageMinutes} min`) : '';
+  const wind = rateWindClient(m.windSpeedKmh, m.windGustKmh);
+  const dirRating = rateSkytechDirectionClient(station, m.windDirection);
+  return `
+    <p class="meta small">Trenutna meritev${ageText ? ' · ' + ageText : ''}${station.altitude ? ` · ${station.altitude} m n.v.` : ''}</p>
+    <div class="big-row">
+      ${metricBox('Veter', m.windSpeedKmh != null ? `${formatWind(m.windSpeedKmh)}${m.windDirection ? ' ' + m.windDirection : ''}` : '—', wind)}
+      ${metricBox('Sunki vetra', formatWind(m.windGustKmh))}
+      ${metricBox('Smer (ocena)', m.windDirection || '—', dirRating)}
+      ${metricBox('Temperatura', m.temperatureC != null ? `${m.temperatureC}°C` : '—')}
+    </div>
+  `;
+}
+
+async function loadStationHistory(stationId) {
+  if (state.stationHistoryCache.has(stationId)) {
+    return state.stationHistoryCache.get(stationId);
+  }
+  const res = await fetch(`data/history/${stationId}.json`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Zgodovina za to postajo ni na voljo.');
+  const data = await res.json();
+  state.stationHistoryCache.set(stationId, data);
+  return data;
+}
+
+function renderHistoryCharts(history) {
+  if (!history || !history.ok || !history.measurements || history.measurements.length === 0) {
+    el.historyModalBody.innerHTML = '<p class="meta small">Zgodovina za to postajo (zadnjih nekaj ur) ni na voljo.</p>';
+    return;
+  }
+  const m = history.measurements;
+  const windSeries = m.map((e) => ({ time: e.time, value: e.windSpeedKmh }));
+  const gustSeries = m.map((e) => ({ time: e.time, value: e.windGustKmh }));
+  const dirSeries = m.map((e) => ({ time: e.time, direction: e.windDirection }));
+  const tempSeries = m.map((e) => ({ time: e.time, value: e.temperatureC }));
+  const hoursSpan = Math.round((m.length * 10) / 6) / 10;
+
+  el.historyModalBody.innerHTML = `
+    <div class="chart-block">
+      <h4>Veter (km/h)</h4>
+      ${buildLineChartSvg({ series: windSeries, series2: gustSeries, color: '#55ffff', color2: '#ffaa00' })}
+      ${buildDirectionArrowsSvg(dirSeries)}
+      <p class="meta small">↑ = smer, od koder piha veter (sever = puščica navzgor), po ena za vsako uro.</p>
+      <div class="chart-legend">
+        <span><span class="swatch" style="background:#55ffff"></span>hitrost</span>
+        <span><span class="swatch" style="background:#ffaa00"></span>sunki</span>
+      </div>
+    </div>
+    <div class="chart-block">
+      <h4>Temperatura (°C)</h4>
+      ${buildLineChartSvg({ series: tempSeries, color: '#ff5555', unit: '°' })}
+    </div>
+    <p class="meta small">Zadnjih ${m.length} meritev (~${hoursSpan} h, postaja poroča približno vsakih 10 min).</p>
+  `;
+}
+
+function closeHistoryModal() {
+  el.historyModalOverlay.hidden = true;
+  state.currentHistoryStationId = null;
+}
+
+function openHistoryModal(stationId, stationName, station) {
+  state.currentHistoryStationId = stationId;
+  el.historyModalTitle.textContent = stationName || 'Postaja';
+  el.historyModalSnapshot.innerHTML = station ? renderStationSnapshot(station) : '';
+  el.historyModalBody.innerHTML = '<p class="meta small">Nalagam zgodovino…</p>';
+  el.historyModalOverlay.hidden = false;
+  loadStationHistory(stationId)
+    .then((history) => {
+      if (state.currentHistoryStationId === stationId) renderHistoryCharts(history);
+    })
+    .catch((err) => {
+      if (state.currentHistoryStationId === stationId) {
+        el.historyModalBody.innerHTML = `<p class="meta small">${err.message}</p>`;
+      }
+    });
+}
+
+/**
+ * Odpre podrobnosti postaje po ID-ju - poišče postajo v že naloženem
+ * seznamu vseh postaj (za trenutno meritev/oceno vetra/smeri), nato
+ * naloži zgodovino za graf. Uporabljeno tako za "trenutno" postajo kot
+ * za vrstice v seznamu bližnjih postaj in oznake na zemljevidu.
+ */
+async function openStationDetail(stationId, stationName) {
+  const stations = await loadAllStations();
+  const station = stations.find((s) => s.id === stationId) || null;
+  openHistoryModal(stationId, stationName, station);
+}
+
+/* ---------- Podrobnosti termike (klik na kartico termike) ---------- */
+
+const THERMAL_LEVEL_RANK = { gray: 1, blue: 1, green: 2, orange: 3 };
+const THERMAL_LEVEL_LABELS = { 1: 'šibka', 2: 'dobra', 3: 'ostra' };
+
+function buildThermalLineSvg(entries) {
+  const series = entries
+    .filter((e) => e.time)
+    .map((e) => ({ time: e.time, value: THERMAL_LEVEL_RANK[e.thermal && e.thermal.color] || null }));
+  if (series.length === 0) return '<p class="meta small">Ni podatkov za graf.</p>';
+  return buildLineChartSvg({
+    series,
+    color: '#ffaa00',
+    yLabelFormatter: (v) => THERMAL_LEVEL_LABELS[Math.min(3, Math.max(1, Math.round(v)))] || '',
+  });
+}
+
+function renderThermalHourlyEstimate() {
+  const forecast = state.lastData && state.lastData.forecast;
+  if (!forecast || forecast.length === 0) return '';
+  const days = forecast.slice(0, 2).filter((d) => d && d.timeline && d.timeline.length > 0);
+  if (days.length === 0) return '';
+  return days
+    .map((day) => {
+      const entries = day.timeline.map((e) => ({ time: e.time, thermal: e.paragliding && e.paragliding.thermal }));
+      return `
+        <div class="chart-block">
+          <h4>Naša ocena po urah — ${formatDayLabel(day.date)} (ni uradni ARSO podatek)</h4>
+          ${buildThermalLineSvg(entries)}
+        </div>
+      `;
+    })
+    .join('');
+}
+
+function openArsoThermalDetailModal() {
+  const t = state.lastData && state.lastData.thermalForecastArso;
+  if (!t || !t.items || t.items.length === 0) return;
+  state.currentHistoryStationId = null;
+  el.historyModalTitle.textContent = `🌡️ Napoved termike — ${t.regionLabel}`;
+  el.historyModalSnapshot.innerHTML = '';
+  el.historyModalBody.innerHTML =
+    '<h4>Uradna ARSO napoved</h4>' +
+    t.items
+      .map(
+        (item) => `
+    <div class="big-stat" style="margin-bottom:10px;">
+      <div class="label">${item.date}</div>
+      <div class="value">${item.climbMs} m/s</div>
+      <div class="thermal-swatch" style="background:${item.color}"></div>
+      ${item.issued ? `<p class="meta small" style="margin-top:8px;">Izdano: ${item.issued}</p>` : ''}
+      ${item.link ? `<p><a href="${item.link}" target="_blank" rel="noopener">Poglej na uradni ARSO strani ↗</a></p>` : ''}
+    </div>
+  `
+      )
+      .join('') +
+    renderThermalHourlyEstimate();
+  el.historyModalOverlay.hidden = false;
+}
+
+/* ---------- Izbira lokacije na zemljevidu (Leaflet + OpenStreetMap) ---------- */
+
+let mapPickerMap = null;
+let mapPickerMarker = null;
+let mapPickerLatLng = null;
+
+function addSiteMarkersToMapPicker() {
+  const icon = L.divIcon({
+    html: '<div class="map-pin">🪂</div>',
+    className: 'map-pin-wrapper',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+  for (const site of state.sites) {
+    if (typeof site.lat !== 'number' || typeof site.lon !== 'number') continue;
+    L.marker([site.lat, site.lon], { icon, zIndexOffset: 400 })
+      .addTo(mapPickerMap)
+      .on('click', () => setMapPickerPoint(site.lat, site.lon));
+  }
+}
+
+async function addStationMarkersToMapPicker() {
+  const stations = await loadAllStations();
+  if (!mapPickerMap) return;
+  const icon = L.divIcon({
+    html: '<div class="map-pin map-pin-station">📡</div>',
+    className: 'map-pin-wrapper',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+  const now = Date.now();
+  for (const s of stations) {
+    if (typeof s.lat !== 'number' || typeof s.lon !== 'number') continue;
+    if (s.altitude === 0) continue;
+    const ageMinutes = s.measurement && s.measurement.time ? Math.round((now - new Date(s.measurement.time).getTime()) / 60000) : null;
+    if (ageMinutes == null || ageMinutes > NEARBY_MAX_AGE_MINUTES) continue;
+    L.marker([s.lat, s.lon], { icon, zIndexOffset: 300 })
+      .addTo(mapPickerMap)
+      .on('click', () => {
+        setMapPickerPoint(s.lat, s.lon);
+        openHistoryModal(s.id, s.name, s);
+      });
+  }
+}
+
+function initMapPicker() {
+  if (mapPickerMap || typeof L === 'undefined') return;
+  const center = state.userCoords ? [state.userCoords.lat, state.userCoords.lon] : [46.05, 14.9];
+  mapPickerMap = L.map(el.mapContainer).setView(center, state.userCoords ? 11 : 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+    maxZoom: 18,
+  }).addTo(mapPickerMap);
+  mapPickerMap.on('click', (e) => setMapPickerPoint(e.latlng.lat, e.latlng.lng));
+
+  addSiteMarkersToMapPicker();
+  addStationMarkersToMapPicker();
+
+  if (state.userCoords) {
+    setMapPickerPoint(state.userCoords.lat, state.userCoords.lon);
+  }
+}
+
+function setMapPickerPoint(lat, lon) {
+  mapPickerLatLng = { lat, lon };
+  if (mapPickerMarker) {
+    mapPickerMarker.setLatLng([lat, lon]);
+  } else {
+    mapPickerMarker = L.marker([lat, lon], { draggable: true }).addTo(mapPickerMap);
+    mapPickerMarker.on('dragend', () => {
+      const p = mapPickerMarker.getLatLng();
+      mapPickerLatLng = { lat: p.lat, lon: p.lng };
+      el.mapCoordsLabel.textContent = `Izbrana lokacija: ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;
+    });
+  }
+  el.mapCoordsLabel.textContent = `Izbrana lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  el.mapConfirmBtn.disabled = false;
+}
+
+function openMapPicker() {
+  if (typeof L === 'undefined') {
+    setStatus('Zemljevida ni bilo mogoče naložiti (ni internetne povezave). Poskusi gumb "Moja lokacija" ali izberi vzletišče ročno.', 'error');
+    return;
+  }
+  el.mapModalOverlay.hidden = false;
+  requestAnimationFrame(() => {
+    initMapPicker();
+    mapPickerMap.invalidateSize();
+  });
+}
+
+function closeMapPicker() {
+  el.mapModalOverlay.hidden = true;
+}
+
+/* ---------- Prikaz podatkov ---------- */
+
 function renderCurrent(data) {
   el.siteName.textContent = data.myLocationMode ? '📍 Tvoja lokacija' : data.site.name;
   const regionText = data.myLocationMode
@@ -198,6 +657,20 @@ function renderCurrent(data) {
   if (dirRating && !data.myLocationMode) verdictParts.push(`<span class="${pillClass(dirRating.color)}">${dirRating.label}</span>`);
   el.verdicts.innerHTML = verdictParts.join('') + `<p class="meta" style="margin-top:10px;">Vir: ${source}</p>`;
 
+  if (useLive) {
+    el.currentBlock.dataset.stationId = sk.stationId;
+    el.currentBlock.dataset.stationName = sk.stationName;
+    el.currentHint.hidden = false;
+    el.currentBlock.tabIndex = 0;
+    el.currentBlock.style.cursor = 'pointer';
+  } else {
+    delete el.currentBlock.dataset.stationId;
+    delete el.currentBlock.dataset.stationName;
+    el.currentHint.hidden = true;
+    el.currentBlock.tabIndex = -1;
+    el.currentBlock.style.cursor = 'default';
+  }
+
   el.currentBlock.hidden = false;
 }
 
@@ -223,7 +696,7 @@ function renderNearby(data) {
   el.nearbyList.innerHTML = stations
     .map(
       (s) => `
-    <li>
+    <li data-station-id="${s.stationId}" data-station-name="${s.stationName}">
       <span>${s.stationName} (${s.distanceKm} km)</span>
       <span>${s.windSpeedKmh != null ? Math.round(s.windSpeedKmh) + ' km/h ' + (s.windDirection || '') : '—'}</span>
     </li>
@@ -279,6 +752,7 @@ function renderLinks(data) {
 }
 
 function renderAll(data) {
+  state.lastData = data;
   renderCurrent(data);
   renderThermal(data);
   renderNearby(data);
@@ -325,6 +799,22 @@ async function showMyLocationWeather(nearest) {
   }
 }
 
+/**
+ * Skupna pot za "uporabi to GPS točko" - iz pravega GPS-a (locateBtn)
+ * ali z izbiro na zemljevidu (mapConfirmBtn), isti vzorec kot useLocation
+ * v app.js.
+ */
+function useLocation(lat, lon) {
+  state.userCoords = { lat, lon };
+  const nearest = findNearestSite(lat, lon);
+  if (nearest.site) {
+    el.siteSelect.value = nearest.site.id;
+    showMyLocationWeather(nearest);
+  } else {
+    setStatus('Ni najdenega bližnjega vzletišča.', 'error');
+  }
+}
+
 el.siteSelect.addEventListener('change', () => {
   loadWeatherForSite(el.siteSelect.value);
 });
@@ -337,18 +827,63 @@ el.locateBtn.addEventListener('click', () => {
   setStatus('Iščem lokacijo…');
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      state.userCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      const nearest = findNearestSite(state.userCoords.lat, state.userCoords.lon);
-      if (nearest.site) {
-        el.siteSelect.value = nearest.site.id;
-        showMyLocationWeather(nearest);
-      } else {
-        setStatus('Ni najdenega bližnjega vzletišča.', 'error');
-      }
+      setStatus(null);
+      useLocation(pos.coords.latitude, pos.coords.longitude);
     },
     () => setStatus('Dostop do lokacije zavrnjen ali ni na voljo.', 'error'),
     { enableHighAccuracy: true, timeout: 10000 }
   );
+});
+
+el.mapPickerBtn.addEventListener('click', openMapPicker);
+el.mapModalClose.addEventListener('click', closeMapPicker);
+el.mapModalOverlay.addEventListener('click', (e) => {
+  if (e.target === el.mapModalOverlay) closeMapPicker();
+});
+el.mapConfirmBtn.addEventListener('click', () => {
+  if (!mapPickerLatLng) return;
+  const { lat, lon } = mapPickerLatLng;
+  closeMapPicker();
+  useLocation(lat, lon);
+});
+
+el.currentBlock.addEventListener('click', () => {
+  const id = el.currentBlock.dataset.stationId;
+  if (id) openStationDetail(id, el.currentBlock.dataset.stationName);
+});
+el.currentBlock.addEventListener('keydown', (e) => {
+  if ((e.key === 'Enter' || e.key === ' ') && el.currentBlock.dataset.stationId) {
+    e.preventDefault();
+    el.currentBlock.click();
+  }
+});
+
+el.nearbyList.addEventListener('click', (e) => {
+  const row = e.target.closest('li');
+  if (!row || !row.dataset.stationId) return;
+  openStationDetail(row.dataset.stationId, row.dataset.stationName);
+});
+
+el.thermalBlock.addEventListener('click', openArsoThermalDetailModal);
+el.thermalBlock.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    openArsoThermalDetailModal();
+  }
+});
+
+el.historyModalClose.addEventListener('click', closeHistoryModal);
+el.historyModalOverlay.addEventListener('click', (e) => {
+  if (e.target === el.historyModalOverlay) closeHistoryModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!el.historyModalOverlay.hidden) {
+    closeHistoryModal();
+  } else if (!el.mapModalOverlay.hidden) {
+    closeMapPicker();
+  }
 });
 
 (async function init() {

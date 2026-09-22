@@ -324,3 +324,162 @@ select:focus {
     padding: 24px 20px 40px;
   }
 }
+
+/* Klikljivi bloki/vrstice (podrobnosti postaje/termike) */
+.block[role="button"] {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.block[role="button"]:active {
+  background: var(--dos-blue);
+}
+
+.small {
+  font-size: 0.92rem;
+}
+
+.clickable-list li {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.clickable-list li:active {
+  color: var(--white);
+}
+
+/* Modalno okno (podrobnosti postaje/termike, izbira na zemljevidu) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  padding: 0;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .modal-overlay {
+    align-items: center;
+    padding: 16px;
+  }
+}
+
+.modal {
+  background: var(--dos-blue);
+  border: 4px double var(--cyan);
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 14px;
+  font-family: 'VT323', monospace;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 2px solid var(--cyan-dim);
+  padding-bottom: 8px;
+}
+
+.modal-header h3 {
+  font-size: 1.5rem;
+  color: var(--yellow);
+  letter-spacing: 0.03em;
+}
+
+.modal-close {
+  background: var(--cyan);
+  color: var(--dos-blue);
+  border: none;
+  width: 32px;
+  height: 32px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.chart-block {
+  margin-bottom: 16px;
+}
+
+.chart-block h4 {
+  font-size: 1.05rem;
+  color: var(--cyan);
+  margin: 0 0 6px;
+  font-weight: normal;
+  letter-spacing: 0.03em;
+}
+
+.history-chart-arrows {
+  display: block;
+  margin-top: -6px;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 0.95rem;
+  color: var(--cyan-dim);
+  margin-top: 4px;
+}
+
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chart-legend .swatch {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+}
+
+.thermal-swatch {
+  width: 100%;
+  height: 8px;
+  margin-top: 8px;
+}
+
+/* Zemljevid za izbiro lokacije (Leaflet) */
+.map-container {
+  width: 100%;
+  height: 320px;
+  overflow: hidden;
+  margin: 10px 0;
+  border: 2px solid var(--cyan-dim);
+}
+
+.map-pin-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.map-pin {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  background: var(--dos-blue);
+  border: 2px solid var(--cyan);
+}
+
+.map-pin-station {
+  width: 22px;
+  height: 22px;
+  font-size: 0.8rem;
+  border-color: var(--yellow);
+}
