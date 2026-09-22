@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Padalstvo Vreme — enostaven pogled</title>
+  <meta name="description" content="Poenostavljen prikaz vremenske napovedi za jadralno padalstvo v Sloveniji: veter, termika in večdnevna napoved na enem mestu." />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/preprosto.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>🪂 Padalstvo Vreme</h1>
+      <p class="subtitle">Enostaven pogled</p>
+    </div>
+    <a href="index.html" class="back-link">← Napredni pogled</a>
+  </header>
+
+  <label for="siteSelect">Vzletišče</label>
+  <select id="siteSelect"></select>
+  <button id="locateBtn" class="btn-big" type="button">📍 Uporabi mojo lokacijo</button>
+
+  <section id="statusBox" class="status-box" hidden></section>
+
+  <section id="currentBlock" class="block" hidden>
+    <h2 id="siteName">—</h2>
+    <p id="siteMeta" class="meta"></p>
+    <div class="big-row" id="currentStats"></div>
+    <div id="verdicts"></div>
+  </section>
+
+  <section id="thermalBlock" class="block" hidden>
+    <h2>🌡️ Termika (uradna ARSO napoved)</h2>
+    <p class="meta" id="thermalMeta"></p>
+    <div class="big-row" id="thermalStats"></div>
+  </section>
+
+  <section id="nearbyBlock" class="block" hidden>
+    <h2>📡 Postaje v bližini</h2>
+    <ul id="nearbyList" class="simple-list"></ul>
+  </section>
+
+  <section id="forecastBlock" class="block" hidden>
+    <h2>Večdnevna napoved</h2>
+    <table class="day-table">
+      <thead>
+        <tr>
+          <th>Dan</th>
+          <th>Temp.</th>
+          <th>Veter</th>
+          <th>Termika</th>
+          <th>Dež</th>
+        </tr>
+      </thead>
+      <tbody id="forecastBody"></tbody>
+    </table>
+  </section>
+
+  <section id="linksBlock" class="block" hidden>
+    <h2>Povezave</h2>
+    <ul id="linksList" class="links-list"></ul>
+  </section>
+
+  <p id="disclaimerBox" class="disclaimer" hidden></p>
+
+  <footer class="footer">
+    <p>Podatki: ARSO (vreme.arso.gov.si, meteo.si), opendata.si, SkyTech.si. Ni uradna letalska napoved.</p>
+    <p><a href="index.html">Napredni pogled (zemljevid, grafi, vse podrobnosti) →</a></p>
+  </footer>
+
+  <script src="js/preprosto.js"></script>
+</body>
+</html>

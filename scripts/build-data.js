@@ -51,13 +51,12 @@ function getVersion() {
  * (GitHub Pages CDN) po vsakem deployu nujno naložijo sveže datoteke
  * namesto morebitne stare predpomnjene različice.
  */
-function addCacheBusting(version) {
+function addCacheBusting(version, htmlPath) {
   const v = version || String(Date.now());
-  const indexPath = path.join(__dirname, '..', 'public', 'index.html');
-  let html = fs.readFileSync(indexPath, 'utf8');
-  html = html.replace(/(href="css\/style\.css)(\?v=[^"]*)?(")/, `$1?v=${v}$3`);
-  html = html.replace(/(src="js\/app\.js)(\?v=[^"]*)?(")/, `$1?v=${v}$3`);
-  fs.writeFileSync(indexPath, html);
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  html = html.replace(/(href="css\/[^"?]+\.css)(\?v=[^"]*)?(")/g, `$1?v=${v}$3`);
+  html = html.replace(/(src="js\/[^"?]+\.js)(\?v=[^"]*)?(")/g, `$1?v=${v}$3`);
+  fs.writeFileSync(htmlPath, html);
 }
 
 async function buildSite(site, stationById, allStations, thermalRegions) {
@@ -99,7 +98,9 @@ async function main() {
   fs.mkdirSync(WEATHER_DIR, { recursive: true });
 
   const version = getVersion();
-  addCacheBusting(version);
+  const publicDir = path.join(__dirname, '..', 'public');
+  addCacheBusting(version, path.join(publicDir, 'index.html'));
+  addCacheBusting(version, path.join(publicDir, 'preprosto.html'));
 
   fs.writeFileSync(path.join(DATA_DIR, 'sites.json'), JSON.stringify(sites, null, 2));
 

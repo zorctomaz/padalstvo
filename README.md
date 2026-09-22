@@ -203,11 +203,39 @@ src/skytech.js                       Klient za uradni KOK/SkyTech API (žive mer
 src/arso-thermal.js                  Klient za uradno ARSO napoved termike (RSS po 6 letalskih regijah)
 src/paragliding.js                   Izpeljane ocene: baza oblakov, ocena vetra, termika, povezave
 public/                              Mobilno prilagojen frontend (vanilla HTML/CSS/JS, brez build koraka)
+public/preprosto.html                Poenostavljen pogled (glej razdelek spodaj) - iste podatke, manj razporejeno
+public/js/preprosto.js               Frontend za preprosto.html - lasten, ne deli kode z app.js (glej spodaj zakaj)
 public/data/                         Generirano z `npm run build:data` – NI v git repozitoriju (.gitignore)
 public/data/skytech-stations.json    Javni seznam vseh SkyTech postaj (za "Moja lokacija" - glej razdelek spodaj)
+public/data/thermal-regions.json     Vseh 6 ARSO regij termike + središča (za "Moja lokacija" - glej razdelek spodaj)
 public/data/history/<id>.json        Zgodovina meritev postaje (za graf ob kliku - glej razdelek spodaj)
 SKYTECH_API_ISSUES.md                Zbirni seznam napak v SkyTech API podatkih za poročanje SkyTech-u
 ```
+
+## Enostaven pogled (`preprosto.html`)
+
+Gumb "🔎 Enostavno" na vrhu glavne strani vodi na poenostavljeno
+podstran z **istimi podatki**, a manj razporejeno: en sam konsolidiran
+blok na vzletišče (veter, sunki, smer, temperatura, ocene, uradna ARSO
+termika, bližnje postaje, kompaktna tabela večdnevne napovedi,
+povezave) namesto več ločenih kartic, z večjimi pisavami. Brez
+zemljevida, brez modalov z grafi zgodovine in brez izbire enote vetra
+(vedno km/h) - te funkcije ostanejo na glavni strani ("← Napredni
+pogled" v glavi podstrani).
+
+Bere **iste JSON datoteke** iz `/data/`, ki jih zgradi
+`scripts/build-data.js` - brez dodatnega strežniškega klica ali
+podvajanja podatkovnega cevovoda. `public/js/preprosto.js` je namenoma
+**ločena, samostojna datoteka** (ne uvaža/uporablja funkcij iz
+`app.js`) - obe se serviirata kot navadna `<script>` brez modulskega
+sistema (ni build koraka), zato bi deljenje kode zahtevalo dodatno
+infrastrukturo (bundler ali ročno ločevanje v skupno datoteko), kar za
+majhno količino podvojene logike (haversine, `findNearestSite`,
+`computeNearbyStationsForPoint`, `computeNearestThermalRegion` - vse
+kopirano iz `app.js`) ni bilo vredno dodatne kompleksnosti. Ob
+spremembi teh funkcij v `app.js` (npr. nov popravek natančnosti) je
+smiselno preveriti, ali je enak popravek potreben tudi v
+`preprosto.js`.
 
 ## Žive postaje vs. samo napoved (📡 / 📊)
 
