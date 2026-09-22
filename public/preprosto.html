@@ -24,7 +24,6 @@
   <select id="siteSelect"></select>
   <button id="locateBtn" class="btn-big" type="button">📍 Uporabi mojo lokacijo</button>
   <button id="mapPickerBtn" class="btn-big" type="button">🗺️ Izberi na zemljevidu</button>
-  <a id="windAloftLink" class="btn-big" href="#" target="_blank" rel="noopener" hidden>🌬️ Veter na višini (Windy)</a>
 
   <section id="statusBox" class="status-box" hidden></section>
 
@@ -41,6 +40,13 @@
     <p class="meta" id="thermalMeta"></p>
     <div class="big-row" id="thermalStats"></div>
     <p class="meta small">Klikni za podrobnosti in graf po urah ↗</p>
+  </section>
+
+  <section id="windAloftBlock" class="block" hidden>
+    <h2>🌬️ Veter po višini</h2>
+    <p id="windAloftMeta" class="meta small"></p>
+    <ul id="windAloftList" class="simple-list"></ul>
+    <a id="windAloftLink" class="btn-big" href="#" target="_blank" rel="noopener" style="margin-top:10px;">Podroben profil na Windy.com ↗</a>
   </section>
 
   <section id="nearbyBlock" class="block" hidden>

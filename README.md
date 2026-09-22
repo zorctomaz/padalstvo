@@ -40,7 +40,8 @@ za pilote:
 | **ARSO letalsko vreme** – `meteo.si/met/sl/aviation/` | GAFOR, SIGWX, karte vetra na višini | Aplikacija povezuje neposredno na uradno stran (grafični/besedilni produkti, primerni za odpiranje, ne za avtomatsko razčlenjevanje) |
 | **SFFA telefonski odzivniki** | Žive vremenske postaje (veter v realnem času) na nekaterih vzletiščih | Za vzletišča s potrjeno postajo aplikacija prikaže telefonsko številko odzivnika (vir: SFFA – Zveza za prosto letenje) kot dodaten/varnostni vir |
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
-| **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model | Prominenten gumb "🌬️ Veter na višini" takoj pod izbiro vzletišča/lokacije (na koordinato vzletišča ali, v načinu "Moja lokacija", uporabnikovo dejansko GPS točko) – ARSO/meteo.si javno ne objavlja strojno berljivih kart vetra na višini (preverjeno prek GitHub Actions: napovedni API vrne le prizemne vrednosti, letalska stran SIGWX/GAFOR ponuja le grafične/besedilne produkte, brez JSON/XML/RSS vira), zato je Windy edini praktični vir |
+| **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini |
+| **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Dopolnilna povezava "Podroben profil na Windy.com" pod tabelo vetra po višini – za več podrobnosti/nivojev, kot jih prikaže tabela |
 
 ### Ocene, specifične za jadralno padalstvo
 
@@ -388,6 +389,33 @@ najmočnejšem vetru tistega dne) poleg besedilne smeri vetra prikaže tudi
 **puščico** (`windArrow`/`WIND_ARROW_BY_SI_DIRECTION` v obeh JS datotekah,
 podvojeno kot ostala logika) – puščica kaže, OD KOD piha veter (npr.
 "S" → ↑, "od severa"; standardna kompasna orientacija, sever gor).
+
+### Veter po višini (🌬️)
+
+Prominenten razdelek takoj pod izbiro vzletišča/lokacije (na obeh
+straneh) prikaže dejanske podatke – ne le povezavo – za veter na petih
+tlačnih nivojih (1000/925/850/700/600 hPa, s približno nadmorsko višino
+po standardni atmosferi: ~110/760/1460/3010/4210 m). ARSO tega ne
+objavlja strojno berljivo (preverjeno prek GitHub Actions: napovedni API
+vrne le prizemne vrednosti; letalska stran SIGWX/GAFOR ponuja le
+grafične/besedilne produkte, brez JSON/XML/RSS vira) – zato podatke
+neposredno iz brskalnika pridobimo od **Open-Meteo** (`api.open-meteo.com`,
+brez API ključa, odprt CORS – `Access-Control-Allow-Origin: *`, potrjeno
+prek GitHub Actions z eksplicitno `Origin` glavo v zahtevi).
+
+Ker je "Moja lokacija" poljubna GPS točka (ni je mogoče vnaprej zgraditi
+za vsako možnost, za razliko od 36 ARSO krajev zgoraj), ni strežniške
+predpriprave – `fetchWindAloft(lat, lon)` v `public/js/app.js` in
+`public/js/preprosto.js` (podvojeno, enak vzorec kot drugod) kliče
+Open-Meteo neposredno za trenutno izbrano vzletišče ali uporabnikovo
+dejansko točko (`data.myLocationMode` ? uporabnikove koordinate :
+koordinate vzletišča), poišče najbližjo urno vrednost trenutnemu času in
+prikaže tabelo (višina/nivo, hitrost, smer + puščica – `degToSiOctant`/
+`windArrow`, ista konvencija kot drugod). `state.windAloftRequestToken`
+prepreči, da bi počasnejši/starejši klic (npr. po hitri menjavi
+vzletišča) prepisal novejši rezultat. Pod tabelo ostane povezava na
+**Windy.com** za podroben interaktiven profil/graf, ki ga tabela ne
+poskuša nadomestiti.
 
 Gumb "🗺️" poleg "Moja lokacija" odpre modalno okno z interaktivnim
 zemljevidom ([Leaflet](https://leafletjs.com/) + [OpenStreetMap](https://www.openstreetmap.org/)

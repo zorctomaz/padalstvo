@@ -35,6 +35,7 @@ const state = {
   thermalRegions: null,
   arsoLocations: null,
   arsoLocationForecastCache: new Map(),
+  windAloftRequestToken: null,
   nightOverride: false,
   stationHistoryCache: new Map(),
   currentHistoryStationId: null,
@@ -65,6 +66,8 @@ const el = {
   nearbyCard: document.getElementById('nearbyCard'),
   nearbyContent: document.getElementById('nearbyContent'),
   windAloftCard: document.getElementById('windAloftCard'),
+  windAloftMeta: document.getElementById('windAloftMeta'),
+  windAloftList: document.getElementById('windAloftList'),
   windAloftLink: document.getElementById('windAloftLink'),
   forecastSection: document.getElementById('forecastSection'),
   forecastSourceInfo: document.getElementById('forecastSourceInfo'),
@@ -1341,6 +1344,107 @@ function windArrow(direction) {
   return direction ? (WIND_ARROW_BY_SI_DIRECTION[direction] || '') : '';
 }
 
+const SI_OCTANTS_BY_DEG = ['S', 'SV', 'V', 'JV', 'J', 'JZ', 'Z', 'SZ'];
+
+function degToSiOctant(deg) {
+  if (deg === null || deg === undefined || Number.isNaN(deg)) return null;
+  const idx = Math.round(((deg % 360) + 360) % 360 / 45) % 8;
+  return SI_OCTANTS_BY_DEG[idx];
+}
+
+/**
+ * Veter po višini (tlačni nivoji/hPa) - ARSO tega ne objavlja strojno
+ * berljivo (preverjeno prek GitHub Actions: napovedni API vrne le
+ * prizemne vrednosti, letalska stran SIGWX/GAFOR ponuja le grafične/
+ * besedilne produkte). Open-Meteo (api.open-meteo.com) je brezplačen,
+ * brez API ključa, z odprtim CORS-om (preverjeno prek GitHub Actions -
+ * Access-Control-Allow-Origin: *), zato ga pokličemo neposredno iz
+ * brskalnika, brez strežniške predpriprave (poljubna GPS točka pri
+ * "Moja lokacija" je ni mogoče vnaprej zgraditi za vsako možnost).
+ *
+ * Nadmorske višine tlačnih nivojev so približki po standardni atmosferi
+ * (ISA barometrična formula), zaokroženi na 10 m - dovolj natančno za
+ * grobo orientacijo, ne za natančno navigacijo.
+ */
+const WIND_ALOFT_LEVELS = [
+  { hpa: 1000, altitudeM: 110 },
+  { hpa: 925, altitudeM: 760 },
+  { hpa: 850, altitudeM: 1460 },
+  { hpa: 700, altitudeM: 3010 },
+  { hpa: 600, altitudeM: 4210 },
+];
+
+async function fetchWindAloft(lat, lon) {
+  const params = WIND_ALOFT_LEVELS.flatMap((l) => [`wind_speed_${l.hpa}hPa`, `wind_direction_${l.hpa}hPa`]).join(',');
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&timezone=auto&forecast_days=1`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  const times = json.hourly.time;
+  const now = Date.now();
+  let bestIdx = 0;
+  let bestDiff = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const diff = Math.abs(new Date(times[i]).getTime() - now);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIdx = i;
+    }
+  }
+  return {
+    time: times[bestIdx],
+    levels: WIND_ALOFT_LEVELS.map((l) => ({
+      hpa: l.hpa,
+      altitudeM: l.altitudeM,
+      windSpeedKmh: json.hourly[`wind_speed_${l.hpa}hPa`][bestIdx],
+      windDirectionDeg: json.hourly[`wind_direction_${l.hpa}hPa`][bestIdx],
+    })),
+  };
+}
+
+async function renderWindAloft(data) {
+  if (!data.links || !data.links.windAloft) {
+    el.windAloftCard.hidden = true;
+    return;
+  }
+  el.windAloftLink.href = data.links.windAloft;
+  el.windAloftCard.hidden = false;
+
+  const coords = data.myLocationMode && data.userCoords
+    ? data.userCoords
+    : (data.site ? { lat: data.site.lat, lon: data.site.lon } : null);
+  if (!coords) {
+    el.windAloftMeta.textContent = '';
+    el.windAloftList.innerHTML = '';
+    return;
+  }
+
+  const requestToken = Symbol('windAloft');
+  state.windAloftRequestToken = requestToken;
+  el.windAloftMeta.textContent = 'Nalagam…';
+  el.windAloftList.innerHTML = '';
+  try {
+    const aloft = await fetchWindAloft(coords.lat, coords.lon);
+    if (state.windAloftRequestToken !== requestToken) return; // uporabnik je medtem zamenjal lokacijo
+    el.windAloftMeta.textContent = `Vir: Open-Meteo (ne ARSO) · trenutno (${formatTime(aloft.time)})`;
+    el.windAloftList.innerHTML = aloft.levels
+      .map((l) => {
+        const octant = degToSiOctant(l.windDirectionDeg);
+        return `
+          <div class="timeline-row">
+            <div class="timeline-time">~${l.altitudeM} m</div>
+            <div class="timeline-detail">${l.hpa} hPa · ${formatWind(l.windSpeedKmh)}${octant ? ' ' + octant + ' ' + windArrow(octant) : ''}</div>
+          </div>
+        `;
+      })
+      .join('');
+  } catch (err) {
+    if (state.windAloftRequestToken !== requestToken) return;
+    el.windAloftMeta.textContent = 'Podatkov trenutno ni bilo mogoče naložiti.';
+    el.windAloftList.innerHTML = '';
+  }
+}
+
 function renderForecast(data) {
   if (!data.forecast || data.forecast.length === 0) {
     el.forecastSection.hidden = true;
@@ -1459,23 +1563,6 @@ function renderSources(data) {
   if (problems.length > 0) {
     setStatus(problems.join(' '), 'error');
   }
-}
-
-/**
- * Prominentna povezava na Windy.com (veter po višinah/hPa nivojih) - ARSO
- * te podatke ne objavlja strojno berljivo (preverjeno prek GitHub Actions:
- * napovedni API vrne le prizemne vrednosti, letalska stran pa nima
- * dostopnega vira - SIGWX/GAFOR so grafični produkti), zato je Windy edini
- * praktični vir. Doslej je bila ta povezava zakopana na dnu seznama
- * povezav; zdaj je lasten gumb takoj pod izbiro vzletišča.
- */
-function renderWindAloft(data) {
-  if (!data.links || !data.links.windAloft) {
-    el.windAloftCard.hidden = true;
-    return;
-  }
-  el.windAloftLink.href = data.links.windAloft;
-  el.windAloftCard.hidden = false;
 }
 
 function renderWeather(data) {

@@ -20,6 +20,7 @@ const state = {
   thermalRegions: null,
   arsoLocations: null,
   arsoLocationForecastCache: new Map(),
+  windAloftRequestToken: null,
   lastData: null,
   stationHistoryCache: new Map(),
   currentHistoryStationId: null,
@@ -29,6 +30,9 @@ const el = {
   siteSelect: document.getElementById('siteSelect'),
   locateBtn: document.getElementById('locateBtn'),
   mapPickerBtn: document.getElementById('mapPickerBtn'),
+  windAloftBlock: document.getElementById('windAloftBlock'),
+  windAloftMeta: document.getElementById('windAloftMeta'),
+  windAloftList: document.getElementById('windAloftList'),
   windAloftLink: document.getElementById('windAloftLink'),
   statusBox: document.getElementById('statusBox'),
   currentBlock: document.getElementById('currentBlock'),
@@ -273,6 +277,106 @@ const WIND_ARROW_BY_SI_DIRECTION = {
 
 function windArrow(direction) {
   return direction ? (WIND_ARROW_BY_SI_DIRECTION[direction] || '') : '';
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return '—';
+  const d = new Date(timeStr);
+  if (Number.isNaN(d.getTime())) return timeStr;
+  return d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
+}
+
+const SI_OCTANTS_BY_DEG = ['S', 'SV', 'V', 'JV', 'J', 'JZ', 'Z', 'SZ'];
+
+function degToSiOctant(deg) {
+  if (deg === null || deg === undefined || Number.isNaN(deg)) return null;
+  const idx = Math.round(((deg % 360) + 360) % 360 / 45) % 8;
+  return SI_OCTANTS_BY_DEG[idx];
+}
+
+/**
+ * Enako kot v app.js - veter po višini (tlačni nivoji) iz Open-Meteo
+ * (brez API ključa, odprt CORS - preverjeno prek GitHub Actions), ker
+ * ARSO tega ne objavlja strojno berljivo. Klic gre neposredno iz
+ * brskalnika, brez strežniške predpriprave.
+ */
+const WIND_ALOFT_LEVELS = [
+  { hpa: 1000, altitudeM: 110 },
+  { hpa: 925, altitudeM: 760 },
+  { hpa: 850, altitudeM: 1460 },
+  { hpa: 700, altitudeM: 3010 },
+  { hpa: 600, altitudeM: 4210 },
+];
+
+async function fetchWindAloft(lat, lon) {
+  const params = WIND_ALOFT_LEVELS.flatMap((l) => [`wind_speed_${l.hpa}hPa`, `wind_direction_${l.hpa}hPa`]).join(',');
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${params}&timezone=auto&forecast_days=1`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  const times = json.hourly.time;
+  const now = Date.now();
+  let bestIdx = 0;
+  let bestDiff = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const diff = Math.abs(new Date(times[i]).getTime() - now);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIdx = i;
+    }
+  }
+  return {
+    time: times[bestIdx],
+    levels: WIND_ALOFT_LEVELS.map((l) => ({
+      hpa: l.hpa,
+      altitudeM: l.altitudeM,
+      windSpeedKmh: json.hourly[`wind_speed_${l.hpa}hPa`][bestIdx],
+      windDirectionDeg: json.hourly[`wind_direction_${l.hpa}hPa`][bestIdx],
+    })),
+  };
+}
+
+async function renderWindAloft(data) {
+  if (!data.links || !data.links.windAloft) {
+    el.windAloftBlock.hidden = true;
+    return;
+  }
+  el.windAloftLink.href = data.links.windAloft;
+  el.windAloftBlock.hidden = false;
+
+  const coords = data.myLocationMode && state.userCoords
+    ? state.userCoords
+    : (data.site ? { lat: data.site.lat, lon: data.site.lon } : null);
+  if (!coords) {
+    el.windAloftMeta.textContent = '';
+    el.windAloftList.innerHTML = '';
+    return;
+  }
+
+  const requestToken = Symbol('windAloft');
+  state.windAloftRequestToken = requestToken;
+  el.windAloftMeta.textContent = 'Nalagam…';
+  el.windAloftList.innerHTML = '';
+  try {
+    const aloft = await fetchWindAloft(coords.lat, coords.lon);
+    if (state.windAloftRequestToken !== requestToken) return;
+    el.windAloftMeta.textContent = `Vir: Open-Meteo (ne ARSO) · trenutno (${formatTime(aloft.time)})`;
+    el.windAloftList.innerHTML = aloft.levels
+      .map((l) => {
+        const octant = degToSiOctant(l.windDirectionDeg);
+        return `
+          <li>
+            <span>~${l.altitudeM} m (${l.hpa} hPa)</span>
+            <span>${formatWind(l.windSpeedKmh)}${octant ? ' ' + octant + ' ' + windArrow(octant) : ''}</span>
+          </li>
+        `;
+      })
+      .join('');
+  } catch (err) {
+    if (state.windAloftRequestToken !== requestToken) return;
+    el.windAloftMeta.textContent = 'Podatkov trenutno ni bilo mogoče naložiti.';
+    el.windAloftList.innerHTML = '';
+  }
 }
 
 /**
@@ -848,20 +952,6 @@ function renderLinks(data) {
   }
   el.linksList.innerHTML = items.map((i) => `<li><a href="${i.href}" target="_blank" rel="noopener">${i.label} ↗</a></li>`).join('');
   el.linksBlock.hidden = false;
-}
-
-/**
- * Enako kot v app.js - prominenten gumb na vrhu namesto zakopane povezave
- * na dnu seznama (ARSO ne objavlja vetra po višini strojno berljivo,
- * preverjeno prek GitHub Actions, zato je Windy edini praktični vir).
- */
-function renderWindAloft(data) {
-  if (!data.links || !data.links.windAloft) {
-    el.windAloftLink.hidden = true;
-    return;
-  }
-  el.windAloftLink.href = data.links.windAloft;
-  el.windAloftLink.hidden = false;
 }
 
 function renderAll(data) {
