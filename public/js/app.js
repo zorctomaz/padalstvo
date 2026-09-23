@@ -107,6 +107,7 @@ const TRANSLATIONS = {
     linkArsoAviation: 'ARSO letalsko vreme',
     linkArsoRadar: 'ARSO radar padavin',
     linkWindAloft: 'Veter na višini (Windy)',
+    linkSynopticChart: 'Sinoptična karta (ECMWF)',
     linkSkytech: 'SkyTech.si',
     loadingData: 'Nalagam podatke…',
     siteDataUnavailable: 'Podatki za to vzletišče še niso na voljo.',
@@ -199,6 +200,7 @@ const TRANSLATIONS = {
     linkArsoAviation: 'ARSO aviation weather',
     linkArsoRadar: 'ARSO precipitation radar',
     linkWindAloft: 'Wind aloft (Windy)',
+    linkSynopticChart: 'Synoptic chart (ECMWF)',
     linkSkytech: 'SkyTech.si',
     loadingData: 'Loading data…',
     siteDataUnavailable: 'Data for this launch site is not available yet.',
@@ -1429,6 +1431,7 @@ function renderLinks(data) {
     { href: links.arsoAviation, label: t('linkArsoAviation') },
     { href: links.arsoRadar, label: t('linkArsoRadar') },
     { href: links.windAloft, label: t('linkWindAloft') },
+    { href: links.synopticChart, label: t('linkSynopticChart') },
     { href: links.skytech, label: t('linkSkytech') },
   ].filter((i) => i.href);
   if (items.length === 0) {

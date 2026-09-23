@@ -47,6 +47,7 @@ za pilote:
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
 | **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini |
 | **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Povezava "Veter na višini (Windy)" v kartici "Povezave" na dnu strani – za več podrobnosti/nivojev, kot jih prikaže tabela |
+| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisana javna karta pritiska na morski gladini (MSLP) + vetra na 850 hPa za Evropo, osvežena z vsakim tekom ECMWF-jevega modela, CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji (JSON API vrne trenutno veljaven PNG URL); povezava "Sinoptična karta (ECMWF)" v kartici "Povezave" – dopolnjuje trend zračnega pritiska spodaj z dejansko sliko sinoptične situacije (pritisni sistemi, groba orientacija front) |
 
 ### Ocene, specifične za jadralno padalstvo
 
@@ -504,6 +505,13 @@ uveljavljen posreden kazalnik (hiter padec napoveduje približevanje
 nizkega pritiska/fronte, hiter dvig krepitev anticiklona), za katerega
 podatek že imamo.
 
+Poleg tega izračunanega trenda je v kartici "Povezave" na dnu strani
+tudi povezava **"Sinoptična karta (ECMWF)"** - dejanska, vnaprej
+izrisana karta pritiska + vetra na 850 hPa za Evropo (glej "ECMWF Open
+Charts" v tabeli virov zgoraj), na kateri je približna lokacija
+pritisnih sistemov (in posredno front) vidna neposredno, ne le kot
+izračunan trend na eni točki.
+
 - `pressureHpa` je ARSO polje (`msl` - pritisk na morski gladini),
   razčlenjeno že v `src/arso.js` za vsak 3h vnos napovedi, doslej pa
   nikjer prikazano.
@@ -518,6 +526,17 @@ podatek že imamo.
   sicer prikazuje živo SkyTech meritev (`useLive`) - SkyTech postaje
   pritiska ne merijo, zato ta podatek ni odvisen od izbire žive
   postaje.
+- **Sinoptična karta (ECMWF)** je za razliko od trenda ENA SAMA karta za
+  celotno Evropo, ne po vzletišču/lokaciji - `src/ecmwf.js` jo ob vsaki
+  izgradnji pridobi z enim samim klicem (`fetchSynopticChartUrl`,
+  JSON API `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/`
+  vrne trenutno veljaven PNG URL), `scripts/build-data.js` pa isto
+  povezavo doda vsem vzletiščem. Sama HTML produktna stran ECMWF-ja je
+  za brskalnike zaščitena z anti-bot izzivom (Anubis), a JSON API in
+  sam PNG nista (potrjeno prek GitHub Actions - status 200/`image/png`
+  tako s kot brez posebne `User-Agent` glave), zato je varno za
+  neposredno povezavo v aplikaciji. Če klic spodleti, se povezava preprosto
+  izpusti iz kartice "Povezave" (ne podre izgradnje).
 
 ### Veter po višini (🌬️)
 

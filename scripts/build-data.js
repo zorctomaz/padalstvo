@@ -21,6 +21,7 @@ const { buildParaglidingSummary, buildGenericLocationForecast } = require('../sr
 const { fetchAllStations, fetchStationHistory } = require('../src/skytech');
 const { fetchAllThermalRegions, REGION_CENTERS } = require('../src/arso-thermal');
 const { ARSO_LOCATIONS } = require('../src/arso-locations');
+const { fetchSynopticChartUrl } = require('../src/ecmwf');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
@@ -188,12 +189,19 @@ async function main() {
   const arsoLocationsResult = await buildArsoLocations();
   console.log(`OK(${arsoLocationsResult.ok}/${arsoLocationsResult.total})`);
 
+  // Ena sama karta za celotno Evropo (ni vezana na posamezno vzletišče) -
+  // en klic, nato deljen med vsemi vzletišči spodaj (glej src/ecmwf.js).
+  process.stdout.write('Pridobivam ECMWF sinoptično karto (MSLP + veter 850 hPa)... ');
+  const synopticChart = await fetchSynopticChartUrl();
+  console.log(synopticChart.ok ? 'OK' : `NAPAKA(${synopticChart.error})`);
+
   const results = [];
   const relevantStationIds = new Set();
   for (const site of sites) {
     process.stdout.write(`Gradim podatke za ${site.name} (${site.id})... `);
     try {
       const summary = await buildSite(site, stationById, skytech.stations, thermalRegions);
+      if (synopticChart.ok) summary.links.synopticChart = synopticChart.url;
       fs.writeFileSync(
         path.join(WEATHER_DIR, `${site.id}.json`),
         JSON.stringify(summary, null, 2)
