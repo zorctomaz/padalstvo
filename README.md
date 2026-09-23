@@ -317,6 +317,17 @@ vzletišča z lastnim vnosom v `src/sites.json`. Izračuna jo
 GPS koordinate vzletišča do vseh 62 postaj), prikazana je v kartici
 "📡 Druga merilna mesta v bližini" na strani.
 
+**Zajamčen minimum 3 postaj** (dodano po poročilu uporabnika za
+Pogorelec, ki v 25 km nima nobene): če je znotraj 25 km manj kot 3 živih
+postaj, funkcija namesto praznega/pretankega seznama raje vrne 3
+najbližje žive postaje ne glede na razdaljo. Starostni filter (varovalka
+pred pokvarjenimi postajami, glej spodaj) pri tem NIKOLI ne popusti - v
+skrajnem primeru (npr. res ni nobene žive postaje s svežo meritvijo v
+celotnem naboru) je lahko vrnjenih tudi manj kot 3. Enaka logika (isti
+`NEARBY_STATIONS_MIN_COUNT`/`NEARBY_MIN_COUNT` vzorec) velja tudi za
+klientski `computeNearbyStationsForPoint` (razdelek "Moja lokacija"
+spodaj).
+
 **Znana napaka podatkov pri viru (popravljeno 2026-09-20):** več neaktivnih
 SkyTech postaj vrača skupno privzeto/napačno koordinato (najpogosteje
 `lat:46, lon:15`, ena varianta tudi `lat:46, lon:15.1` za "Kranjska gora",

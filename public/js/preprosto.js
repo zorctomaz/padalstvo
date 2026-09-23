@@ -159,6 +159,7 @@ async function loadThermalRegions() {
 
 const NEARBY_MAX_DISTANCE_KM = 25;
 const NEARBY_MAX_COUNT = 6;
+const NEARBY_MIN_COUNT = 3;
 const NEARBY_MAX_AGE_MINUTES = 24 * 60;
 
 /**
@@ -168,7 +169,7 @@ const NEARBY_MAX_AGE_MINUTES = 24 * 60;
  */
 function computeNearbyStationsForPoint(stations, lat, lon, excludeId) {
   if (!Array.isArray(stations)) return [];
-  return stations
+  const candidates = stations
     .filter((s) =>
       s.id !== excludeId &&
       typeof s.lat === 'number' &&
@@ -191,9 +192,14 @@ function computeNearbyStationsForPoint(stations, lat, lon, excludeId) {
         temperatureC: m.temperatureC,
       };
     })
-    .filter((s) => s.distanceKm <= NEARBY_MAX_DISTANCE_KM && s.ageMinutes != null && s.ageMinutes <= NEARBY_MAX_AGE_MINUTES)
-    .sort((a, b) => a.distanceKm - b.distanceKm)
-    .slice(0, NEARBY_MAX_COUNT);
+    // Starostni filter (varovalka pred pokvarjenimi postajami s privzeto
+    // koordinato, glej summarizeNearbyStations v src/paragliding.js) ostane
+    // vedno aktiven, tudi spodaj, ko popustimo razdaljno omejitev.
+    .filter((s) => s.ageMinutes != null && s.ageMinutes <= NEARBY_MAX_AGE_MINUTES)
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+
+  const withinRange = candidates.filter((s) => s.distanceKm <= NEARBY_MAX_DISTANCE_KM).slice(0, NEARBY_MAX_COUNT);
+  return withinRange.length >= NEARBY_MIN_COUNT ? withinRange : candidates.slice(0, NEARBY_MIN_COUNT);
 }
 
 /**

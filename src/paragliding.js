@@ -243,6 +243,7 @@ function summarizeSkytechStation(station) {
 
 const NEARBY_STATIONS_MAX_DISTANCE_KM = 25;
 const NEARBY_STATIONS_MAX_COUNT = 6;
+const NEARBY_STATIONS_MIN_COUNT = 3;
 const NEARBY_STATIONS_MAX_AGE_MINUTES = 24 * 60;
 
 /**
@@ -265,10 +266,18 @@ const NEARBY_STATIONS_MAX_AGE_MINUTES = 24 * 60;
  * splošen signal je STAROST meritve: vse doslej najdene pokvarjene postaje
  * imajo meritev staro več kot 24h (do skoraj 3 leta), medtem ko imajo
  * prave žive postaje meritev staro nekaj minut. Glej SKYTECH_API_ISSUES.md.
+ *
+ * Prednostno vrne do NEARBY_STATIONS_MAX_COUNT živih postaj znotraj
+ * NEARBY_STATIONS_MAX_DISTANCE_KM - če jih toliko ni (npr. Pogorelec na
+ * Dolenjskem, kjer v 25 km ni nobene), pa raje pokaže NEARBY_STATIONS_MIN_COUNT
+ * najbližjih ŽIVIH postaj ne glede na razdaljo, kot prazen/pretanek seznam.
+ * Starostni filter (varovalka pred pokvarjenimi postajami, glej zgoraj)
+ * ostane pri tem VEDNO aktiven - nikoli ne prikažemo postaje s
+ * sumljivo/zastarelo meritvijo samo zato, da bi dosegli minimalno število.
  */
 function summarizeNearbyStations(allStations, site, excludeStationId) {
   if (!Array.isArray(allStations) || allStations.length === 0) return [];
-  return allStations
+  const candidates = allStations
     .filter((s) =>
       s.id !== excludeStationId &&
       typeof s.lat === 'number' &&
@@ -280,14 +289,22 @@ function summarizeNearbyStations(allStations, site, excludeStationId) {
       altitude: s.altitude ?? null,
       ...summarizeSkytechStation(s),
     }))
-    .filter((s) =>
-      s.hasMeasurement &&
-      s.distanceKm <= NEARBY_STATIONS_MAX_DISTANCE_KM &&
-      s.ageMinutes != null &&
-      s.ageMinutes <= NEARBY_STATIONS_MAX_AGE_MINUTES
-    )
-    .sort((a, b) => a.distanceKm - b.distanceKm)
+    // Starostni filter (glej opombo zgoraj) je varovalka pred pokvarjenimi
+    // postajami, ne le "svežina" - zato ostane vedno aktiven, tudi spodaj,
+    // ko zaradi premalo postaj v 25 km popustimo RAZDALJNO omejitev.
+    .filter((s) => s.hasMeasurement && s.ageMinutes != null && s.ageMinutes <= NEARBY_STATIONS_MAX_AGE_MINUTES)
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+
+  const withinRange = candidates
+    .filter((s) => s.distanceKm <= NEARBY_STATIONS_MAX_DISTANCE_KM)
     .slice(0, NEARBY_STATIONS_MAX_COUNT);
+
+  // Nekatera vzletišča (npr. Pogorelec na Dolenjskem) nimajo NITI treh
+  // živih postaj v 25 km - v tem primeru raje pokažemo najbližje žive
+  // postaje ne glede na razdaljo, kot da seznam ostane prazen/skop.
+  return withinRange.length >= NEARBY_STATIONS_MIN_COUNT
+    ? withinRange
+    : candidates.slice(0, NEARBY_STATIONS_MIN_COUNT);
 }
 
 function buildLinks(site) {
