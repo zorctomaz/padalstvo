@@ -1099,7 +1099,7 @@ function addSiteMarkersToMapPicker() {
       .addTo(mapPickerMap)
       .on('click', () => {
         mapPickerSelectedStation = null;
-        setMapPickerPoint(site.lat, site.lon);
+        setMapPickerPoint(site.lat, site.lon, `🪂 ${site.name}`);
         openSiteInfoModal(site);
       });
   }
@@ -1148,7 +1148,7 @@ async function addStationMarkersToMapPicker() {
       .addTo(mapPickerMap)
       .on('click', () => {
         mapPickerSelectedStation = s;
-        setMapPickerPoint(s.lat, s.lon);
+        setMapPickerPoint(s.lat, s.lon, `📡 ${s.name}`);
         openHistoryModal(s.id, s.name, s);
       });
   }
@@ -1177,7 +1177,12 @@ function initMapPicker() {
   }
 }
 
-function setMapPickerPoint(lat, lon) {
+function formatMapCoordsLabel(lat, lon, name) {
+  const coords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  return name ? `Izbrana lokacija: ${name} (${coords})` : `Izbrana lokacija: ${coords}`;
+}
+
+function setMapPickerPoint(lat, lon, name) {
   mapPickerLatLng = { lat, lon };
   if (mapPickerMarker) {
     mapPickerMarker.setLatLng([lat, lon]);
@@ -1187,10 +1192,10 @@ function setMapPickerPoint(lat, lon) {
       const p = mapPickerMarker.getLatLng();
       mapPickerLatLng = { lat: p.lat, lon: p.lng };
       mapPickerSelectedStation = null;
-      el.mapCoordsLabel.textContent = `Izbrana lokacija: ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;
+      el.mapCoordsLabel.textContent = formatMapCoordsLabel(p.lat, p.lng, null);
     });
   }
-  el.mapCoordsLabel.textContent = `Izbrana lokacija: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  el.mapCoordsLabel.textContent = formatMapCoordsLabel(lat, lon, name);
   el.mapConfirmBtn.disabled = false;
 }
 
