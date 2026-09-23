@@ -19,6 +19,9 @@ za pilote:
 - grobo oceno termike in **okvirno "termalno okno"** (v katerih urah je
   termika verjetno aktivna) z oceno primernosti za XC prelete,
 - padavine/točo v bližini,
+- **trend zračnega pritiska** (zadnjih ~24 ur, glej opombo spodaj) –
+  zgoden signal približevanja nizkega pritiska/fronte ali krepitve
+  anticiklona,
 - **druga SkyTech merilna mesta v bližini izbrane lokacije** (do 25 km,
   niso uradna vzletišča, a dajo dodaten vpogled v veter na sosednjih
   vrhovih/dolinah, kjer nameravaš leteti),
@@ -487,6 +490,34 @@ kratica→puščica: `windArrow` (ARSO/SI vhod) in `windArrowSkytech`
 podatek dejansko prihaja (npr. v `renderCurrent` glede na `useLive` –
 živ SkyTech podatek uporabi `windArrowSkytech`, ARSO napoved pa
 `windArrow`), ne glede na trenutno izbrani prikazni jezik strani.
+
+### Trend zračnega pritiska
+
+Pod glavno kartico "trenutno stanje" je vrstica s trenutnim pritiskom
+(hPa) in trendom naslednjih ~24 ur, npr. "Pritisk: 1015 hPa ↓ · hitro
+pada (-9 hPa / 24 h) – mogoča bližajoča se fronta". Namen: neposrednih
+podatkov o poimenovanih ciklonih/anticiklonih ali natančnih mejah front
+noben preverjen brezplačen vir ne objavlja strojno berljivo (ARSO in
+drugi te objavljajo le kot sinoptične **karte/slike** - glej "ARSO
+letalsko vreme" v tabeli virov zgoraj) - trend pritiska pa je
+uveljavljen posreden kazalnik (hiter padec napoveduje približevanje
+nizkega pritiska/fronte, hiter dvig krepitev anticiklona), za katerega
+podatek že imamo.
+
+- `pressureHpa` je ARSO polje (`msl` - pritisk na morski gladini),
+  razčlenjeno že v `src/arso.js` za vsak 3h vnos napovedi, doslej pa
+  nikjer prikazano.
+- `computePressureTrend` (v `public/js/app.js`) med vsemi vnosi
+  tedenske napovedi (`data.forecast`) poišče prvega z razpoložljivim
+  pritiskom in tistega ~24 ur kasneje (ali zadnjega razpoložljivega, če
+  napoved ne sega tako daleč) ter izračuna razliko.
+- Prag za "hitro pada/narašča" (±6 hPa/24h) je groba hevristika, ne
+  uradna meja - pri manjši spremembi (<2 hPa/24h) se prikaže kot
+  "stabilen", brez puščice.
+- Prikazano je **vedno iz ARSO napovedi**, ne glede na to, ali kartica
+  sicer prikazuje živo SkyTech meritev (`useLive`) - SkyTech postaje
+  pritiska ne merijo, zato ta podatek ni odvisen od izbire žive
+  postaje.
 
 ### Veter po višini (🌬️)
 

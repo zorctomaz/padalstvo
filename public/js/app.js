@@ -64,6 +64,12 @@ const TRANSLATIONS = {
     labelDirection: 'Smer',
     labelDirectionEst: 'Smer (ocena)',
     labelTemp: 'Temperatura',
+    labelPressure: 'Pritisk',
+    pressureSteady: 'stabilen',
+    pressureFalling: (delta, hours) => `pada (${delta} hPa / ${hours} h)`,
+    pressureFallingFast: (delta, hours) => `hitro pada (${delta} hPa / ${hours} h) – mogoča bližajoča se fronta`,
+    pressureRising: (delta, hours) => `narašča (+${delta} hPa / ${hours} h)`,
+    pressureRisingFast: (delta, hours) => `hitro narašča (+${delta} hPa / ${hours} h) – krepitev visokega pritiska`,
     currentMeasurement: 'Trenutna meritev',
     agoLessMinute: 'pred manj kot minuto',
     agoMinutes: (min) => `pred ${min} min`,
@@ -150,6 +156,12 @@ const TRANSLATIONS = {
     labelDirection: 'Direction',
     labelDirectionEst: 'Direction (estimate)',
     labelTemp: 'Temperature',
+    labelPressure: 'Pressure',
+    pressureSteady: 'steady',
+    pressureFalling: (delta, hours) => `falling (${delta} hPa / ${hours} h)`,
+    pressureFallingFast: (delta, hours) => `falling fast (${delta} hPa / ${hours} h) – a front may be approaching`,
+    pressureRising: (delta, hours) => `rising (+${delta} hPa / ${hours} h)`,
+    pressureRisingFast: (delta, hours) => `rising fast (+${delta} hPa / ${hours} h) – high pressure building`,
     currentMeasurement: 'Current measurement',
     agoLessMinute: 'less than a minute ago',
     agoMinutes: (min) => `${min} min ago`,
@@ -1238,6 +1250,52 @@ function closeMapPicker() {
 
 /* ---------- Prikaz podatkov ---------- */
 
+/**
+ * Trend zračnega pritiska iz ARSO napovedi (data.forecast, polje
+ * pressureHpa na vsakem 3h vnosu - že razčlenjeno v src/arso.js, doslej
+ * pa nikjer prikazano). Primerja prvi razpoložljivi vnos s tistim ~24h
+ * kasneje - padajoč pritisk je zgoden signal približevanja nizkega
+ * pritiska/fronte, naraščajoč pa krepitve območja visokega pritiska.
+ * Neodvisno od žive SkyTech postaje (ta pritiska ne meri) - vedno iz
+ * ARSO napovedi, ne glede na useLive/stationMode.
+ */
+function computePressureTrend(days) {
+  const entries = [];
+  for (const day of days || []) {
+    for (const e of day.timeline || []) {
+      if (e.pressureHpa != null && e.time) entries.push({ ms: new Date(e.time).getTime(), hpa: e.pressureHpa });
+    }
+  }
+  if (entries.length === 0) return null;
+  entries.sort((a, b) => a.ms - b.ms);
+  const start = entries[0];
+  const targetMs = start.ms + 24 * 3600 * 1000;
+  let end = entries[entries.length - 1];
+  for (const e of entries) {
+    if (e.ms >= targetMs) {
+      end = e;
+      break;
+    }
+  }
+  const hours = Math.round((end.ms - start.ms) / 3600000);
+  const deltaHpa = hours >= 3 ? Math.round((end.hpa - start.hpa) * 10) / 10 : 0;
+  return { currentHpa: Math.round(start.hpa), deltaHpa, hours };
+}
+
+function renderPressureTrend(data) {
+  const trend = computePressureTrend(data.forecast);
+  if (!trend || trend.hours < 3) return '';
+  const { currentHpa, deltaHpa, hours } = trend;
+  let note;
+  if (deltaHpa <= -6) note = t('pressureFallingFast', deltaHpa, hours);
+  else if (deltaHpa <= -2) note = t('pressureFalling', deltaHpa, hours);
+  else if (deltaHpa >= 6) note = t('pressureRisingFast', deltaHpa, hours);
+  else if (deltaHpa >= 2) note = t('pressureRising', deltaHpa, hours);
+  else note = t('pressureSteady');
+  const arrow = deltaHpa <= -2 ? ' ↓' : deltaHpa >= 2 ? ' ↑' : '';
+  return `<p class="meta">${t('labelPressure')}: ${currentHpa} hPa${arrow} · ${note}</p>`;
+}
+
 function renderCurrent(data) {
   el.siteName.textContent = data.myLocationMode ? t('myLocation') : data.site.name;
   const arsoSourceName = data.arsoLocationName || data.site.name;
@@ -1274,7 +1332,8 @@ function renderCurrent(data) {
   const verdictParts = [];
   if (windRating) verdictParts.push(`<span class="${pillClass(windRating.color)}">${translateRatingLabel(windRating.label)}</span>`);
   if (dirRating && (data.stationMode || !data.myLocationMode)) verdictParts.push(`<span class="${pillClass(dirRating.color)}">${translateRatingLabel(dirRating.label)}</span>`);
-  el.verdicts.innerHTML = verdictParts.join('') + `<p class="meta" style="margin-top:10px;">${t('sourceLabel', source)}</p>`;
+  el.verdicts.innerHTML =
+    verdictParts.join('') + renderPressureTrend(data) + `<p class="meta" style="margin-top:10px;">${t('sourceLabel', source)}</p>`;
 
   if (useLive) {
     el.currentBlock.dataset.stationId = sk.stationId;
