@@ -36,6 +36,7 @@ const state = {
   arsoLocations: null,
   arsoLocationForecastCache: new Map(),
   windAloftRequestToken: null,
+  siteInfoRequestToken: null,
   nightOverride: false,
   stationHistoryCache: new Map(),
   currentHistoryStationId: null,
@@ -1038,23 +1039,41 @@ function openHistoryModal(stationId, stationName, station) {
 }
 
 /**
+ * Statično besedilo o stanju žive postaje (brez dejanske meritve) - uporabljeno
+ * kot začetni/rezervni prikaz, dokler (če) se ne naloži dejanska živa meritev
+ * spodaj. ls.phone je lahko null (potrjeno prek SkyTech API-ja, brez telefona)
+ * - takrat ga NE izpišemo (prej se je zaradi predloge izpisal dobesedni "null").
+ */
+function staticLiveStationText(site) {
+  const ls = site.liveStation;
+  if (!ls || !ls.confirmed) return '📊 Brez potrjene žive postaje na vzletišču (le ARSO napoved).';
+  const parts = ['📡 Živa postaja'];
+  if (ls.phone) parts.push(ls.phone);
+  if (ls.note) parts.push(ls.note);
+  return parts.join(' — ');
+}
+
+/**
  * Prikaz podatkov o uradnem vzletišču (isto kot na prvi strani ob
  * izbiri vzletišča - nadmorska višina, primerna smer vzleta, stanje
  * žive postaje, opombe) - uporabljeno za oznake vzletišč na
- * zemljevidu, v istem modalnem oknu kot postaje.
+ * zemljevidu, v istem modalnem oknu kot postaje. Poleg statičnega opisa
+ * asinhrono naloži tudi DEJANSKO zadnjo meritev (data/weather/<id>.json,
+ * data.skytech) - prej je bilo tu vidno le "potrjeno"/telefon, ne pa
+ * resnične žive vrednosti vetra, kar je delovalo, kot da živih podatkov
+ * sploh ni (glej tudi popravek "null" telefona zgoraj).
  */
-function openSiteInfoModal(site) {
+
+async function openSiteInfoModal(site) {
   state.currentHistoryStationId = null;
+  const requestToken = Symbol('siteInfo');
+  state.siteInfoRequestToken = requestToken;
   el.historyModalTitle.textContent = `🪂 ${site.name}`;
   el.historyModalSnapshot.innerHTML = '';
-  const ls = site.liveStation;
-  const liveText = ls && ls.confirmed
-    ? `📡 Živa postaja: ${ls.phone}${ls.note ? ` — ${ls.note}` : ''}`
-    : '📊 Brez potrjene žive postaje na vzletišču (le ARSO napoved).';
   el.historyModalBody.innerHTML = `
     <p class="muted">${site.region} · nadmorska višina vzletišča: ${site.elevation != null ? site.elevation + ' m' : '—'}</p>
     ${site.launchWindDirections ? `<p>Primerna smer vzleta: <strong>${site.launchWindDirections.join(', ')}</strong></p>` : ''}
-    <p>${liveText}</p>
+    <div id="siteInfoLive"><p class="muted small">Nalagam žive podatke…</p></div>
     ${site.notes ? `<p class="muted small">${site.notes}</p>` : ''}
     <button id="siteInfoWeatherBtn" class="btn btn-primary map-confirm-btn" type="button">Pokaži napoved za to vzletišče →</button>
   `;
@@ -1065,6 +1084,28 @@ function openSiteInfoModal(site) {
     el.siteSelect.value = site.id;
     loadWeatherForSite(site.id);
   });
+
+  const liveEl = document.getElementById('siteInfoLive');
+  let sk = null;
+  try {
+    const res = await fetch(`data/weather/${site.id}.json`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      sk = data.skytech || null;
+    }
+  } catch (_) {
+    // tiho nazaj na statično besedilo spodaj
+  }
+  if (state.siteInfoRequestToken !== requestToken) return; // uporabnik je medtem izbral drugo oznako
+
+  if (sk && sk.hasMeasurement) {
+    const ageText = sk.ageMinutes != null
+      ? (sk.ageMinutes <= 1 ? 'pred manj kot minuto' : `pred ${sk.ageMinutes} min`)
+      : '';
+    liveEl.innerHTML = `<p>📡 Živa meritev (${sk.stationName}, ${ageText}): <strong>${formatWind(sk.windSpeedKmh)}${sk.windDirection ? ' ' + sk.windDirection : ''}</strong>${sk.temperatureC != null ? `, ${sk.temperatureC}°C` : ''}</p>`;
+  } else {
+    liveEl.innerHTML = `<p>${staticLiveStationText(site)}</p>`;
+  }
 }
 
 /**
