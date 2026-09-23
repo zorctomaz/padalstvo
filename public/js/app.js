@@ -43,7 +43,6 @@ const state = {
 };
 
 const el = {
-  siteSelect: document.getElementById('siteSelect'),
   distanceInfo: document.getElementById('distanceInfo'),
   locateBtn: document.getElementById('locateBtn'),
   nightOverrideBtn: document.getElementById('nightOverrideBtn'),
@@ -400,12 +399,6 @@ async function loadSites() {
   const res = await fetch('data/sites.json', { cache: 'no-store' });
   if (!res.ok) throw new Error('Seznama vzletišč ni bilo mogoče naložiti.');
   state.sites = await res.json();
-  el.siteSelect.innerHTML = state.sites
-    .map((s) => {
-      const badge = s.liveStation && s.liveStation.confirmed ? '📡' : '📊';
-      return `<option value="${s.id}">${badge} ${s.name} — ${s.region}</option>`;
-    })
-    .join('');
 }
 
 async function loadMeta() {
@@ -435,7 +428,6 @@ function useLocation(lat, lon, altitude, station) {
   setStatus(null);
   const nearest = findNearestSite(lat, lon);
   if (nearest.site) {
-    el.siteSelect.value = nearest.site.id;
     // Končno besedilo (z natančnim virom ARSO napovedi) se izpiše šele v
     // showMyLocationWeather, ko je znan najbližji ARSO-podprt kraj - do
     // takrat prikažemo le koordinate.
@@ -1082,7 +1074,6 @@ async function openSiteInfoModal(site) {
   document.getElementById('siteInfoWeatherBtn').addEventListener('click', () => {
     closeHistoryModal();
     closeMapPicker();
-    el.siteSelect.value = site.id;
     loadWeatherForSite(site.id);
   });
 
@@ -1704,10 +1695,6 @@ function renderWeather(data) {
 }
 
 el.locateBtn.addEventListener('click', requestGeolocation);
-el.siteSelect.addEventListener('change', () => {
-  el.distanceInfo.textContent = '';
-  loadWeatherForSite(el.siteSelect.value);
-});
 el.nightOverrideBtn.addEventListener('click', () => {
   state.nightOverride = !state.nightOverride;
   updateNightMode();
@@ -1796,7 +1783,6 @@ document.addEventListener('keydown', (e) => {
     await loadSites();
     loadMeta();
     if (state.sites.length > 0) {
-      el.siteSelect.value = state.sites[0].id;
       await loadWeatherForSite(state.sites[0].id);
     }
     requestGeolocation();

@@ -54,7 +54,6 @@ const state = {
 const el = {
   unitMsBtn: document.getElementById('unitMsBtn'),
   unitKmhBtn: document.getElementById('unitKmhBtn'),
-  siteSelect: document.getElementById('siteSelect'),
   locateBtn: document.getElementById('locateBtn'),
   mapPickerBtn: document.getElementById('mapPickerBtn'),
   windAloftBlock: document.getElementById('windAloftBlock'),
@@ -130,7 +129,6 @@ async function loadSites() {
   const res = await fetch('data/sites.json', { cache: 'no-store' });
   if (!res.ok) throw new Error('Seznama vzletišč ni bilo mogoče naložiti.');
   state.sites = await res.json();
-  el.siteSelect.innerHTML = state.sites.map((s) => `<option value="${s.id}">${s.name} — ${s.region}</option>`).join('');
 }
 
 async function loadAllStations() {
@@ -1168,16 +1166,11 @@ function useLocation(lat, lon, station) {
   state.userCoords = { lat, lon };
   const nearest = findNearestSite(lat, lon);
   if (nearest.site) {
-    el.siteSelect.value = nearest.site.id;
     showMyLocationWeather(nearest, station);
   } else {
     setStatus('Ni najdenega bližnjega vzletišča.', 'error');
   }
 }
-
-el.siteSelect.addEventListener('change', () => {
-  loadWeatherForSite(el.siteSelect.value);
-});
 
 el.locateBtn.addEventListener('click', () => {
   if (!('geolocation' in navigator)) {
@@ -1278,7 +1271,6 @@ document.addEventListener('keydown', (e) => {
     updateUnitButtons();
     await loadSites();
     if (state.sites.length > 0) {
-      el.siteSelect.value = state.sites[0].id;
       await loadWeatherForSite(state.sites[0].id);
     }
   } catch (err) {

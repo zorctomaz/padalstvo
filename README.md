@@ -6,7 +6,9 @@ za TVOJO natančno GPS točko – ne glede na to, ali je uradno vzletišče in a
 je v bližini potrjena živa postaja (glej razdelek "Moja lokacija" spodaj);
 gumb "🗺️" poleg njega omogoči izbiro poljubne lokacije na interaktivnem
 zemljevidu (npr. če GPS ni na voljo ali želiš preveriti napoved za drug
-kraj); v padajočem seznamu pa lahko izbereš tudi katero od znanih vzletišč.
+kraj) - na istem zemljevidu (🪂 oznake) izbereš tudi katero od znanih
+vzletišč, zato ločenega padajočega seznama vzletišč (kakršen je bil
+prej nad zemljevidom) ni več.
 Aplikacija prikaže vremenske podatke ter iz njih izpeljane ocene, pomembne
 za pilote:
 

@@ -142,31 +142,6 @@ p {
   background: var(--white);
 }
 
-label {
-  display: block;
-  font-size: 1.05rem;
-  color: var(--cyan);
-  margin: 0 10px 6px;
-  letter-spacing: 0.03em;
-}
-
-select {
-  display: block;
-  width: calc(100% - 20px);
-  margin: 0 10px 12px;
-  padding: 10px;
-  border: 2px solid var(--cyan-dim);
-  background: var(--black);
-  color: var(--white);
-  font-family: 'VT323', monospace;
-  font-size: 1.2rem;
-}
-
-select:focus {
-  outline: 2px solid var(--cyan);
-  border-color: var(--cyan);
-}
-
 .btn-big {
   display: block;
   width: calc(100% - 20px);

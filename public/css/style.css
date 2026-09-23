@@ -195,23 +195,6 @@ body:not(.is-night) #app {
   margin-bottom: 14px;
 }
 
-.site-picker label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-select {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 1rem;
-}
-
 .status-box {
   padding: 12px 16px;
   border-radius: var(--radius);
