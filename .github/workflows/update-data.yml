@@ -43,8 +43,8 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
-      - name: Začasno - preišči ECMWF Open Charts (medium-mslp-wind850)
-        run: node scripts/debug-ecmwf-opencharts.js
+      - name: Začasno - preveri neposredno dosegljivost ECMWF PNG slike
+        run: node scripts/debug-ecmwf-image.js
 
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
