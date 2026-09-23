@@ -48,7 +48,8 @@ const el = {
   locateBtn: document.getElementById('locateBtn'),
   nightOverrideBtn: document.getElementById('nightOverrideBtn'),
   nightBanner: document.getElementById('nightBanner'),
-  unitSelect: document.getElementById('unitSelect'),
+  unitMsBtn: document.getElementById('unitMsBtn'),
+  unitKmhBtn: document.getElementById('unitKmhBtn'),
   statusBox: document.getElementById('statusBox'),
   skytechCard: document.getElementById('skytechCard'),
   skytechMeta: document.getElementById('skytechMeta'),
@@ -1711,13 +1712,19 @@ el.nightOverrideBtn.addEventListener('click', () => {
   state.nightOverride = !state.nightOverride;
   updateNightMode();
 });
-el.unitSelect.addEventListener('change', () => {
-  state.windUnit = el.unitSelect.value;
+function updateUnitButtons() {
+  el.unitMsBtn.setAttribute('aria-pressed', state.windUnit === 'ms' ? 'true' : 'false');
+  el.unitKmhBtn.setAttribute('aria-pressed', state.windUnit === 'kmh' ? 'true' : 'false');
+}
+
+function setWindUnit(unit) {
+  state.windUnit = unit;
   try {
     localStorage.setItem(WIND_UNIT_STORAGE_KEY, state.windUnit);
   } catch (_) {
     /* ni kritično, spregledamo */
   }
+  updateUnitButtons();
   if (state.weather) {
     renderSkytech(state.weather);
     renderCurrent(state.weather);
@@ -1727,7 +1734,10 @@ el.unitSelect.addEventListener('change', () => {
   if (state.currentHistoryStationId && state.stationHistoryCache.has(state.currentHistoryStationId)) {
     renderHistoryCharts(state.stationHistoryCache.get(state.currentHistoryStationId));
   }
-});
+}
+
+el.unitMsBtn.addEventListener('click', () => setWindUnit('ms'));
+el.unitKmhBtn.addEventListener('click', () => setWindUnit('kmh'));
 
 el.skytechCard.addEventListener('click', () => {
   const id = el.skytechCard.dataset.stationId;
@@ -1782,7 +1792,7 @@ document.addEventListener('keydown', (e) => {
 
 (async function init() {
   try {
-    el.unitSelect.value = state.windUnit;
+    updateUnitButtons();
     await loadSites();
     loadMeta();
     if (state.sites.length > 0) {

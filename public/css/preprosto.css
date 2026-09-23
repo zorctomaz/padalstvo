@@ -81,29 +81,49 @@ p {
 
 .topbar {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   padding: 14px 10px 16px;
   border-bottom: 2px solid var(--cyan-dim);
   margin-bottom: 16px;
   text-align: center;
-  flex-direction: column;
+}
+
+.brand-row {
+  display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
 }
 
-h1 {
-  font-size: clamp(2.2rem, 9vw, 3.2rem);
-  letter-spacing: 0.1em;
+.brand-icon {
+  display: flex;
   color: var(--yellow);
-  text-shadow: 0 0 6px rgba(255, 255, 85, 0.5);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 85, 0.5));
 }
 
-.subtitle {
+.paraglider-icon {
+  width: 56px;
+  height: 36px;
+}
+
+.unit-toggle-btn {
+  border: 2px solid var(--cyan);
+  background: var(--dos-blue-dark);
   color: var(--cyan);
-  font-size: 1.15rem;
-  letter-spacing: 0.08em;
-  margin-top: 2px;
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  padding: 8px 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.unit-toggle-btn[aria-pressed="true"] {
+  background: var(--cyan);
+  color: var(--dos-blue);
 }
 
 .back-link {

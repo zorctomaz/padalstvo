@@ -21,10 +21,13 @@ za pilote:
   niso uradna vzletišča, a dajo dodaten vpogled v veter na sosednjih
   vrhovih/dolinah, kjer nameravaš leteti),
 - povezavo na veter na višini (za oceno strižnega vetra pri XC preletih),
-- **izbiro enote za prikaz hitrosti vetra** (km/h, m/s, mph, vozli) v
-  izbirnem meniju na vrhu strani – izbira se shrani v brskalniku
-  (`localStorage`) in velja za vse prikaze hitrosti/sunkov vetra na
-  strani (interno se vedno računa v km/h, pretvorba je le za prikaz),
+- **izbiro enote za prikaz hitrosti vetra** (km/h ali m/s) prek dveh
+  gumbov v glavi strani, levo in desno od ikone padala – izbira se
+  shrani v brskalniku (`localStorage`, isti ključ na obeh straneh, glej
+  spodaj) in velja za vse prikaze hitrosti/sunkov vetra na strani
+  (interno se vedno računa v km/h, pretvorba je le za prikaz; mph in
+  vozli ostajata podprta v podatkovni strukturi za morebitno kasnejšo
+  uporabo, a nista dosegljiva prek teh dveh gumbov),
   - **nočno zatemnitev** – ponoči (med sončnim zahodom in vzhodom na
     relevantni lokaciji – glej razdelek spodaj) je stran namenoma zelo
     slabo vidna, saj se takrat jadralno padalstvo uradno (VFR, dnevno
@@ -219,9 +222,10 @@ Gumb "🔎 Enostavno" na vrhu glavne strani vodi na poenostavljeno
 podstran z **istimi podatki**, a manj razporejeno: en sam konsolidiran
 blok na vzletišče (veter, sunki, smer, temperatura, ocene, uradna ARSO
 termika, bližnje postaje, kompaktna tabela večdnevne napovedi,
-povezave) namesto več ločenih kartic, z večjimi pisavami. Brez izbire
-enote vetra (vedno km/h) - to ostane samo na glavni strani ("←
-Napredni pogled" v glavi podstrani).
+povezave) namesto več ločenih kartic, z večjimi pisavami. Izbira enote
+vetra (km/h/m/s) deluje enako kot na glavni strani, prek istih dveh
+gumbov v glavi podstrani ("← Napredni pogled" prav tako v glavi
+podstrani).
 
 Podstran ima tudi **izbiro lokacije na zemljevidu** (🗺️, Leaflet +
 OpenStreetMap - ista SRI-pinjena CDN skripta kot glavna stran) in

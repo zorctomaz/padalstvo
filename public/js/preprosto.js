@@ -2,16 +2,40 @@
 
 /**
  * Poenostavljena podstran - iste podatke kot glavna stran (app.js), a
- * manj razporejeno: en konsolidiran blok na vzletišče, večje pisave,
- * brez izbire enote vetra (vedno km/h). Bere ISTE JSON datoteke iz
- * /data/, ki jih zgradi scripts/build-data.js - brez dodatnega
- * strežniškega klica ali podvajanja podatkovnega cevovoda.
+ * manj razporejeno: en konsolidiran blok na vzletišče, večje pisave.
+ * Bere ISTE JSON datoteke iz /data/, ki jih zgradi scripts/build-data.js
+ * - brez dodatnega strežniškega klica ali podvajanja podatkovnega
+ * cevovoda.
  *
  * Izbira lokacije na zemljevidu in podrobnosti ob kliku na postajo/
  * termiko so namenoma ločena implementacija od app.js (ista logika,
  * kopirana in prilagojena - glej opombo pri computeNearbyStationsForPoint
  * zgoraj v README.md zakaj datoteki nista deljeni).
  */
+
+/**
+ * Enota za hitrost vetra - ista shema in isti localStorage ključ kot v
+ * app.js, da se izbira ohrani ne glede na to, katero od obeh strani
+ * uporabnik odpre. Tu na voljo le prek dveh gumbov (m/s, km/h) - mph/kn
+ * ostajata v podatkovni strukturi zaradi doslednosti z app.js, a nista
+ * dosegljiva prek uporabniškega vmesnika na tej (enostavni) strani.
+ */
+const WIND_UNITS = {
+  kmh: { label: 'km/h', factor: 1 },
+  ms: { label: 'm/s', factor: 1 / 3.6 },
+  mph: { label: 'mph', factor: 1 / 1.60934 },
+  kn: { label: 'kn', factor: 1 / 1.852 },
+};
+const WIND_UNIT_STORAGE_KEY = 'padalstvo-vreme:windUnit';
+
+function loadStoredWindUnit() {
+  try {
+    const stored = localStorage.getItem(WIND_UNIT_STORAGE_KEY);
+    return stored && WIND_UNITS[stored] ? stored : 'kmh';
+  } catch (_) {
+    return 'kmh';
+  }
+}
 
 const state = {
   sites: [],
@@ -24,9 +48,12 @@ const state = {
   lastData: null,
   stationHistoryCache: new Map(),
   currentHistoryStationId: null,
+  windUnit: loadStoredWindUnit(),
 };
 
 const el = {
+  unitMsBtn: document.getElementById('unitMsBtn'),
+  unitKmhBtn: document.getElementById('unitKmhBtn'),
   siteSelect: document.getElementById('siteSelect'),
   locateBtn: document.getElementById('locateBtn'),
   mapPickerBtn: document.getElementById('mapPickerBtn'),
@@ -251,8 +278,19 @@ function formatDayLabel(dateStr) {
   return d.toLocaleDateString('sl-SI', { weekday: 'short', day: 'numeric', month: 'numeric' });
 }
 
-function formatWind(v) {
-  return v !== null && v !== undefined ? Math.round(v) + ' km/h' : '—';
+/** Vhod je vedno v km/h (tako jih vrača build-data.js) - pretvorimo v
+ * trenutno izbrano enoto (glej WIND_UNITS/state.windUnit zgoraj). */
+function formatWind(windSpeedKmh) {
+  if (windSpeedKmh === null || windSpeedKmh === undefined) return '—';
+  const unit = WIND_UNITS[state.windUnit] || WIND_UNITS.kmh;
+  const value = Math.round(windSpeedKmh * unit.factor * 10) / 10;
+  return `${value} ${unit.label}`;
+}
+
+function convertWindValue(windSpeedKmh) {
+  if (windSpeedKmh === null || windSpeedKmh === undefined) return null;
+  const unit = WIND_UNITS[state.windUnit] || WIND_UNITS.kmh;
+  return Math.round(windSpeedKmh * unit.factor * 10) / 10;
 }
 
 function metricBox(label, value, pill) {
@@ -344,7 +382,7 @@ function formatWindAloftColHeader(timeStr) {
   return `<div class="wa-day">${day}</div><div class="wa-hour">${hour}</div>`;
 }
 
-function buildWindAloftTable(aloft) {
+function buildWindAloftTable(aloft, windSpeedFormatter, unitLabel) {
   const colCount = aloft.times.length;
   const headerRow = `<tr><th></th>${aloft.times.map((t) => `<th>${formatWindAloftColHeader(t)}</th>`).join('')}</tr>`;
 
@@ -368,7 +406,7 @@ function buildWindAloftTable(aloft) {
           const arrow = deg !== null && deg !== undefined
             ? `<span class="wa-arrow" style="transform:rotate(${deg}deg)">↑</span>`
             : '';
-          const speedText = s !== null && s !== undefined ? Math.round(s) : '—';
+          const speedText = s !== null && s !== undefined ? windSpeedFormatter(s) : '—';
           return `<td class="${cls}">${arrow}<br>${speedText}</td>`;
         })
         .join('');
@@ -383,7 +421,7 @@ function buildWindAloftTable(aloft) {
         <tbody>
           <tr class="wa-section"><th colspan="${colCount + 1}">Temperatura (°C)</th></tr>
           ${tempRows}
-          <tr class="wa-section"><th colspan="${colCount + 1}">Veter (km/h) · ↑ = od kod piha</th></tr>
+          <tr class="wa-section"><th colspan="${colCount + 1}">Veter (${unitLabel}) · ↑ = od kod piha</th></tr>
           ${windRows}
         </tbody>
       </table>
@@ -415,8 +453,9 @@ async function renderWindAloft(data) {
   try {
     const aloft = await fetchWindAloft(coords.lat, coords.lon);
     if (state.windAloftRequestToken !== requestToken) return;
+    const unitLabel = (WIND_UNITS[state.windUnit] || WIND_UNITS.kmh).label;
     el.windAloftMeta.textContent = 'Vir: Open-Meteo (ne ARSO) · naslednja 2 dni, vsake 3 ure';
-    el.windAloftList.innerHTML = buildWindAloftTable(aloft);
+    el.windAloftList.innerHTML = buildWindAloftTable(aloft, (kmh) => Math.round(convertWindValue(kmh)), unitLabel);
   } catch (err) {
     if (state.windAloftRequestToken !== requestToken) return;
     el.windAloftMeta.textContent = 'Podatkov trenutno ni bilo mogoče naložiti.';
@@ -633,15 +672,16 @@ function renderHistoryCharts(history) {
     return;
   }
   const m = history.measurements;
-  const windSeries = m.map((e) => ({ time: e.time, value: e.windSpeedKmh }));
-  const gustSeries = m.map((e) => ({ time: e.time, value: e.windGustKmh }));
+  const unitLabel = (WIND_UNITS[state.windUnit] || WIND_UNITS.kmh).label;
+  const windSeries = m.map((e) => ({ time: e.time, value: convertWindValue(e.windSpeedKmh) }));
+  const gustSeries = m.map((e) => ({ time: e.time, value: convertWindValue(e.windGustKmh) }));
   const dirSeries = m.map((e) => ({ time: e.time, direction: e.windDirection }));
   const tempSeries = m.map((e) => ({ time: e.time, value: e.temperatureC }));
   const hoursSpan = Math.round((m.length * 10) / 6) / 10;
 
   el.historyModalBody.innerHTML = `
     <div class="chart-block">
-      <h4>Veter (km/h)</h4>
+      <h4>Veter (${unitLabel})</h4>
       ${buildLineChartSvg({ series: windSeries, series2: gustSeries, color: '#55ffff', color2: '#ffaa00' })}
       ${buildDirectionArrowsSvg(dirSeries)}
       <p class="meta small">↑ = smer, od koder piha veter (sever = puščica navzgor), po ena za vsako uro.</p>
@@ -901,8 +941,8 @@ function renderCurrent(data) {
   const source = useLive ? `živa meritev (${sk.stationName})` : 'ARSO napoved';
 
   el.currentStats.innerHTML = `
-    <div class="big-stat"><div class="label">Veter</div><div class="value">${windSpeed != null ? Math.round(windSpeed) + ' km/h' : '—'}</div></div>
-    <div class="big-stat"><div class="label">Sunki</div><div class="value">${windGust != null ? Math.round(windGust) + ' km/h' : '—'}</div></div>
+    <div class="big-stat"><div class="label">Veter</div><div class="value">${formatWind(windSpeed)}</div></div>
+    <div class="big-stat"><div class="label">Sunki</div><div class="value">${formatWind(windGust)}</div></div>
     <div class="big-stat"><div class="label">Smer</div><div class="value">${windDir || '—'}</div></div>
     <div class="big-stat"><div class="label">Temperatura</div><div class="value">${temp != null ? Math.round(temp) + '°C' : '—'}</div></div>
   `;
@@ -953,7 +993,7 @@ function renderNearby(data) {
       (s) => `
     <li data-station-id="${s.stationId}" data-station-name="${s.stationName}">
       <span>${s.stationName} (${s.distanceKm} km)</span>
-      <span>${s.windSpeedKmh != null ? Math.round(s.windSpeedKmh) + ' km/h ' + (s.windDirection || '') : '—'}</span>
+      <span>${s.windSpeedKmh != null ? formatWind(s.windSpeedKmh) + ' ' + (s.windDirection || '') : '—'}</span>
     </li>
   `
     )
@@ -983,7 +1023,7 @@ function renderForecast(data) {
       const tMin = temps.length ? Math.round(Math.min(...temps)) : null;
       const tMax = temps.length ? Math.round(Math.max(...temps)) : null;
       const windText = windPeak
-        ? `do ${Math.round(windPeak.windSpeedKmh)} km/h${windPeak.windDirection ? ' ' + windArrow(windPeak.windDirection) : ''}`
+        ? `do ${formatWind(windPeak.windSpeedKmh)}${windPeak.windDirection ? ' ' + windArrow(windPeak.windDirection) : ''}`
         : '—';
       return `
         <tr>
@@ -1155,6 +1195,32 @@ el.locateBtn.addEventListener('click', () => {
   );
 });
 
+function updateUnitButtons() {
+  el.unitMsBtn.setAttribute('aria-pressed', state.windUnit === 'ms' ? 'true' : 'false');
+  el.unitKmhBtn.setAttribute('aria-pressed', state.windUnit === 'kmh' ? 'true' : 'false');
+}
+
+function setWindUnit(unit) {
+  state.windUnit = unit;
+  try {
+    localStorage.setItem(WIND_UNIT_STORAGE_KEY, state.windUnit);
+  } catch (_) {
+    /* ni kritično, spregledamo */
+  }
+  updateUnitButtons();
+  if (state.lastData) {
+    renderCurrent(state.lastData);
+    renderNearby(state.lastData);
+    renderForecast(state.lastData);
+  }
+  if (state.currentHistoryStationId && state.stationHistoryCache.has(state.currentHistoryStationId)) {
+    renderHistoryCharts(state.stationHistoryCache.get(state.currentHistoryStationId));
+  }
+}
+
+el.unitMsBtn.addEventListener('click', () => setWindUnit('ms'));
+el.unitKmhBtn.addEventListener('click', () => setWindUnit('kmh'));
+
 el.mapPickerBtn.addEventListener('click', openMapPicker);
 el.mapModalClose.addEventListener('click', closeMapPicker);
 el.mapModalOverlay.addEventListener('click', (e) => {
@@ -1209,6 +1275,7 @@ document.addEventListener('keydown', (e) => {
 
 (async function init() {
   try {
+    updateUnitButtons();
     await loadSites();
     if (state.sites.length > 0) {
       el.siteSelect.value = state.sites[0].id;
