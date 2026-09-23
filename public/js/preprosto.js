@@ -812,8 +812,14 @@ function addSiteMarkersToMapPicker() {
     L.marker([site.lat, site.lon], { icon, zIndexOffset: 400 })
       .addTo(mapPickerMap)
       .on('click', () => {
-        mapPickerSelectedStation = null;
-        setMapPickerPoint(site.lat, site.lon, `🪂 ${site.name}`);
+        // Uradno vzletišče ima svojo stran (loadWeatherForSite) - klik
+        // nanj naj takoj pokaže TO stran (z živo postajo, če jo ima,
+        // enako kot privzeto izbrano vzletišče ob zagonu), ne pa splošni
+        // "Moja lokacija" GPS-način (ki živih podatkov ne prikaže
+        // prioritetno, glej useLive spodaj) - prej je bila edina pot do
+        // izbire drugega vzletišča padajoči seznam, ki je bil odstranjen.
+        closeMapPicker();
+        loadWeatherForSite(site.id);
       });
   }
 }
