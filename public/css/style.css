@@ -121,6 +121,46 @@ p {
   color: var(--dos-blue);
 }
 
+/* Vrstica z gumbom "domov" (nazaj na fotra.net), email povezavo in
+   jezikovnim preklopnikom - natančna kopija sloga strukture
+   .titlebar-controls > .icon-links + .lang-toggle na norway.fotra.net
+   (ena od poddomen fotra.net, preiskano prek GitHub Actions, glej git
+   zgodovino - peskovnik agenta nima neposrednega dostopa do fotra.net). */
+.titlebar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.icon-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--cyan);
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+.icon-links a:hover,
+.icon-links a:focus-visible {
+  color: var(--yellow);
+  outline: none;
+}
+
+.icon-links svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
 /* Jezikovni preklopnik (SI/EN) - natančna kopija sloga in obnašanja
    preklopnika na fotra.net (.lang-toggle/.lang-btn, preiskano prek
    GitHub Actions, glej git zgodovino). Za razliko od unit-toggle-btn

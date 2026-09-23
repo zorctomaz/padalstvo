@@ -256,9 +256,23 @@ naloženo prek CDN) in **podrobnosti ob kliku**:
   postaja (če jo vzletišče ima) se tam prikaže prednostno pred ARSO
   napovedjo (glej `renderCurrent`/`useLive`).
 
+## Glava strani: domov, email, jezik
+
+Pod izbiro enote vetra je vrstica `.titlebar-controls` z gumbom "domov"
+(🏠 SVG ikona, `https://fotra.net/`) in email povezavo (✉️ SVG ikona,
+`mailto:info@fotra.net`) v `.icon-links`, ter jezikovnim preklopnikom
+(glej spodaj) - vse tri **natančna kopija strukture in sloga**
+`.titlebar-controls > .icon-links + .lang-toggle` na
+**norway.fotra.net** (ena od poddomen fotra.net, preiskano prek
+začasnega GitHub Actions debug skripta - glej git zgodovino, peskovnik
+agenta nima neposrednega dostopa do fotra.net omrežja). Ikoni in email
+naslov (`info@fotra.net`, skupen celotnemu fotra.net omrežju, ne
+specifičen za to podstran) sta enaka v obeh jezikih, zato nista del
+`data-i18n` mehanizma spodaj.
+
 ## Jezik strani (SI/EN)
 
-Dva gumba ("SI"/"EN") pod izbiro enote vetra preklopita jezik celotne
+Dva gumba ("SI"/"EN") ob gumbu domov/email preklopita jezik celotne
 strani - izbira se shrani v `localStorage`
 (`padalstvo-vreme:lang`) in velja do naslednje spremembe.
 
