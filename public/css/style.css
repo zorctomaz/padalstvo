@@ -121,6 +121,34 @@ p {
   color: var(--dos-blue);
 }
 
+/* Jezikovni preklopnik (SI/EN) - natančna kopija sloga in obnašanja
+   preklopnika na fotra.net (.lang-toggle/.lang-btn, preiskano prek
+   GitHub Actions, glej git zgodovino). Za razliko od unit-toggle-btn
+   zgoraj (kjer sta oba gumba vedno vidna, aktivni le poudarjen) je tu
+   viden LE gumb za jezik, V KATEREGA lahko preklopiš - gumb za trenutno
+   izbrani jezik ostane v DOM-u (za klik/dostopnost), a je skrit. */
+.lang-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lang-btn {
+  font-family: 'VT323', monospace;
+  background: var(--dos-blue);
+  color: var(--cyan);
+  border: none;
+  padding: 0.2rem 0.6rem;
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  touch-action: manipulation;
+}
+
+.lang-btn[aria-pressed="true"] {
+  display: none;
+}
+
 .btn-big {
   display: block;
   width: calc(100% - 20px);

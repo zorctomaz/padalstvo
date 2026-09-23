@@ -262,6 +262,17 @@ Dva gumba ("SI"/"EN") pod izbiro enote vetra preklopita jezik celotne
 strani - izbira se shrani v `localStorage`
 (`padalstvo-vreme:lang`) in velja do naslednje spremembe.
 
+**Slog in obnašanje preklopnika je natančna kopija tistega na matični
+strani fotra.net** (`.lang-toggle`/`.lang-btn`, preiskano prek začasnega
+GitHub Actions debug skripta - glej git zgodovino, peskovnik agenta
+nima neposrednega dostopa do fotra.net): oba gumba (`SI`/`EN`) sta ves
+čas v DOM-u (zaradi klika/dostopnosti), a CSS pravilo
+`.lang-btn[aria-pressed="true"] { display: none; }` skrije gumb za
+TRENUTNO izbrani jezik - viden je torej vedno le gumb za jezik, V
+KATEREGA lahko preklopiš (npr. v slovenskem načinu je viden le "EN").
+To se razlikuje od izbire enote vetra tik zgoraj (`.unit-toggle-btn`),
+kjer sta oba gumba vedno vidna in je le trenutno aktivni poudarjen.
+
 - **Statična besedila** (gumbi, naslovi razdelkov, legenda zemljevida,
   noga strani ...) so v `index.html` označena z `data-i18n`/
   `data-i18n-aria` atributi; `applyStaticTranslations()` v `app.js` jih
