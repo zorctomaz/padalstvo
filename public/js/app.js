@@ -36,7 +36,6 @@ const TRANSLATIONS = {
     thermalTitle: '🌡️ Termika (uradna ARSO napoved)',
     clickForHourlyDetailsChart: 'Klikni za podrobnosti in graf po urah ↗',
     windAloftTitle: '🌬️ Veter po višini',
-    windyProfileLink: 'Podroben profil na Windy.com ↗',
     nearbyStationsTitle: '📡 Postaje v bližini',
     forecastTitle: 'Večdnevna napoved',
     colDay: 'Dan',
@@ -123,7 +122,6 @@ const TRANSLATIONS = {
     thermalTitle: '🌡️ Thermals (official ARSO forecast)',
     clickForHourlyDetailsChart: 'Click for hourly details and chart ↗',
     windAloftTitle: '🌬️ Wind aloft',
-    windyProfileLink: 'Detailed profile on Windy.com ↗',
     nearbyStationsTitle: '📡 Nearby stations',
     forecastTitle: 'Multi-day forecast',
     colDay: 'Day',
@@ -336,7 +334,6 @@ const el = {
   windAloftBlock: document.getElementById('windAloftBlock'),
   windAloftMeta: document.getElementById('windAloftMeta'),
   windAloftList: document.getElementById('windAloftList'),
-  windAloftLink: document.getElementById('windAloftLink'),
   statusBox: document.getElementById('statusBox'),
   currentBlock: document.getElementById('currentBlock'),
   siteName: document.getElementById('siteName'),
@@ -731,7 +728,6 @@ async function renderWindAloft(data) {
     el.windAloftBlock.hidden = true;
     return;
   }
-  el.windAloftLink.href = data.links.windAloft;
   el.windAloftBlock.hidden = false;
 
   const coords = data.myLocationMode && state.userCoords

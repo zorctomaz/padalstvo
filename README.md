@@ -43,7 +43,7 @@ za pilote:
 | **SFFA telefonski odzivniki** | Žive vremenske postaje (veter v realnem času) na nekaterih vzletiščih | Za vzletišča s potrjeno postajo aplikacija prikaže telefonsko številko odzivnika (vir: SFFA – Zveza za prosto letenje) kot dodaten/varnostni vir |
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
 | **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini |
-| **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Dopolnilna povezava "Podroben profil na Windy.com" pod tabelo vetra po višini – za več podrobnosti/nivojev, kot jih prikaže tabela |
+| **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Povezava "Veter na višini (Windy)" v kartici "Povezave" na dnu strani – za več podrobnosti/nivojev, kot jih prikaže tabela |
 
 ### Ocene, specifične za jadralno padalstvo
 
@@ -528,8 +528,10 @@ stopinjo) in hitrost, obarvano po štiristopenjski lestvici (`windAloftSpeedClas
 – modra/rumena/oranžna/rdeča, ločena od `rateWindClient`, ki je umerjena za
 prizemni polet 8–30 km/h, ne za morebiten jetstream čez 100 km/h na višjih
 nivojih). `state.windAloftRequestToken` prepreči, da bi počasnejši/starejši
-klic (npr. po hitri menjavi vzletišča) prepisal novejši rezultat. Pod
-tabelo ostane povezava na **Windy.com** za podroben interaktiven profil.
+klic (npr. po hitri menjavi vzletišča) prepisal novejši rezultat.
+Povezava na Windy.com (za podroben interaktiven profil) pod tabelo je
+bila odstranjena – na voljo ostane prek kartice "Povezave" na dnu
+strani ("Veter na višini (Windy)").
 
 Gumb "🗺️" poleg "Moja lokacija" odpre modalno okno z interaktivnim
 zemljevidom ([Leaflet](https://leafletjs.com/) + [OpenStreetMap](https://www.openstreetmap.org/)
