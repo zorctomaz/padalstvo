@@ -1,14 +1,14 @@
 # Padalstvo Vreme
 
-Spletna aplikacija (v celoti prilagojena mobilnim napravam) za vremensko napoved
-za **jadralno padalstvo** v Sloveniji. Gumb "📍 Moja lokacija" pokaže napoved
-za TVOJO natančno GPS točko – ne glede na to, ali je uradno vzletišče in ali
-je v bližini potrjena živa postaja (glej razdelek "Moja lokacija" spodaj);
-gumb "🗺️" poleg njega omogoči izbiro poljubne lokacije na interaktivnem
-zemljevidu (npr. če GPS ni na voljo ali želiš preveriti napoved za drug
-kraj) - na istem zemljevidu (🪂 oznake) izbereš tudi katero od znanih
-vzletišč, zato ločenega padajočega seznama vzletišč (kakršen je bil
-prej nad zemljevidom) ni več.
+Spletna aplikacija (v celoti prilagojena mobilnim napravam, ena sama stran)
+za vremensko napoved za **jadralno padalstvo** v Sloveniji. Gumb "📍 Uporabi
+mojo lokacijo" pokaže napoved za TVOJO natančno GPS točko – ne glede na to,
+ali je uradno vzletišče in ali je v bližini potrjena živa postaja (glej
+razdelek "Moja lokacija" spodaj); gumb "🗺️ Izberi na zemljevidu" poleg
+njega omogoči izbiro poljubne lokacije na interaktivnem zemljevidu (npr.
+če GPS ni na voljo ali želiš preveriti napoved za drug kraj) - na istem
+zemljevidu (🪂 oznake) izbereš tudi katero od znanih vzletišč, zato
+ločenega padajočega seznama vzletišč ni.
 Aplikacija prikaže vremenske podatke ter iz njih izpeljane ocene, pomembne
 za pilote:
 
@@ -25,16 +25,13 @@ za pilote:
 - povezavo na veter na višini (za oceno strižnega vetra pri XC preletih),
 - **izbiro enote za prikaz hitrosti vetra** (km/h ali m/s) prek dveh
   gumbov v glavi strani, levo in desno od ikone padala – izbira se
-  shrani v brskalniku (`localStorage`, isti ključ na obeh straneh, glej
-  spodaj) in velja za vse prikaze hitrosti/sunkov vetra na strani
-  (interno se vedno računa v km/h, pretvorba je le za prikaz; mph in
-  vozli ostajata podprta v podatkovni strukturi za morebitno kasnejšo
-  uporabo, a nista dosegljiva prek teh dveh gumbov),
-  - **nočno zatemnitev** – ponoči (med sončnim zahodom in vzhodom na
-    relevantni lokaciji – glej razdelek spodaj) je stran namenoma zelo
-    slabo vidna, saj se takrat jadralno padalstvo uradno (VFR, dnevno
-    letenje) ne sme izvajati; gumb 🔦 na vrhu (viden le ponoči) to
-    začasno izklopi za branje.
+  shrani v brskalniku (`localStorage`) in velja za vse prikaze
+  hitrosti/sunkov vetra na strani (interno se vedno računa v km/h,
+  pretvorba je le za prikaz; mph in vozli ostajata podprta v podatkovni
+  strukturi za morebitno kasnejšo uporabo, a nista dosegljiva prek teh
+  dveh gumbov),
+- **preklop jezika (SI/EN)** prek dveh gumbov pod izbiro enote – glej
+  razdelek "Jezik strani (SI/EN)" spodaj.
 
 ## Viri podatkov
 
@@ -209,8 +206,9 @@ src/skytech.js                       Klient za uradni KOK/SkyTech API (žive mer
 src/arso-thermal.js                  Klient za uradno ARSO napoved termike (RSS po 6 letalskih regijah)
 src/paragliding.js                   Izpeljane ocene: baza oblakov, ocena vetra, termika, povezave
 public/                              Mobilno prilagojen frontend (vanilla HTML/CSS/JS, brez build koraka)
-public/preprosto.html                Poenostavljen pogled (glej razdelek spodaj) - iste podatke, manj razporejeno
-public/js/preprosto.js               Frontend za preprosto.html - lasten, ne deli kode z app.js (glej spodaj zakaj)
+public/index.html                    Edina stran aplikacije
+public/js/app.js                     Ves frontend JS (podatki, izris, zemljevid, i18n - glej spodaj)
+public/css/style.css                 Retro DOS/CRT slog (glej spodaj)
 public/data/                         Generirano z `npm run build:data` – NI v git repozitoriju (.gitignore)
 public/data/skytech-stations.json    Javni seznam vseh SkyTech postaj (za "Moja lokacija" - glej razdelek spodaj)
 public/data/thermal-regions.json     Vseh 6 ARSO regij termike + središča (za "Moja lokacija" - glej razdelek spodaj)
@@ -218,46 +216,21 @@ public/data/history/<id>.json        Zgodovina meritev postaje (za graf ob kliku
 SKYTECH_API_ISSUES.md                Zbirni seznam napak v SkyTech API podatkih za poročanje SkyTech-u
 ```
 
-## Enostaven pogled (`preprosto.html`)
+## Ena stran (nekoč dva pogleda)
 
-Gumb "🔎 Enostavno" na vrhu glavne strani vodi na poenostavljeno
-podstran z **istimi podatki**, a manj razporejeno: en sam konsolidiran
-blok na vzletišče (veter, sunki, smer, temperatura, ocene, uradna ARSO
-termika, bližnje postaje, kompaktna tabela večdnevne napovedi,
-povezave) namesto več ločenih kartic, z večjimi pisavami. Izbira enote
-vetra (km/h/m/s) deluje enako kot na glavni strani, prek istih dveh
-gumbov v glavi podstrani ("← Napredni pogled" prav tako v glavi
-podstrani).
+Aplikacija je imela do septembra 2026 dva ločena pogleda: "napredni"
+(`index.html`/`app.js`, več kartic, spustni seznam vzletišč, izbira
+med 4 enotami vetra) in "enostaven" (`preprosto.html`/`preprosto.js`,
+en konsolidiran blok na vzletišče, retro DOS/CRT slog). Na uporabnikovo
+željo je napredni pogled odstranjen, enostaven pogled pa je postal
+**edina stran** aplikacije (`preprosto.html`/`preprosto.js`/
+`preprosto.css` so preimenovani v `index.html`/`app.js`/`style.css`).
+Nekaj funkcij naprednega pogleda (npr. nočna zatemnitev, predogled
+žive postaje v pojavnem oknu ob kliku na vzletišče na zemljevidu) pri
+tem ni bilo preneseno – če jih boš pogrešal/-a, jih je treba znova
+dodati v to (zdaj edino) datoteko.
 
-Podstran ima tudi **izbiro lokacije na zemljevidu** (🗺️, Leaflet +
-OpenStreetMap - ista SRI-pinjena CDN skripta kot glavna stran) in
-**podrobnosti ob kliku**:
-- klik na trenutno kartico (če prikazuje živo SkyTech meritev) ali na
-  vrstico v seznamu bližnjih postaj odpre okno s trenutno meritvijo
-  (veter/sunki/smer/temperatura + ocene) in grafom vetra/temperature
-  zadnjih ur (isti gradniki kot glavna stran - `buildLineChartSvg`,
-  oznake na osi vsake 3 ure, puščice smeri vetra po urah);
-- klik na kartico termike odpre uradno ARSO napoved (danes/jutri) + naš
-  graf "po urah" (glej razdelek "Uradna ARSO napoved termike" spodaj za
-  razlago, zakaj to ni uradni podatek);
-- klik na oznako postaje na zemljevidu odpre isto okno neposredno z
-  zemljevida.
-
-Bere **iste JSON datoteke** iz `/data/`, ki jih zgradi
-`scripts/build-data.js` - brez dodatnega strežniškega klica ali
-podvajanja podatkovnega cevovoda. `public/js/preprosto.js` je namenoma
-**ločena, samostojna datoteka** (ne uvaža/uporablja funkcij iz
-`app.js`) - obe se serviirata kot navadna `<script>` brez modulskega
-sistema (ni build koraka), zato bi deljenje kode zahtevalo dodatno
-infrastrukturo (bundler ali ročno ločevanje v skupno datoteko), kar za
-majhno količino podvojene logike (haversine, `findNearestSite`,
-`computeNearbyStationsForPoint`, `computeNearestThermalRegion` - vse
-kopirano iz `app.js`) ni bilo vredno dodatne kompleksnosti. Ob
-spremembi teh funkcij v `app.js` (npr. nov popravek natančnosti) je
-smiselno preveriti, ali je enak popravek potreben tudi v
-`preprosto.js`.
-
-**Vizualni slog** te podstrani sledi matični strani **fotra.net**
+**Vizualni slog** sledi matični strani **fotra.net**
 (padalstvo.fotra.net je njena poddomena) - retro DOS/CRT terminal
 estetika: pisava **VT323** (Google Fonts, monospace), barvna paleta
 "DOS modra" ozadje (`#0000AA`), cian obroba/poudarki (`#55FFFF`), rumen
@@ -265,15 +238,69 @@ naslov s sijajem (`#FFFF55`), dvojna cian obroba okoli osrednjega
 "screen" vsebnika, rahlo CRT scanline prekritje. Barve/pisava so
 prevzete neposredno iz fotra.net (preiskano prek začasnega GitHub
 Actions debug skripta, glej git zgodovino - peskovnik agenta nima
-neposrednega dostopa do fotra.net). Glavna stran (`index.html`/
-`style.css`) namenoma ostane v svojem obstoječem (nevezanem na
-fotra.net) slogu - uporabnik je slog fotra.net zahteval izrecno za to
-podstran.
+neposrednega dostopa do fotra.net).
 
-## Žive postaje vs. samo napoved (📡 / 📊)
+Stran ima **izbiro lokacije na zemljevidu** (🗺️, Leaflet + OpenStreetMap,
+naloženo prek CDN) in **podrobnosti ob kliku**:
+- klik na trenutno kartico (če prikazuje živo SkyTech meritev) ali na
+  vrstico v seznamu bližnjih postaj odpre okno s trenutno meritvijo
+  (veter/sunki/smer/temperatura + ocene) in grafom vetra/temperature
+  zadnjih ur (`buildLineChartSvg`, oznake na osi vsake 3 ure, puščice
+  smeri vetra po urah);
+- klik na kartico termike odpre uradno ARSO napoved (danes/jutri) + naš
+  graf "po urah" (glej razdelek "Uradna ARSO napoved termike" spodaj za
+  razlago, zakaj to ni uradni podatek);
+- klik na 📡 oznako postaje na zemljevidu odpre isto okno neposredno z
+  zemljevida; klik na 🪂 oznako uradnega vzletišča takoj zapre zemljevid
+  in naloži polno stran tega vzletišča (`loadWeatherForSite`) - živa
+  postaja (če jo vzletišče ima) se tam prikaže prednostno pred ARSO
+  napovedjo (glej `renderCurrent`/`useLive`).
 
-Izbirni seznam vzletišč loči tista s **potrjeno živo vremensko postajo**
-(📡) od tistih, kjer je na voljo **le izračunana napoved** (📊).
+## Jezik strani (SI/EN)
+
+Dva gumba ("SI"/"EN") pod izbiro enote vetra preklopita jezik celotne
+strani - izbira se shrani v `localStorage`
+(`padalstvo-vreme:lang`) in velja do naslednje spremembe.
+
+- **Statična besedila** (gumbi, naslovi razdelkov, legenda zemljevida,
+  noga strani ...) so v `index.html` označena z `data-i18n`/
+  `data-i18n-aria` atributi; `applyStaticTranslations()` v `app.js` jih
+  ob zagonu in ob vsakem preklopu jezika osveži iz slovarja
+  `TRANSLATIONS` (`{ sl: {...}, en: {...} }`).
+- **Dinamično besedilo**, ki ga generira `app.js` sam (sporočila o
+  napakah/nalaganju, "Vir: ...", naslovi grafov ipd.), gre prek funkcije
+  `t(key, ...args)` - parametrizirani vnosi v slovarju so funkcije
+  (`(x) => \`...${x}...\``).
+- **Besedila ocen** (veter/termika/XC/primernost smeri), ki jih delno
+  vrača že strežniško zgrajen `data/weather/<site>.json`
+  (`src/paragliding.js`: `rateWind`, `estimateThermalIndex`,
+  `rateLaunchAlignment`, `rateSkytechDirection`) in delno isti klientski
+  izračun (`rateWindClient`/`rateSkytechDirectionClient` v `app.js`), se
+  NE dajo prevesti s ključem, ker so podatki že "končno" slovensko
+  besedilo - `translateRatingLabel()` jih zato prevede z iskanjem po
+  točnem slovenskem nizu (`RATING_LABEL_MAP_EN`), za parametrizirane
+  predloge ("Smer (NE) ustreza postaji" ipd.) pa z regexom, ki ohrani
+  smerno kratico nespremenjeno.
+- **Smerne kratice**: ARSO napoved uporablja slovenske okrajšave
+  (S/SV/V/JV/J/JZ/Z/SZ), SkyTech pa že angleške (N/NE/E/SE/S/SW/W/NW) -
+  `translateCompassDirection()` v načinu EN prevede le slovenske
+  kratice (SkyTech-ove angleške pusti nespremenjene, saj niso ključi te
+  preslikave).
+- **Izven obsega:** prosto besedilo, ki ga uredniki ročno vpišejo v
+  `src/sites.json` (`notes`, `liveStation.note` - opombe posameznih
+  vzletišč), s tem mehanizmom NI zajeto in ostane v slovenščini tudi v
+  EN načinu - gre za 12 ročno pisanih besedil, ki jih ni bilo smiselno
+  mehansko prevajati.
+
+## Žive postaje vs. samo napoved
+
+Nekatera vzletišča imajo **potrjeno živo vremensko postajo**, druga le
+**izračunano napoved**. Stran to ne prikaže kot ločeno oznako v seznamu
+(seznama/spustnega menija vzletišč ni več - izbira je prek zemljevida,
+glej "Ena stran" zgoraj), ampak neposredno na kartici "trenutno stanje":
+če ima vzletišče živo postajo s svežo meritvijo, kartica prikaže NJENE
+podatke (`useLive` v `renderCurrent`) in postane klikljiva (odpre graf
+zgodovine); sicer prikaže prvo uro ARSO napovedi in ni klikljiva.
 
 Od septembra 2026 aplikacija bere žive meritve prek **uradnega KOK/SkyTech
 API-ja** (`api.kok.si/aws_api_v2.php`) – dostop nam je na podlagi
@@ -394,18 +421,16 @@ uspešnost) v `public/data/arso-locations.json`. `computeNearestArsoLocation`
 v brskalniku iz tega manifesta izbere najbližji kraj DEJANSKI GPS točki,
 `loadArsoLocationForecast` lenobno naloži njegovo napoved (predpomnjeno
 po `slug`-u) in z njo prepiše `data.forecast` ter povezavo na ARSO-jev
-graf napovedi – enako v `public/js/app.js` in `public/js/preprosto.js`.
+graf napovedi.
 
-Nad večdnevno napovedjo (`#forecastSourceInfo` na prvi strani,
-`#forecastMeta` na poenostavljeni podstrani) je izpisan ARSO **kraj**, za
+Nad večdnevno napovedjo (`#forecastMeta`) je izpisan ARSO **kraj**, za
 katerega napoved dejansko velja (`data.arsoLocationName` v načinu "Moja
 lokacija", sicer `data.site.arsoLocation` – slednje mora izpostaviti tudi
-`buildParaglidingSummary`, glej `src/paragliding.js`). Vsak vnos v urnem
-pregledu (prva stran) in vsak dan v tabeli (poenostavljena podstran, ob
-najmočnejšem vetru tistega dne) poleg besedilne smeri vetra prikaže tudi
-**puščico** (`windArrow`/`WIND_ARROW_BY_SI_DIRECTION` v obeh JS datotekah,
-podvojeno kot ostala logika) – puščica kaže, OD KOD piha veter (npr.
-"S" → ↑, "od severa"; standardna kompasna orientacija, sever gor).
+`buildParaglidingSummary`, glej `src/paragliding.js`). Vsak dan v tabeli
+(ob najmočnejšem vetru tistega dne) poleg besedilne smeri vetra prikaže
+tudi **puščico** (`windArrow`/`WIND_ARROW_BY_SI_DIRECTION`) – puščica
+kaže, OD KOD piha veter (npr. "S" → ↑, "od severa"; standardna kompasna
+orientacija, sever gor).
 
 ### Veter po višini (🌬️)
 
@@ -430,8 +455,7 @@ koraka, le standardni nabor.
 
 Ker je "Moja lokacija" poljubna GPS točka (ni je mogoče vnaprej zgraditi
 za vsako možnost, za razliko od 36 ARSO krajev zgoraj), ni strežniške
-predpriprave – `fetchWindAloft(lat, lon)` v `public/js/app.js` in
-`public/js/preprosto.js` (podvojeno, enak vzorec kot drugod) kliče
+predpriprave – `fetchWindAloft(lat, lon)` v `public/js/app.js` kliče
 Open-Meteo neposredno za trenutno izbrano vzletišče ali uporabnikovo
 dejansko točko (`data.myLocationMode` ? uporabnikove koordinate :
 koordinate vzletišča), z `forecast_days=2`. Open-Meteo-jevo `hourly` polje
@@ -478,18 +502,19 @@ SKYTECH_API_ISSUES.md) – te bi sicer prikazale postajo na povsem napačni
 lokaciji. Postaje brez sveže meritve (>24h) so vizualno ločene (bledejši,
 sivi pin – `.map-pin-station-stale`), da je jasno, da trenutno morda ne
 poročajo, a jih uporabnik še vedno vidi in lahko klikne (npr. za zadnjo
-znano meritev). Klik na katerokoli oznako takoj postavi izbirno (modro)
-oznako na to točko IN nad zemljevidom odpre okno s podatki:
-- 📡 postaja → trenutna meritev (veter/sunki/smer/temperatura, isti
-  prikaz kot glavna "Živa postaja" kartica) + graf zgodovine, če je za
-  to postajo na voljo (`openHistoryModal`, deli kodo z gumbom "Postaja"
-  na prvi strani) – zgodovina je vnaprej zgrajena le za postaje, povezane
-  z enim od 12 vzletišč (glej razdelek "Graf zgodovine postaje" spodaj),
-  zato je za marsikatero od zdaj dodatno prikazanih (oddaljenih) postaj
-  morda ni na voljo, čeprav je trenutna meritev vseeno prikazana.
-- 🪂 vzletišče → podatki o vzletišču (nadmorska višina, primerna smer
-  vzleta, stanje žive postaje, opombe) + gumb za prikaz polne napovedi
-  na prvi strani (`openSiteInfoModal`).
+znano meritev). Klik na oznako se obnaša različno glede na tip:
+- 📡 postaja → izbirno (modro) oznako postavi na to točko (za morebitno
+  potrditev "Uporabi to lokacijo", glej spodaj) IN nad zemljevidom odpre
+  okno z grafom zgodovine te postaje (`openHistoryModal`, ista funkcija
+  kot za klik na kartico "trenutno stanje" oz. vrstico v seznamu bližnjih
+  postaj – glej razdelek "Graf zgodovine postaje" spodaj) – zgodovina je
+  vnaprej zgrajena le za postaje, povezane z enim od 12 vzletišč, zato je
+  za marsikatero od zdaj dodatno prikazanih (oddaljenih) postaj morda ni
+  na voljo, čeprav je trenutna meritev vseeno prikazana.
+- 🪂 vzletišče → zemljevid se takoj zapre in naloži se polna stran tega
+  vzletišča (`loadWeatherForSite`) – enako, kot bi bilo vzletišče izbrano
+  neposredno (glej razdelek "Ena stran" zgoraj); izbirna oznaka in okno
+  z izbiro poljubne točke se za vzletišča torej ne uporabljata.
 
 Če uporabnik izbere postajo (📡) na zemljevidu in nato potrdi "Uporabi to
 lokacijo", se njena živa meritev prikaže kot glavni podatek – aplikacija
@@ -500,18 +525,20 @@ poljubno točko na zemljevidu ali premiku oznake), ki gre skupaj z
 GPS koordinatami v `useLocation`/`showMyLocationWeather`. Ti iz izbrane
 postaje sestavita sintetičen `skytech` objekt (isti `rateWindClient`/
 `rateSkytechDirectionClient` kot za bližnje postaje) in nastavita
-`stationMode`, kar `renderSkytech` (glavna stran) oz. `renderCurrent`
-(enostavna podstran) prepozna kot izjemo od sicer veljavnega pravila
-"v načinu Moja lokacija se žive postaje ne prikažejo kot glavni podatek"
+`stationMode`, kar `renderCurrent` prepozna kot izjemo od sicer
+veljavnega pravila "v načinu Moja lokacija se žive postaje ne prikažejo
+kot glavni podatek"
 – izbrana postaja je namreč natančno to, po čemer je uporabnik segel, ne
 približek. Izbrana postaja se posledično tudi izloči iz seznama "bližnjih
 postaj" (da se ne podvaja).
 
 ### Graf zgodovine postaje (klik na 📡 postajo)
 
-Klik na glavno "📡 Živa postaja" kartico ali na katerokoli vrstico v
-seznamu "bližnjih postaj" odpre modalno okno z grafom **vetra (hitrost +
-sunki) in temperature za zadnjih nekaj ur** za tisto postajo.
+Klik na kartico "trenutno stanje" (`#currentBlock`, kadar prikazuje živo
+SkyTech meritev - glej `useLive` v `renderCurrent` zgoraj), na katerokoli
+vrstico v seznamu "bližnjih postaj" ali na 📡 oznako na zemljevidu odpre
+modalno okno z grafom **vetra (hitrost + sunki) in temperature za zadnjih
+nekaj ur** za tisto postajo.
 
 - KOK/SkyTech API poleg `?latest=1` (trenutno stanje) ponuja tudi
   `?id=<postaja>&len=<n>` – zgodovino zadnjih meritev posamezne postaje
@@ -542,31 +569,6 @@ sunki) in temperature za zadnjih nekaj ur** za tisto postajo.
   pojavi izključno v načinu "Moja lokacija" na GPS točki daleč od vseh
   uradnih vzletišč (modal v tem primeru to jasno pove, namesto da bi se
   zrušil).
-
-### Nočna zatemnitev (🌙 / 🔦)
-
-Jadralno padalstvo se v Sloveniji (kot VFR/dnevno letenje) uradno sme
-izvajati le podnevi – med sončnim vzhodom in zahodom. Da to aplikacija
-vizualno poudari, ponoči (glede na sistemsko uro naprave uporabnika)
-zelo zatemni celotno vsebino strani (`body.is-night #app` v
-`css/style.css` – nizka prosojnost + sivinski filter) in prikaže
-opozorilni pas na vrhu.
-
-- `getSunTimes(date, lat, lon)` v `public/js/app.js` izračuna sončni
-  vzhod/zahod po poenostavljeni NOAA formuli (natančnost ~1-2 min) za
-  relevantno lokacijo – **ne** fiksne ure, saj se sončni vzhod/zahod v
-  Sloveniji skozi leto razlikuje tudi za več kot 5 ur. Lokacija je
-  uporabnikova prava GPS pozicija, če je na voljo (`state.userCoords`,
-  npr. po kliku "Moja lokacija"), sicer lokacija trenutno izbranega
-  vzletišča.
-- Preverjanje se ponovi vsako minuto (`setInterval`), da se zatemnitev
-  samodejno vklopi/izklopi tudi, če uporabnik pusti stran odprto čez
-  sončni vzhod/zahod.
-- Gumb "🔦" na vrhu je viden le, kadar je trenutno noč, in omogoča
-  **začasen** preklop nazaj na berljiv prikaz (npr. za pregled napovedi
-  za naslednje jutro) – ta izbira se namenoma NE shranjuje med obiski
-  (ni v `localStorage`), saj gre za varnostni opomnik, ne uporabniško
-  nastavitev, ki naj privzeto ne ostane trajno izklopljena.
 
 ## Dodajanje vzletišč
 

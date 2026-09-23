@@ -133,7 +133,6 @@ async function main() {
   const version = getVersion();
   const publicDir = path.join(__dirname, '..', 'public');
   addCacheBusting(version, path.join(publicDir, 'index.html'));
-  addCacheBusting(version, path.join(publicDir, 'preprosto.html'));
 
   fs.writeFileSync(path.join(DATA_DIR, 'sites.json'), JSON.stringify(sites, null, 2));
 

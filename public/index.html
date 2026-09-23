@@ -3,104 +3,95 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Padalstvo Vreme — napoved za jadralno padalstvo</title>
-  <meta name="description" content="Vremenska napoved za jadralno padalstvo v Sloveniji: veter, termika, baza oblakov po GPS lokaciji, ARSO, SkyTech in letalsko vreme." />
-  <meta name="theme-color" content="#0b1220" />
+  <title>Padalstvo Vreme</title>
+  <meta name="description" content="Vremenska napoved za jadralno padalstvo v Sloveniji: veter, termika in večdnevna napoved na enem mestu." />
+  <meta name="theme-color" content="#0000aa" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+<div class="screen">
   <header class="topbar">
     <div class="brand-row">
-      <button id="unitMsBtn" class="unit-toggle-btn" type="button" aria-pressed="false">m/s</button>
+      <button id="unitMsBtn" class="unit-toggle-btn" type="button" aria-pressed="false">M/S</button>
       <span class="brand-icon" aria-hidden="true">🪂</span>
-      <button id="unitKmhBtn" class="unit-toggle-btn" type="button" aria-pressed="true">km/h</button>
+      <button id="unitKmhBtn" class="unit-toggle-btn" type="button" aria-pressed="true">KM/H</button>
     </div>
-    <p id="versionInfo" class="version-info"></p>
-    <div class="topbar-actions">
-      <button id="nightOverrideBtn" class="btn btn-flashlight" type="button" hidden title="Začasno prižgi zatemnitev (podatke vseeno prikaži berljivo)">🔦</button>
-      <button id="locateBtn" class="btn btn-primary" type="button">📍 Moja lokacija</button>
-      <button id="mapPickerBtn" class="btn btn-secondary" type="button" title="Izberi lokacijo na zemljevidu">🗺️</button>
-      <a href="preprosto.html" class="btn btn-secondary" title="Enostaven pogled">🔎 Enostavno</a>
+    <div class="brand-row">
+      <button id="langSiBtn" class="unit-toggle-btn" type="button" aria-pressed="true">SI</button>
+      <button id="langEnBtn" class="unit-toggle-btn" type="button" aria-pressed="false">EN</button>
     </div>
   </header>
 
-  <div id="nightBanner" class="night-banner" hidden></div>
+  <button id="locateBtn" class="btn-big" type="button" data-i18n="locateBtn">📍 Uporabi mojo lokacijo</button>
+  <button id="mapPickerBtn" class="btn-big" type="button" data-i18n="mapPickerBtn">🗺️ Izberi na zemljevidu</button>
 
-  <main id="app">
-    <section class="card">
-      <p class="muted small">📡 = potrjena živa vremenska postaja na/ob vzletišču · 📊 = samo napoved (brez potrjene žive postaje) · vzletišča izbereš na zemljevidu (🗺️ zgoraj)</p>
-      <p id="distanceInfo" class="muted"></p>
-      <p id="updatedInfo" class="muted small"></p>
-    </section>
+  <section id="statusBox" class="status-box" hidden></section>
 
-    <section id="windAloftCard" class="card" hidden>
-      <h3>🌬️ Veter po višini</h3>
-      <p id="windAloftMeta" class="muted small"></p>
-      <div id="windAloftList"></div>
-      <a id="windAloftLink" class="btn btn-secondary btn-block" href="#" target="_blank" rel="noopener" style="margin-top:10px;">Podroben profil na Windy.com ↗</a>
-    </section>
+  <section id="currentBlock" class="block" hidden role="button" tabindex="0">
+    <h2 id="siteName">—</h2>
+    <p id="siteMeta" class="meta"></p>
+    <div class="big-row" id="currentStats"></div>
+    <div id="verdicts"></div>
+    <p id="currentHint" class="meta small" hidden data-i18n="clickForDetailsChart">Klikni za podrobnosti in graf ↗</p>
+  </section>
 
-    <section id="statusBox" class="status-box" hidden></section>
+  <section id="thermalBlock" class="block clickable" hidden role="button" tabindex="0">
+    <h2 data-i18n="thermalTitle">🌡️ Termika (uradna ARSO napoved)</h2>
+    <p class="meta" id="thermalMeta"></p>
+    <div class="big-row" id="thermalStats"></div>
+    <p class="meta small" data-i18n="clickForHourlyDetailsChart">Klikni za podrobnosti in graf po urah ↗</p>
+  </section>
 
-    <section id="skytechCard" class="card skytech-card clickable-card" hidden role="button" tabindex="0">
-      <h3>📡 Živa postaja (SkyTech)</h3>
-      <p id="skytechMeta" class="muted small"></p>
-      <div class="current-grid" id="skytechGrid"></div>
-      <p class="muted small station-hint">Klikni za graf vetra/temperature zadnjih ur ↗</p>
-    </section>
+  <section id="windAloftBlock" class="block" hidden>
+    <h2 data-i18n="windAloftTitle">🌬️ Veter po višini</h2>
+    <p id="windAloftMeta" class="meta small"></p>
+    <div id="windAloftList"></div>
+    <a id="windAloftLink" class="btn-big" href="#" target="_blank" rel="noopener" style="margin-top:10px;" data-i18n="windyProfileLink">Podroben profil na Windy.com ↗</a>
+  </section>
 
-    <section id="nearbyStationsCard" class="card" hidden>
-      <h3 id="nearbyStationsTitle">📡 Druga merilna mesta v bližini</h3>
-      <p id="nearbyStationsIntro" class="muted small">Niso uradna vzletišča – dodaten vpogled v veter v okolici, kjer nameravaš leteti.</p>
-      <div id="nearbyStationsList" class="timeline"></div>
-    </section>
+  <section id="nearbyBlock" class="block" hidden>
+    <h2 data-i18n="nearbyStationsTitle">📡 Postaje v bližini</h2>
+    <ul id="nearbyList" class="simple-list clickable-list"></ul>
+  </section>
 
-    <section id="currentCard" class="card current-card" hidden>
-      <h2 id="currentSiteName">—</h2>
-      <p id="currentSiteMeta" class="muted"></p>
-      <div class="current-grid" id="currentGrid"></div>
-    </section>
+  <section id="forecastBlock" class="block" hidden>
+    <h2 data-i18n="forecastTitle">Večdnevna napoved</h2>
+    <p id="forecastMeta" class="meta small"></p>
+    <table class="day-table">
+      <thead>
+        <tr>
+          <th data-i18n="colDay">Dan</th>
+          <th data-i18n="colTemp">Temp.</th>
+          <th data-i18n="colWind">Veter</th>
+          <th data-i18n="colThermal">Termika</th>
+          <th data-i18n="colRain">Dež</th>
+        </tr>
+      </thead>
+      <tbody id="forecastBody"></tbody>
+    </table>
+  </section>
 
-    <section id="arsoThermalCard" class="card clickable-card" hidden role="button" tabindex="0">
-      <h3>🌡️ Uradna ARSO napoved termike</h3>
-      <p id="arsoThermalMeta" class="muted small"></p>
-      <div id="arsoThermalList" class="current-grid"></div>
-      <p class="muted small station-hint">Vir: meteo.si (ARSO) — ALADIN model, max. hitrost dviganj po letalski regiji. Klikni za podrobnosti ↗</p>
-    </section>
+  <section id="linksBlock" class="block" hidden>
+    <h2 data-i18n="linksTitle">Povezave</h2>
+    <ul id="linksList" class="links-list"></ul>
+  </section>
 
-    <section id="nearbyCard" class="card" hidden>
-      <h3>Padavine in toča v bližini</h3>
-      <div id="nearbyContent" class="nearby-content"></div>
-      <p class="muted small">Vir: opendata.si (ARSO radar / ALADIN)</p>
-    </section>
-
-    <section id="forecastSection" class="card" hidden>
-      <h3>Večdnevna napoved</h3>
-      <p id="forecastSourceInfo" class="muted small"></p>
-      <div id="dayTabs" class="day-tabs"></div>
-      <div id="xcSummary" class="xc-summary"></div>
-      <div id="timeline" class="timeline"></div>
-    </section>
-
-    <section id="linksCard" class="card" hidden>
-      <h3>Uradni viri in dodatne povezave</h3>
-      <ul id="linksList" class="links-list"></ul>
-    </section>
-
-    <section class="card disclaimer" id="disclaimerBox" hidden></section>
-  </main>
+  <p id="disclaimerBox" class="disclaimer" hidden></p>
 
   <footer class="footer">
-    <p>Podatki: ARSO (vreme.arso.gov.si, meteo.si), opendata.si, SkyTech.si. Ni uradna letalska napoved.</p>
+    <p data-i18n="footerSources">Podatki: ARSO (vreme.arso.gov.si, meteo.si), opendata.si, SkyTech.si. Ni uradna letalska napoved.</p>
   </footer>
+</div>
 
   <div id="historyModalOverlay" class="modal-overlay" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
       <div class="modal-header">
-        <h3 id="historyModalTitle">Postaja</h3>
-        <button id="historyModalClose" class="modal-close" type="button" aria-label="Zapri">✕</button>
+        <h3 id="historyModalTitle" data-i18n="stationDefaultTitle">Postaja</h3>
+        <button id="historyModalClose" class="modal-close" type="button" aria-label="Zapri" data-i18n-aria="close">✕</button>
       </div>
       <div class="modal-body">
         <div id="historyModalSnapshot"></div>
@@ -112,19 +103,19 @@
   <div id="mapModalOverlay" class="modal-overlay" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mapModalTitle">
       <div class="modal-header">
-        <h3 id="mapModalTitle">Izberi lokacijo na zemljevidu</h3>
-        <button id="mapModalClose" class="modal-close" type="button" aria-label="Zapri">✕</button>
+        <h3 id="mapModalTitle" data-i18n="mapModalTitle">Izberi lokacijo na zemljevidu</h3>
+        <button id="mapModalClose" class="modal-close" type="button" aria-label="Zapri" data-i18n-aria="close">✕</button>
       </div>
       <div class="modal-body">
-        <p class="muted small">Tapni/klikni na zemljevid, da postaviš oznako, nato jo po želji povleci in potrdi.</p>
+        <p class="meta small" data-i18n="mapLegend">🪂 vzletišče · 📡 postaja (bledo = brez meritve v zadnjih 24h) · klikni oznako ali poljubno točko</p>
         <div id="mapContainer" class="map-container"></div>
-        <p class="muted small map-legend">🪂 uradno vzletišče · 📡 SkyTech vremenska postaja (bledo = brez meritve v zadnjih 24h) · klikni oznako za podatke in izbiro te lokacije</p>
-        <p id="mapCoordsLabel" class="muted small map-coords-label">Izbrana lokacija: —</p>
-        <button id="mapConfirmBtn" class="btn btn-primary map-confirm-btn" type="button" disabled>Uporabi to lokacijo</button>
+        <p id="mapCoordsLabel" class="meta small" data-i18n="mapCoordsLabelDefault">Izbrana lokacija: —</p>
+        <button id="mapConfirmBtn" class="btn-big" type="button" disabled data-i18n="mapConfirmBtn">Uporabi to lokacijo</button>
       </div>
     </div>
   </div>
 
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="js/app.js"></script>
 </body>
