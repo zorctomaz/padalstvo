@@ -43,8 +43,8 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
-      - name: Začasno - ponovno preveri wetter3.de
-        run: node scripts/debug-wetter3.js
+      - name: Začasno - preišči novo domeno wetter3.de (www.wetter3.de)
+        run: node scripts/debug-wetter3-new-domain.js
 
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
