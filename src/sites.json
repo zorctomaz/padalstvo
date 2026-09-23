@@ -247,18 +247,18 @@
     "id": "pogorelec",
     "name": "Pogorelec",
     "region": "Dolenjska",
-    "lat": 45.95,
-    "lon": 15.06,
+    "lat": 45.737667,
+    "lon": 15.023222,
     "elevation": 585,
-    "arsoLocation": "Trebnje",
+    "arsoLocation": "Novo mesto",
     "skytechUrl": "https://skytech.si/",
     "launchWindDirections": null,
     "liveStation": {
       "confirmed": true,
       "phone": null,
-      "note": "Na SkyTech obstaja postaja 'Pogorelec' (id 70) z živimi meritvami vetra, a njeno polje s koordinatami je pokvarjeno (privzeta vrednost lat 46 / lon 15 / altitude 0 – ista znana napaka kot pri drugih postajah v SKYTECH_API_ISSUES.md). Zato spodnja lokacija NI iz SkyTech, temveč groba ocena po splošnem poznavanju lege (okolica Šentrupert/Mirna na Dolenjskem) – preveri in po potrebi popravi."
+      "note": "Na SkyTech obstaja postaja 'Pogorelec' (id 70) z živimi meritvami vetra, a njeno polje s koordinatami je pokvarjeno (privzeta vrednost lat 46 / lon 15 / altitude 0 – ista znana napaka kot pri drugih postajah v SKYTECH_API_ISSUES.md). Lokacija spodaj zato NI iz SkyTech, temveč jo je posredoval uporabnik aplikacije (45°44'15.6\"N 15°01'23.6\"E)."
     },
-    "notes": "Vzletišče na Dolenjskem pri Šentrupertu. Lokacija in nadmorska višina nista potrjeni – gre za grobo oceno, preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
+    "notes": "Vzletišče na Dolenjskem, južno od Novega mesta. Nadmorska višina ni potrjena – gre za oceno, preveri z lokalnim klubom. (ARSO napoved je za bližje večje mesto, ne za točno vzletišče – lahko odstopa.)",
     "skytechStationId": 70,
     "aladinRegion": "NMO"
   }
