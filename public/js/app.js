@@ -36,6 +36,9 @@ const TRANSLATIONS = {
     thermalTitle: '🌡️ Termika (uradna ARSO napoved)',
     clickForHourlyDetailsChart: 'Klikni za podrobnosti in graf po urah ↗',
     windAloftTitle: '🌬️ Veter po višini',
+    synopticChartTitle: '🗺️ Premikanje sistemov (ECMWF)',
+    synopticChartHint: 'Karte pritiska + vetra na 850 hPa – zdaj, čez 24 h in čez 48 h, isti modelski tek. Klik odpre polno velikost.',
+    synopticFrameLabel: (hours) => (hours === 0 ? 'Zdaj' : `+${hours} h`),
     nearbyStationsTitle: '📡 Postaje v bližini',
     forecastTitle: 'Večdnevna napoved',
     colDay: 'Dan',
@@ -107,7 +110,6 @@ const TRANSLATIONS = {
     linkArsoAviation: 'ARSO letalsko vreme',
     linkArsoRadar: 'ARSO radar padavin',
     linkWindAloft: 'Veter na višini (Windy)',
-    linkSynopticChart: 'Sinoptična karta (ECMWF)',
     linkSkytech: 'SkyTech.si',
     loadingData: 'Nalagam podatke…',
     siteDataUnavailable: 'Podatki za to vzletišče še niso na voljo.',
@@ -129,6 +131,9 @@ const TRANSLATIONS = {
     thermalTitle: '🌡️ Thermals (official ARSO forecast)',
     clickForHourlyDetailsChart: 'Click for hourly details and chart ↗',
     windAloftTitle: '🌬️ Wind aloft',
+    synopticChartTitle: '🗺️ System movement (ECMWF)',
+    synopticChartHint: 'Pressure + 850 hPa wind charts – now, in 24 h and in 48 h, same model run. Tap to open full size.',
+    synopticFrameLabel: (hours) => (hours === 0 ? 'Now' : `+${hours} h`),
     nearbyStationsTitle: '📡 Nearby stations',
     forecastTitle: 'Multi-day forecast',
     colDay: 'Day',
@@ -200,7 +205,6 @@ const TRANSLATIONS = {
     linkArsoAviation: 'ARSO aviation weather',
     linkArsoRadar: 'ARSO precipitation radar',
     linkWindAloft: 'Wind aloft (Windy)',
-    linkSynopticChart: 'Synoptic chart (ECMWF)',
     linkSkytech: 'SkyTech.si',
     loadingData: 'Loading data…',
     siteDataUnavailable: 'Data for this launch site is not available yet.',
@@ -348,6 +352,8 @@ const el = {
   windAloftBlock: document.getElementById('windAloftBlock'),
   windAloftMeta: document.getElementById('windAloftMeta'),
   windAloftList: document.getElementById('windAloftList'),
+  synopticChartBlock: document.getElementById('synopticChartBlock'),
+  synopticChartFrames: document.getElementById('synopticChartFrames'),
   statusBox: document.getElementById('statusBox'),
   currentBlock: document.getElementById('currentBlock'),
   siteName: document.getElementById('siteName'),
@@ -1431,7 +1437,6 @@ function renderLinks(data) {
     { href: links.arsoAviation, label: t('linkArsoAviation') },
     { href: links.arsoRadar, label: t('linkArsoRadar') },
     { href: links.windAloft, label: t('linkWindAloft') },
-    { href: links.synopticChart, label: t('linkSynopticChart') },
     { href: links.skytech, label: t('linkSkytech') },
   ].filter((i) => i.href);
   if (items.length === 0) {
@@ -1442,11 +1447,38 @@ function renderLinks(data) {
   el.linksBlock.hidden = false;
 }
 
+/**
+ * Zaporedje treh ECMWF kart (zdaj/+24h/+48h, glej src/ecmwf.js) - male
+ * sličice, klik odpre polno velikost v novem zavihku. Namen: prikazati
+ * premikanje pritisnih sistemov (in posredno front) čez naslednje dni,
+ * ne le en posnetek.
+ */
+function renderSynopticChart(data) {
+  const frames = data.synopticChartFrames;
+  if (!frames || frames.length === 0) {
+    el.synopticChartBlock.hidden = true;
+    return;
+  }
+  el.synopticChartFrames.innerHTML = frames
+    .map((f) => {
+      const label = t('synopticFrameLabel', f.stepHours);
+      return `
+        <a href="${f.url}" target="_blank" rel="noopener" class="synoptic-frame">
+          <img src="${f.url}" alt="${label}" loading="lazy" />
+          <span>${label}</span>
+        </a>
+      `;
+    })
+    .join('');
+  el.synopticChartBlock.hidden = false;
+}
+
 function renderAll(data) {
   state.lastData = data;
   renderWindAloft(data);
   renderCurrent(data);
   renderThermal(data);
+  renderSynopticChart(data);
   renderNearby(data);
   renderForecast(data);
   renderLinks(data);

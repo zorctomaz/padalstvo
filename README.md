@@ -47,7 +47,7 @@ za pilote:
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
 | **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini |
 | **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Povezava "Veter na višini (Windy)" v kartici "Povezave" na dnu strani – za več podrobnosti/nivojev, kot jih prikaže tabela |
-| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisana javna karta pritiska na morski gladini (MSLP) + vetra na 850 hPa za Evropo, osvežena z vsakim tekom ECMWF-jevega modela, CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji (JSON API vrne trenutno veljaven PNG URL); povezava "Sinoptična karta (ECMWF)" v kartici "Povezave" – dopolnjuje trend zračnega pritiska spodaj z dejansko sliko sinoptične situacije (pritisni sistemi, groba orientacija front) |
+| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisane javne karte pritiska na morski gladini (MSLP) + vetra na 850 hPa za srednjo Evropo, osvežene z vsakim tekom ECMWF-jevega modela, CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji, zaporedje treh kart (zdaj/+24h/+48h, isti modelski tek); kartica "🗺️ Premikanje sistemov (ECMWF)" s tremi sličicami – prikazuje, kako se pritisni sistemi (in posredno fronte) premikajo v naslednjih dneh, ne le trenutni posnetek |
 
 ### Ocene, specifične za jadralno padalstvo
 
@@ -505,12 +505,14 @@ uveljavljen posreden kazalnik (hiter padec napoveduje približevanje
 nizkega pritiska/fronte, hiter dvig krepitev anticiklona), za katerega
 podatek že imamo.
 
-Poleg tega izračunanega trenda je v kartici "Povezave" na dnu strani
-tudi povezava **"Sinoptična karta (ECMWF)"** - dejanska, vnaprej
-izrisana karta pritiska + vetra na 850 hPa za Evropo (glej "ECMWF Open
-Charts" v tabeli virov zgoraj), na kateri je približna lokacija
-pritisnih sistemov (in posredno front) vidna neposredno, ne le kot
-izračunan trend na eni točki.
+Poleg tega izračunanega trenda je pod kartico z vetrom po višini
+kartica **"🗺️ Premikanje sistemov (ECMWF)"** - zaporedje treh vnaprej
+izrisanih kart pritiska + vetra na 850 hPa za srednjo Evropo (glej
+"ECMWF Open Charts" v tabeli virov zgoraj): zdaj, čez 24 h in čez 48 h,
+vse iz istega modelskega teka. Tako je viden ne le trenutni položaj
+pritisnih sistemov (in posredno front), temveč tudi smer in hitrost
+njihovega premikanja v naslednjih dneh. Klik na sličico odpre polno
+velikost slike v novem zavihku.
 
 - `pressureHpa` je ARSO polje (`msl` - pritisk na morski gladini),
   razčlenjeno že v `src/arso.js` za vsak 3h vnos napovedi, doslej pa
@@ -526,17 +528,21 @@ izračunan trend na eni točki.
   sicer prikazuje živo SkyTech meritev (`useLive`) - SkyTech postaje
   pritiska ne merijo, zato ta podatek ni odvisen od izbire žive
   postaje.
-- **Sinoptična karta (ECMWF)** je za razliko od trenda ENA SAMA karta za
-  celotno Evropo, ne po vzletišču/lokaciji - `src/ecmwf.js` jo ob vsaki
-  izgradnji pridobi z enim samim klicem (`fetchSynopticChartUrl`,
-  JSON API `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/`
-  vrne trenutno veljaven PNG URL), `scripts/build-data.js` pa isto
-  povezavo doda vsem vzletiščem. Sama HTML produktna stran ECMWF-ja je
-  za brskalnike zaščitena z anti-bot izzivom (Anubis), a JSON API in
-  sam PNG nista (potrjeno prek GitHub Actions - status 200/`image/png`
-  tako s kot brez posebne `User-Agent` glave), zato je varno za
-  neposredno povezavo v aplikaciji. Če klic spodleti, se povezava preprosto
-  izpusti iz kartice "Povezave" (ne podre izgradnje).
+- **Premikanje sistemov (ECMWF)** je za razliko od trenda ENO SAMO
+  zaporedje treh kart za celotno aplikacijo, ne po vzletišču/lokaciji -
+  `src/ecmwf.js` (`fetchSynopticChartSequence`) ob vsaki izgradnji z
+  JSON API-jem (`charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/`)
+  pridobi tri sličice iz istega modelskega teka (`base_time` = zadnja
+  polnoč UTC) za korake 0 h/+24 h/+48 h (`valid_time`), v projekciji
+  `opencharts_central_europe` (bolj primerna za Slovenijo kot privzeta
+  "Europe"). `scripts/build-data.js` isto zaporedje (polje
+  `synopticChartFrames`) doda vsem vzletiščem. Sama HTML produktna
+  stran ECMWF-ja je za brskalnike zaščitena z anti-bot izzivom (Anubis),
+  a JSON API in same PNG slike nista (potrjeno prek GitHub Actions -
+  status 200/`image/png` tako s kot brez posebne `User-Agent` glave),
+  zato je varno za neposredno povezavo v aplikaciji. Če posamezen korak
+  spodleti, se preprosto izpusti iz zaporedja (ne podre izgradnje); če
+  spodletijo vsi trije, se kartica na strani skrije.
 
 ### Veter po višini (🌬️)
 

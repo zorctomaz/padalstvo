@@ -43,9 +43,6 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
-      - name: Začasno - preveri ECMWF časovne korake (valid_time/base_time/projection)
-        run: node scripts/debug-ecmwf-timesteps.js
-
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
         with:

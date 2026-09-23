@@ -21,7 +21,7 @@ const { buildParaglidingSummary, buildGenericLocationForecast } = require('../sr
 const { fetchAllStations, fetchStationHistory } = require('../src/skytech');
 const { fetchAllThermalRegions, REGION_CENTERS } = require('../src/arso-thermal');
 const { ARSO_LOCATIONS } = require('../src/arso-locations');
-const { fetchSynopticChartUrl } = require('../src/ecmwf');
+const { fetchSynopticChartSequence } = require('../src/ecmwf');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
@@ -189,11 +189,12 @@ async function main() {
   const arsoLocationsResult = await buildArsoLocations();
   console.log(`OK(${arsoLocationsResult.ok}/${arsoLocationsResult.total})`);
 
-  // Ena sama karta za celotno Evropo (ni vezana na posamezno vzletišče) -
-  // en klic, nato deljen med vsemi vzletišči spodaj (glej src/ecmwf.js).
-  process.stdout.write('Pridobivam ECMWF sinoptično karto (MSLP + veter 850 hPa)... ');
-  const synopticChart = await fetchSynopticChartUrl();
-  console.log(synopticChart.ok ? 'OK' : `NAPAKA(${synopticChart.error})`);
+  // Ena sama sekvenca (zdaj/+24h/+48h) za celotno aplikacijo (ni vezana na
+  // posamezno vzletišče) - en klic, nato deljen med vsemi vzletišči spodaj
+  // (glej src/ecmwf.js).
+  process.stdout.write('Pridobivam ECMWF sinoptične karte (zdaj/+24h/+48h, MSLP + veter 850 hPa)... ');
+  const synopticChartFrames = await fetchSynopticChartSequence();
+  console.log(`OK(${synopticChartFrames.length}/3)`);
 
   const results = [];
   const relevantStationIds = new Set();
@@ -201,7 +202,7 @@ async function main() {
     process.stdout.write(`Gradim podatke za ${site.name} (${site.id})... `);
     try {
       const summary = await buildSite(site, stationById, skytech.stations, thermalRegions);
-      if (synopticChart.ok) summary.links.synopticChart = synopticChart.url;
+      summary.synopticChartFrames = synopticChartFrames;
       fs.writeFileSync(
         path.join(WEATHER_DIR, `${site.id}.json`),
         JSON.stringify(summary, null, 2)
