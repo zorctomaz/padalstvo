@@ -661,12 +661,7 @@ function renderCurrent(data) {
     el.currentSiteMeta.textContent += ` · Primerna smer vzleta${srcLabel}: ${data.site.launchWindDirections.join(', ')}`;
   }
 
-  const ls = data.site.liveStation;
-  if (ls && ls.confirmed) {
-    el.currentSiteMeta.textContent += ` · 📡 Živa postaja: ${ls.phone}`;
-  } else {
-    el.currentSiteMeta.textContent += ' · 📊 Brez potrjene žive postaje (le napoved)';
-  }
+  el.currentSiteMeta.textContent += ' · ' + staticLiveStationText(data.site);
 }
 
 function renderSkytech(data) {
@@ -1094,7 +1089,21 @@ async function openSiteInfoModal(site) {
     const ageText = sk.ageMinutes != null
       ? (sk.ageMinutes <= 1 ? 'pred manj kot minuto' : `pred ${sk.ageMinutes} min`)
       : '';
-    liveEl.innerHTML = `<p>📡 Živa meritev (${sk.stationName}, ${ageText}): <strong>${formatWind(sk.windSpeedKmh)}${sk.windDirection ? ' ' + sk.windDirection : ''}</strong>${sk.temperatureC != null ? `, ${sk.temperatureC}°C` : ''}</p>`;
+    liveEl.innerHTML = `
+      <div id="siteInfoLiveDetail" class="clickable-card" role="button" tabindex="0">
+        <p>📡 Živa meritev (${sk.stationName}, ${ageText}): <strong>${formatWind(sk.windSpeedKmh)}${sk.windDirection ? ' ' + sk.windDirection : ''}</strong>${sk.temperatureC != null ? `, ${sk.temperatureC}°C` : ''}</p>
+        <p class="muted small station-hint">Klikni za graf vetra/temperature zadnjih ur ↗</p>
+      </div>
+    `;
+    const liveDetailEl = document.getElementById('siteInfoLiveDetail');
+    const openLiveDetail = () => openHistoryModal(sk.stationId, sk.stationName);
+    liveDetailEl.addEventListener('click', openLiveDetail);
+    liveDetailEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openLiveDetail();
+      }
+    });
   } else {
     liveEl.innerHTML = `<p>${staticLiveStationText(site)}</p>`;
   }
