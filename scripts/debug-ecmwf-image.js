@@ -28,7 +28,7 @@ async function main() {
     headers: { 'User-Agent': 'Mozilla/5.0 (padalstvo-vreme ECMWF image probe)' },
   });
   const apiJson = await apiRes.json();
-  const pngUrl = apiJson && apiJson.data && apiJson.data.attributes && apiJson.data.attributes.link && apiJson.data.attributes.link.href;
+  const pngUrl = apiJson && apiJson.data && apiJson.data.link && apiJson.data.link.href;
   console.log('pngUrl:', pngUrl);
   console.log('description:', apiJson.data.attributes.description);
 
