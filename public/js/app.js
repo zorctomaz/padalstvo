@@ -270,23 +270,6 @@ function translateRatingLabel(label) {
   return label;
 }
 
-/**
- * Raw smerne kratice iz ARSO napovedi (entry.windDirection) so slovenske
- * (S/SV/V/JV/J/JZ/Z/SZ ...), medtem ko SkyTech podatki (žive postaje)
- * uporabljajo angleške (N/NE/E/SE ...) - ta preslikava zato varno velja
- * samo za slovenske vhode; angleške kratice niso ključi te tabele in
- * ostanejo nespremenjene.
- */
-const SI_TO_EN_COMPASS = {
-  S: 'N', SSV: 'NNE', SV: 'NE', VSV: 'ENE', V: 'E', VJV: 'ESE', JV: 'SE', JJV: 'SSE',
-  J: 'S', JJZ: 'SSW', JZ: 'SW', ZJZ: 'WSW', Z: 'W', ZSZ: 'WNW', SZ: 'NW', SSZ: 'NNW',
-};
-
-function translateCompassDirection(dir) {
-  if (state.lang !== 'en' || !dir) return dir;
-  return SI_TO_EN_COMPASS[dir] || dir;
-}
-
 function dateLocale() {
   return state.lang === 'en' ? 'en-US' : 'sl-SI';
 }
@@ -613,6 +596,22 @@ const WIND_ARROW_BY_SI_DIRECTION = {
 
 function windArrow(direction) {
   return direction ? (WIND_ARROW_BY_SI_DIRECTION[direction] || '') : '';
+}
+
+/**
+ * SkyTech (žive postaje) uporablja angleške smerne okrajšave
+ * (N/NE/E/SE/S/SW/W/NW) - ločen slovar od zgornjega, ker se npr. "S"
+ * tu pomeni JUG (south), v ARSO napovedi zgoraj pa SEVER (sever) - NE
+ * smeta se zmešati. Ista konvencija ("od kod piha") in isti vzorec
+ * zaokroževanja 16-smernih vrednosti na 8 puščic kot pri SI različici.
+ */
+const WIND_ARROW_BY_EN_DIRECTION = {
+  N: '↑', NNE: '↑', NE: '↗', ENE: '↗', E: '→', ESE: '→', SE: '↘', SSE: '↘',
+  S: '↓', SSW: '↓', SW: '↙', WSW: '↙', W: '←', WNW: '←', NW: '↖', NNW: '↖',
+};
+
+function windArrowSkytech(direction) {
+  return direction ? (WIND_ARROW_BY_EN_DIRECTION[direction] || '') : '';
 }
 
 /**
@@ -945,9 +944,9 @@ function renderStationSnapshot(station) {
   return `
     <p class="meta small">${t('currentMeasurement')}${ageText ? ' · ' + ageText : ''}${station.altitude ? ` · ${station.altitude} ${t('elevAbbrev')}` : ''}</p>
     <div class="big-row">
-      ${metricBox(t('labelWind'), m.windSpeedKmh != null ? `${formatWind(m.windSpeedKmh)}${m.windDirection ? ' ' + m.windDirection : ''}` : '—', wind)}
+      ${metricBox(t('labelWind'), m.windSpeedKmh != null ? `${formatWind(m.windSpeedKmh)}${m.windDirection ? ' ' + windArrowSkytech(m.windDirection) : ''}` : '—', wind)}
       ${metricBox(t('labelGustFull'), formatWind(m.windGustKmh))}
-      ${metricBox(t('labelDirectionEst'), m.windDirection || '—', dirRating)}
+      ${metricBox(t('labelDirectionEst'), windArrowSkytech(m.windDirection) || '—', dirRating)}
       ${metricBox(t('labelTemp'), m.temperatureC != null ? `${m.temperatureC}°C` : '—')}
     </div>
   `;
@@ -1265,10 +1264,14 @@ function renderCurrent(data) {
   const dirRating = useLive ? sk.directionRating : firstEntry ? firstEntry.paragliding.launchAlignment : null;
   const source = useLive ? t('liveMeasurementSource', sk.stationName) : t('arsoForecastSource');
 
+  // Smer je iz žive SkyTech postaje (useLive, angleške kratice) ali iz
+  // ARSO napovedi (slovenske kratice) - izbira pravi slovar glede na vir.
+  const dirArrow = useLive ? windArrowSkytech(windDir) : windArrow(windDir);
+
   el.currentStats.innerHTML = `
     <div class="big-stat"><div class="label">${t('labelWind')}</div><div class="value">${formatWind(windSpeed)}</div></div>
     <div class="big-stat"><div class="label">${t('labelGust')}</div><div class="value">${formatWind(windGust)}</div></div>
-    <div class="big-stat"><div class="label">${t('labelDirection')}</div><div class="value">${translateCompassDirection(windDir) || '—'}</div></div>
+    <div class="big-stat"><div class="label">${t('labelDirection')}</div><div class="value">${dirArrow || '—'}</div></div>
     <div class="big-stat"><div class="label">${t('labelTemp')}</div><div class="value">${temp != null ? Math.round(temp) + '°C' : '—'}</div></div>
   `;
 
@@ -1318,7 +1321,7 @@ function renderNearby(data) {
       (s) => `
     <li data-station-id="${s.stationId}" data-station-name="${s.stationName}">
       <span>${s.stationName} (${s.distanceKm} km)</span>
-      <span>${s.windSpeedKmh != null ? formatWind(s.windSpeedKmh) + ' ' + (s.windDirection || '') : '—'}</span>
+      <span>${s.windSpeedKmh != null ? formatWind(s.windSpeedKmh) + ' ' + windArrowSkytech(s.windDirection) : '—'}</span>
     </li>
   `
     )
