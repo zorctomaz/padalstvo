@@ -72,13 +72,8 @@ p {
 }
 
 .brand-icon {
-  display: flex;
-  color: var(--accent);
-}
-
-.paraglider-icon {
-  width: 52px;
-  height: 34px;
+  font-size: 2.4rem;
+  line-height: 1;
 }
 
 .version-info {

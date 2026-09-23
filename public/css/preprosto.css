@@ -99,14 +99,9 @@ p {
 }
 
 .brand-icon {
-  display: flex;
-  color: var(--yellow);
+  font-size: 2.6rem;
+  line-height: 1;
   filter: drop-shadow(0 0 6px rgba(255, 255, 85, 0.5));
-}
-
-.paraglider-icon {
-  width: 56px;
-  height: 36px;
 }
 
 .unit-toggle-btn {
