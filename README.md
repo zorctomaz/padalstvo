@@ -369,6 +369,16 @@ vzletišča z lastnim vnosom v `src/sites.json`. Izračuna jo
 GPS koordinate vzletišča do vseh 62 postaj), prikazana je v kartici
 "📡 Druga merilna mesta v bližini" na strani.
 
+**Klik na vrstico bližnje postaje takoj posodobi glavno kartico
+"trenutno stanje"** z dejansko izmerjenim vetrom/sunki/smerjo/
+temperaturo TE postaje (`selectStationAsCurrent` v `public/js/app.js`,
+prek istega `buildSyntheticSkytech` pretvornika kot pri izbiri postaje
+na zemljevidu - glej "Moja lokacija" spodaj) - pomembno predvsem za
+vzletišča BREZ potrjene lastne žive postaje (Kum, Rogla, Nanos, Grmada),
+kjer kartica sicer privzeto prikaže le ARSO napoved. Poleg tega se odpre
+še podrobno okno z grafom zgodovine (`openStationDetail`), enako kot
+prej.
+
 **Zajamčen minimum 3 postaj** (dodano po poročilu uporabnika za
 Pogorelec, ki v 25 km nima nobene): če je znotraj 25 km manj kot 3 živih
 postaj, funkcija namesto praznega/pretankega seznama raje vrne 3

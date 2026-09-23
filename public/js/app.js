@@ -1026,8 +1026,29 @@ function openHistoryModal(stationId, stationName, station) {
  */
 async function openStationDetail(stationId, stationName) {
   const stations = await loadAllStations();
-  const station = stations.find((s) => s.id === stationId) || null;
+  // s.id je iz JSON-a (številka), stationId pa iz DOM data-atributa (vedno
+  // niz) - primerjava mora biti tolerantna na tip, sicer se snapshot v
+  // oknu ne izriše, ker ujemanja ni (String(5) !== 5).
+  const station = stations.find((s) => String(s.id) === String(stationId)) || null;
   openHistoryModal(stationId, stationName, station);
+}
+
+/**
+ * Klik na vrstico "bližnje postaje" na osnovni strani (ne na zemljevidu)
+ * mora poleg podrobnosti (openStationDetail, graf zgodovine) tudi takoj
+ * posodobiti veter/temperaturo na glavni kartici "trenutno stanje" - da
+ * uporabnik vidi podatek iz DEJANSKO kliknjene postaje, ne le tiste,
+ * privzeto dodeljene vzletišču (ali splošne ARSO napovedi, če vzletišče
+ * nima potrjene lastne postaje).
+ */
+async function selectStationAsCurrent(stationId) {
+  if (!state.lastData) return;
+  const stations = await loadAllStations();
+  const station = stations.find((s) => String(s.id) === String(stationId));
+  if (!station || !station.measurement) return;
+  state.lastData.skytech = buildSyntheticSkytech(station);
+  state.lastData.stationMode = true;
+  renderCurrent(state.lastData);
 }
 
 /* ---------- Podrobnosti termike (klik na kartico termike) ---------- */
@@ -1386,6 +1407,29 @@ async function loadWeatherForSite(siteId) {
 }
 
 /**
+ * Iz surove SkyTech postaje (z .measurement) sestavi isti "skytech" objekt,
+ * kot bi ga vrnil strežniški build za vzletiščem dodeljeno postajo - da ga
+ * lahko renderCurrent prikaže kot glavni podatek za poljubno izbrano
+ * postajo (klik na zemljevidu, na vrstico bližnje postaje ipd.).
+ */
+function buildSyntheticSkytech(station) {
+  const m = station.measurement;
+  const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
+  return {
+    hasMeasurement: true,
+    stationId: station.id,
+    stationName: station.name,
+    ageMinutes,
+    windSpeedKmh: m.windSpeedKmh,
+    windGustKmh: m.windGustKmh,
+    windDirection: m.windDirection,
+    temperatureC: m.temperatureC,
+    wind: rateWindClient(m.windSpeedKmh, m.windGustKmh),
+    directionRating: rateSkytechDirectionClient(station, m.windDirection),
+  };
+}
+
+/**
  * Če je uporabnik na zemljevidu izbral konkretno živo postajo (station),
  * njeno meritev prikažemo kot glavni "trenutno" podatek namesto splošne
  * ARSO napovedi za najbližje vzletišče - podatek že imamo.
@@ -1409,20 +1453,7 @@ async function showMyLocationWeather(nearest, station) {
     );
 
     if (station && station.measurement) {
-      const m = station.measurement;
-      const ageMinutes = m.time ? Math.round((Date.now() - new Date(m.time).getTime()) / 60000) : null;
-      data.skytech = {
-        hasMeasurement: true,
-        stationId: station.id,
-        stationName: station.name,
-        ageMinutes,
-        windSpeedKmh: m.windSpeedKmh,
-        windGustKmh: m.windGustKmh,
-        windDirection: m.windDirection,
-        temperatureC: m.temperatureC,
-        wind: rateWindClient(m.windSpeedKmh, m.windGustKmh),
-        directionRating: rateSkytechDirectionClient(station, m.windDirection),
-      };
+      data.skytech = buildSyntheticSkytech(station);
       data.stationMode = true;
     }
 
@@ -1571,6 +1602,7 @@ el.currentBlock.addEventListener('keydown', (e) => {
 el.nearbyList.addEventListener('click', (e) => {
   const row = e.target.closest('li');
   if (!row || !row.dataset.stationId) return;
+  selectStationAsCurrent(row.dataset.stationId);
   openStationDetail(row.dataset.stationId, row.dataset.stationName);
 });
 
