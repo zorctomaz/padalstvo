@@ -104,33 +104,41 @@ p {
   filter: drop-shadow(0 0 6px rgba(255, 255, 85, 0.5));
 }
 
-.unit-toggle-btn {
-  border: 2px solid var(--cyan);
-  background: var(--dos-blue-dark);
-  color: var(--cyan);
-  font-family: 'VT323', monospace;
-  font-size: 1.1rem;
-  letter-spacing: 0.05em;
-  padding: 8px 14px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.unit-toggle-btn[aria-pressed="true"] {
-  background: var(--cyan);
-  color: var(--dos-blue);
-}
-
-/* Vrstica z gumbom "domov" (nazaj na fotra.net), email povezavo in
-   jezikovnim preklopnikom - natančna kopija sloga strukture
-   .titlebar-controls > .icon-links + .lang-toggle na norway.fotra.net
-   (ena od poddomen fotra.net, preiskano prek GitHub Actions, glej git
-   zgodovino - peskovnik agenta nima neposrednega dostopa do fotra.net). */
+/* Vrstica z enotskim preklopnikom (M/S ⇄ KM/H), gumbom "domov" (nazaj
+   na fotra.net), email povezavo in jezikovnim preklopnikom - struktura
+   po zgledu .titlebar-controls > .icon-links + .lang-toggle na
+   norway.fotra.net (ena od poddomen fotra.net, preiskano prek GitHub
+   Actions, glej git zgodovino - peskovnik agenta nima neposrednega
+   dostopa do fotra.net). Enotski preklopnik je levo od gumba "domov",
+   z enakim izključujočim slogom kot jezikovni preklopnik spodaj (glej
+   .unit-btn/.lang-btn). */
 .titlebar-controls {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
+}
+
+.unit-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unit-btn {
+  font-family: 'VT323', monospace;
+  background: var(--dos-blue);
+  color: var(--cyan);
+  border: none;
+  padding: 0.2rem 0.6rem;
+  font-size: clamp(0.95rem, 3vw, 1.15rem);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  touch-action: manipulation;
+}
+
+.unit-btn[aria-pressed="true"] {
+  display: none;
 }
 
 .icon-links {
@@ -163,10 +171,10 @@ p {
 
 /* Jezikovni preklopnik (SI/EN) - natančna kopija sloga in obnašanja
    preklopnika na fotra.net (.lang-toggle/.lang-btn, preiskano prek
-   GitHub Actions, glej git zgodovino). Za razliko od unit-toggle-btn
-   zgoraj (kjer sta oba gumba vedno vidna, aktivni le poudarjen) je tu
-   viden LE gumb za jezik, V KATEREGA lahko preklopiš - gumb za trenutno
-   izbrani jezik ostane v DOM-u (za klik/dostopnost), a je skrit. */
+   GitHub Actions, glej git zgodovino). Viden je LE gumb za jezik, V
+   KATEREGA lahko preklopiš - gumb za trenutno izbrani jezik ostane v
+   DOM-u (za klik/dostopnost), a je skrit (glej .lang-btn[aria-pressed]
+   spodaj) - enak izključujoč slog uporablja tudi .unit-btn zgoraj. */
 .lang-toggle {
   display: flex;
   align-items: center;

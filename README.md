@@ -26,15 +26,17 @@ za pilote:
   niso uradna vzletišča, a dajo dodaten vpogled v veter na sosednjih
   vrhovih/dolinah, kjer nameravaš leteti),
 - povezavo na veter na višini (za oceno strižnega vetra pri XC preletih),
-- **izbiro enote za prikaz hitrosti vetra** (km/h ali m/s) prek dveh
-  gumbov v glavi strani, levo in desno od ikone padala – izbira se
+- **izbiro enote za prikaz hitrosti vetra** (km/h ali m/s) prek
+  preklopnika levo od gumba "domov" v glavi strani – izbira se
   shrani v brskalniku (`localStorage`) in velja za vse prikaze
   hitrosti/sunkov vetra na strani (interno se vedno računa v km/h,
   pretvorba je le za prikaz; mph in vozli ostajata podprta v podatkovni
-  strukturi za morebitno kasnejšo uporabo, a nista dosegljiva prek teh
-  dveh gumbov),
-- **preklop jezika (SI/EN)** prek dveh gumbov pod izbiro enote – glej
-  razdelek "Jezik strani (SI/EN)" spodaj.
+  strukturi za morebitno kasnejšo uporabo, a nista dosegljiva prek tega
+  preklopnika),
+- **preklop jezika (SI/EN)** prek preklopnika desno (za jezikovnim
+  preklopnikom v vrstici z gumboma "domov"/email) – glej razdelek
+  "Jezik strani (SI/EN)" spodaj; enotski preklopnik uporablja isti
+  izključujoč slog.
 
 ## Viri podatkov
 
@@ -288,8 +290,14 @@ nima neposrednega dostopa do fotra.net): oba gumba (`SI`/`EN`) sta ves
 `.lang-btn[aria-pressed="true"] { display: none; }` skrije gumb za
 TRENUTNO izbrani jezik - viden je torej vedno le gumb za jezik, V
 KATEREGA lahko preklopiš (npr. v slovenskem načinu je viden le "EN").
-To se razlikuje od izbire enote vetra tik zgoraj (`.unit-toggle-btn`),
-kjer sta oba gumba vedno vidna in je le trenutno aktivni poudarjen.
+
+**Enotski preklopnik (M/S ⇄ KM/H)** je postavljen levo od gumba
+"domov" v isti vrstici (`titlebar-controls`) in uporablja IDENTIČEN
+izključujoč slog (`.unit-toggle`/`.unit-btn`, kopija `.lang-toggle`/
+`.lang-btn` - viden je vedno le gumb za enoto, V KATERO lahko
+preklopiš). Prej sta bila oba gumba (M/S in KM/H) ob strani ikone
+padala, oba vedno vidna, le trenutno aktivni poudarjen; na uporabnikovo
+željo je preklopnik premaknjen in poenoten z jezikovnim.
 
 - **Statična besedila** (gumbi, naslovi razdelkov, legenda zemljevida,
   noga strani ...) so v `index.html` označena z `data-i18n`/
