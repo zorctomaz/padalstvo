@@ -54,6 +54,14 @@
  * kumulativnem klicu. Zato med posameznimi klici NAMENOMA počakamo
  * (REQUEST_SPACING_MS) in ob 429 enkrat počakamo dlje ter ponovimo
  * (RETRY_DELAY_MS) - brez tega bi bila večina od 41 sličic izpuščena.
+ *
+ * `pickBaseTime` je izvožena samostojno, ker `scripts/build-data.js`
+ * PREDPOMNI zaporedje na disk (`data-cache/ecmwf-frames.json`, commitano
+ * nazaj v repo) in ta modul kliče (41 zaporednih klicev, ~4 minute) LE
+ * kadar se `base_time` dejansko spremeni - to je le dvakrat na dan
+ * (base_time je konstanten znotraj vsakega 12h okna, glej `pickBaseTime`
+ * spodaj), build pa teče vsako uro. Brez predpomnjenja bi se isto
+ * zaporedje po nepotrebnem znova pridobivalo 24-krat na dan namesto 2x.
  */
 
 const { fetchJsonCached } = require('./fetchUtil');
@@ -124,4 +132,4 @@ async function fetchSynopticChartSequence() {
   return frames;
 }
 
-module.exports = { fetchSynopticChartSequence, STEP_HOURS };
+module.exports = { fetchSynopticChartSequence, STEP_HOURS, pickBaseTime };

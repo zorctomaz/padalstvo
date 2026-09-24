@@ -21,13 +21,47 @@ const { buildParaglidingSummary, buildGenericLocationForecast } = require('../sr
 const { fetchAllStations, fetchStationHistory } = require('../src/skytech');
 const { fetchAllThermalRegions, REGION_CENTERS } = require('../src/arso-thermal');
 const { ARSO_LOCATIONS } = require('../src/arso-locations');
-const { fetchSynopticChartSequence, STEP_HOURS } = require('../src/ecmwf');
+const { fetchSynopticChartSequence, STEP_HOURS, pickBaseTime } = require('../src/ecmwf');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
 const HISTORY_DIR = path.join(DATA_DIR, 'history');
 const ARSO_DIR = path.join(DATA_DIR, 'arso');
 const HISTORY_LEN = 100; // API max (glej src/skytech.js) - ~16-17h pri poročanju vsakih ~10 min, ne polnih 24h
+
+// `public/` se ob vsaki izgradnji zgradi na novo in NI komitiran v git
+// (glej README - "Viri podatkov"), zato tu NE more živeti predpomnilnik, ki
+// mora preživeti med ločenimi GitHub Actions teki. `data-cache/` je zato
+// ločena, komitirana mapa (glej .github/workflows/update-data.yml - korak,
+// ki po izgradnji commita spremenjeno datoteko nazaj v repo).
+const ECMWF_CACHE_PATH = path.join(__dirname, '..', 'data-cache', 'ecmwf-frames.json');
+
+/**
+ * `base_time` (glej pickBaseTime v src/ecmwf.js) je konstanten znotraj
+ * vsakega 12h okna in se spremeni le dvakrat na dan, build pa teče vsako
+ * uro - brez predpomnjenja bi se isto 41-slikovno zaporedje (skupaj ~4
+ * minute zaradi namernega zamika med klici zaradi omejitve API-ja, glej
+ * src/ecmwf.js) po nepotrebnem znova pridobivalo vsako uro namesto le
+ * dvakrat na dan. Če je predpomnilnik za trenutni base_time še veljaven,
+ * ga preprosto uporabimo brez klica API-ja.
+ */
+async function getSynopticChartFrames() {
+  const desiredBaseTime = pickBaseTime(new Date()).toISOString();
+  try {
+    const cached = JSON.parse(fs.readFileSync(ECMWF_CACHE_PATH, 'utf8'));
+    if (cached.baseTime === desiredBaseTime && Array.isArray(cached.frames) && cached.frames.length > 0) {
+      return { frames: cached.frames, fromCache: true };
+    }
+  } catch (_) {
+    // Predpomnilnik ne obstaja ali je neveljaven - preprosto pridobimo sveže podatke spodaj.
+  }
+  const frames = await fetchSynopticChartSequence();
+  if (frames.length > 0) {
+    fs.mkdirSync(path.dirname(ECMWF_CACHE_PATH), { recursive: true });
+    fs.writeFileSync(ECMWF_CACHE_PATH, JSON.stringify({ baseTime: desiredBaseTime, frames }, null, 2));
+  }
+  return { frames, fromCache: false };
+}
 
 /**
  * Kratka identifikacija trenutno objavljenega koda (git commit), da
@@ -192,9 +226,12 @@ async function main() {
   // Ena sama sekvenca (zdaj/+24h/+48h) za celotno aplikacijo (ni vezana na
   // posamezno vzletišče) - en klic, nato deljen med vsemi vzletišči spodaj
   // (glej src/ecmwf.js).
-  process.stdout.write('Pridobivam ECMWF sinoptične karte (zdaj do +240h/10 dni, vsakih 6h, MSLP + veter 850 hPa, lahko traja nekaj minut)... ');
-  const synopticChartFrames = await fetchSynopticChartSequence();
-  console.log(`OK(${synopticChartFrames.length}/${STEP_HOURS.length})`);
+  process.stdout.write('Pridobivam ECMWF sinoptične karte (zdaj do +240h/10 dni, vsakih 6h, MSLP + veter 850 hPa)... ');
+  const synopticChartResult = await getSynopticChartFrames();
+  const synopticChartFrames = synopticChartResult.frames;
+  console.log(
+    `OK(${synopticChartFrames.length}/${STEP_HOURS.length}${synopticChartResult.fromCache ? ', iz predpomnilnika' : ', sveže pridobljeno - traja nekaj minut'})`
+  );
 
   const results = [];
   const relevantStationIds = new Set();

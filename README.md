@@ -562,9 +562,27 @@ polno velikost v novem zavihku.
   `fetchSynopticChartSequence` med klici namenoma počaka
   (`REQUEST_SPACING_MS`, 5 sekund) in ob `429` enkrat počaka dlje ter
   ponovi klic (`RETRY_DELAY_MS`, 15 sekund) - brez tega bi bila večina
-  sličic izpuščena. Posledica: ta korak izgradnje zdaj traja nekaj
-  minut (namesto prejšnjih ~20 sekund za 11 klicev), kar je pri urni
-  (ne pogostejši) izgradnji zanemarljivo.
+  sličic izpuščena. Posledica: en poln fetch traja nekaj minut (namesto
+  prejšnjih ~20 sekund za 11 klicev).
+- **Predpomnilnik na disku (`data-cache/ecmwf-frames.json`)** - `base_time`
+  je konstanten znotraj vsakega 12h okna in se spremeni le DVAKRAT na
+  dan (glej `pickBaseTime` spodaj), build pa teče vsako uro. Brez
+  predpomnjenja bi se isto 41-slikovno zaporedje po nepotrebnem znova
+  pridobivalo 24-krat na dan namesto 2x, kar po nepotrebnem obremenjuje
+  ECMWF-jev API in vsak urni tek podaljša za nekaj minut. `getSynopticChartFrames`
+  v `scripts/build-data.js` zato pred vsakim klicem API-ja preveri, ali
+  `data-cache/ecmwf-frames.json` že vsebuje zaporedje za TRENUTNO
+  veljaven `base_time` (`pickBaseTime`, izvožena iz `src/ecmwf.js`) - če
+  da, ga preprosto ponovno uporabi brez enega samega klica API-ja; če ne (ker
+  se je `base_time` spremenil ali datoteka manjka/je neveljavna),
+  izvede poln fetch in rezultat zapiše nazaj v to datoteko. Ker se
+  `public/` ob vsaki izgradnji zgradi na novo in NI komitiran v git
+  (glej zgoraj), mora predpomnilnik živeti ZUNAJ `public/`, v posebni
+  komitirani mapi - `.github/workflows/update-data.yml` zato po
+  `build-data.js` doda korak, ki spremenjeno datoteko commita in
+  pushne nazaj v repo (če se ni spremenila, se ta korak preprosto
+  izpusti). Push z vgrajenim `GITHUB_TOKEN` GitHuba eksplicitno NE
+  sproži novega teka tega workflow-a, zato ni tveganja neskončne zanke.
 - **Projekcija `opencharts_europe`** (namesto prvotne
   `opencharts_central_europe`) je bila izbrana namenoma širša - uporabnik
   je želel na zemljevidu videti tudi sisteme, ki šele prihajajo izven

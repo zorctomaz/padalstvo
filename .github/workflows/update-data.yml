@@ -14,7 +14,7 @@ on:
       # (ali ga zamenjaj), da se stran gradi tudi ob vsakem push-u nanjo.
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -42,6 +42,25 @@ jobs:
         env:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
+
+      - name: Shrani osvežen ECMWF predpomnilnik (če se je spremenil)
+        # data-cache/ecmwf-frames.json (glej scripts/build-data.js) se med
+        # teki komitira nazaj v repo, da naslednji urni tek prepozna, ali
+        # je base_time še isti in mu ni treba znova klicati ECMWF-ja (ta
+        # se sicer spremeni le dvakrat na dan, build pa teče vsako uro).
+        # Push z vgrajenim GITHUB_TOKEN ne sproži novega teka tega
+        # workflow-a (GitHub to eksplicitno prepreči), zato ni tveganja
+        # neskončne zanke.
+        run: |
+          if [ -n "$(git status --porcelain -- data-cache/ecmwf-frames.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data-cache/ecmwf-frames.json
+            git commit -m "chore: osveži ECMWF predpomnilnik"
+            git push
+          else
+            echo "Predpomnilnik nespremenjen, brez commit-a."
+          fi
 
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
