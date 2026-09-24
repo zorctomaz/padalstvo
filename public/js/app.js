@@ -70,7 +70,7 @@ const TRANSLATIONS = {
     labelGustFull: 'Sunki vetra',
     labelDirection: 'Smer',
     labelDirectionEst: 'Smer (ocena)',
-    directionCodeHint: 'Smerna kratica v oklepaju (npr. JZ) vedno pove, OD KOD piha veter. Puščica pri ikoni pa kaže nasprotno – KAM veter potuje (kot na Windy.com).',
+    directionCodeHint: 'Smerna kratica v oklepaju (npr. JZ) vedno pove, OD KOD piha veter. Puščica pa kaže nasprotno – KAM veter potuje (kot na Windy.com).',
     labelTemp: 'Temperatura',
     labelPressure: 'Pritisk',
     pressureSteady: 'stabilen',
@@ -86,7 +86,7 @@ const TRANSLATIONS = {
     historyUnavailableRecent: 'Zgodovina za to postajo (zadnjih nekaj ur) ni na voljo.',
     windChartTitle: (unitLabel) => `Veter (${unitLabel})`,
     windAloftWindHeader: (unitLabel) => `Veter (${unitLabel}) · puščica = kam piha`,
-    arrowLegend: 'Puščica kaže, KAM veter potuje (sever = puščica navzgor pomeni veter proti severu); zastavice na njej naznanjajo moč vetra, po ena puščica vsaki dve uri.',
+    arrowLegend: 'Puščica kaže, KAM veter potuje (sever = puščica navzgor pomeni veter proti severu), po ena puščica vsaki dve uri.',
     legendSpeed: 'hitrost',
     legendGust: 'sunki',
     legendTemp: 'temperatura',
@@ -173,7 +173,7 @@ const TRANSLATIONS = {
     labelGustFull: 'Wind gusts',
     labelDirection: 'Direction',
     labelDirectionEst: 'Direction (estimate)',
-    directionCodeHint: 'The direction code in parentheses (e.g. SW) always shows where the wind is blowing FROM. The arrow icon shows the opposite – where it is blowing TOWARD (like on Windy.com).',
+    directionCodeHint: 'The direction code in parentheses (e.g. SW) always shows where the wind is blowing FROM. The arrow shows the opposite – where it is blowing TOWARD (like on Windy.com).',
     labelTemp: 'Temperature',
     labelPressure: 'Pressure',
     pressureSteady: 'steady',
@@ -189,7 +189,7 @@ const TRANSLATIONS = {
     historyUnavailableRecent: 'History for this station (the last few hours) is not available.',
     windChartTitle: (unitLabel) => `Wind (${unitLabel})`,
     windAloftWindHeader: (unitLabel) => `Wind (${unitLabel}) · arrow = where it's blowing toward`,
-    arrowLegend: 'Arrow shows where the wind is blowing TOWARD (north = arrow pointing up means wind heading north); the barbs show wind strength, one arrow every two hours.',
+    arrowLegend: 'Arrow shows where the wind is blowing TOWARD (north = arrow pointing up means wind heading north), one arrow every two hours.',
     legendSpeed: 'speed',
     legendGust: 'gusts',
     legendTemp: 'temperature',
@@ -648,100 +648,44 @@ function metricBox(label, value, pill) {
 }
 
 /**
- * Vetrne "zastavice" (wind barb) namesto preprostih puščic - poenostavljena
- * standardna meteorološka oblika (kot na klasičnih diagramih "how to read
- * wind barbs"): raven ročaj BREZ puščične konice, majhna pika na enem
- * koncu (postaja/oporišče), zastavice (feather barbs) na drugem koncu.
- * Ročaj kaže SMER, KAMOR veter potuje (konvencija kot na Windy.com -
- * "smer potovanja", NASPROTNO od "od kod piha", ki jo uporablja kompasna
- * koda v besedilu ocene - glej directionCodeHint), zastavice pa kodirajo
- * MOČ vetra, tako da je jakost razvidna tudi brez branja števila:
- *   - trikotnik (zastavica) = 20 km/h, dolga črtica = 10 km/h, kratka
- *     črtica = 5 km/h (hitrost se za izris zaokroži na najbližjih 5 km/h)
- *   - sama pika brez ročaja = šibek/miren veter (< 3 km/h, smer takrat
- *     ni relevantna)
- * Barva ikone se prevzame iz besedila okrog nje (fill/stroke="currentColor"),
- * zato se npr. znotraj rdeče/zelene oznake ustrezno obarva sama.
+ * Smer vetra se prikaže kot navadna puščica (unicode znak), ki kaže SMER,
+ * KAMOR veter potuje (konvencija kot na Windy.com - "smer potovanja",
+ * NASPROTNO od "od kod piha", ki jo uporablja kompasna koda v besedilu
+ * ocene - glej directionCodeHint). ARSO napoved uporablja slovenske
+ * smerne okrajšave (S=sever/0°, V=vzhod/90°, J=jug/180°, Z=zahod/270°,
+ * standardna kompasna orientacija, tudi vmesne 16-delne) - puščica za
+ * vsako kodo kaže NASPROTNO stran od tega, od kod veter dejansko piha
+ * (npr. "S" = veter od severa, potuje proti jugu → ↓).
  */
-function windBarbMarkup(speedKmh) {
-  if (speedKmh === null || speedKmh === undefined) return '';
-  if (speedKmh < 3) {
-    return '<circle cx="0" cy="0" r="3" fill="currentColor"/>';
-  }
-  const units5 = Math.max(1, Math.round(speedKmh / 5));
-  let rem = units5;
-  const pennants = Math.floor(rem / 4);
-  rem -= pennants * 4;
-  const longBarbs = Math.floor(rem / 2);
-  rem -= longBarbs * 2;
-  const shortBarbs = rem;
-
-  let barbs = '';
-  let y = -8;
-  const step = 3;
-  for (let i = 0; i < pennants; i++) {
-    barbs += `<path d="M0,${y.toFixed(1)} L6,${(y + 3).toFixed(1)} L0,${(y + 3).toFixed(1)} Z" fill="currentColor"/>`;
-    y += step;
-  }
-  for (let i = 0; i < longBarbs; i++) {
-    barbs += `<line x1="0" y1="${y.toFixed(1)}" x2="6" y2="${(y + 3).toFixed(1)}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`;
-    y += step;
-  }
-  for (let i = 0; i < shortBarbs; i++) {
-    barbs += `<line x1="0" y1="${y.toFixed(1)}" x2="3" y2="${(y + 1.5).toFixed(1)}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`;
-    y += step;
-  }
-  return `<line x1="0" y1="8" x2="0" y2="-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="0" cy="8" r="2" fill="currentColor"/>${barbs}`;
-}
-
-function windBarbSvgFromDeg(fromDeg, speedKmh, size) {
-  size = size || 20;
-  if (fromDeg === null || fromDeg === undefined) return '';
-  const inner = windBarbMarkup(speedKmh);
-  if (!inner) return '';
-  const travelDeg = (fromDeg + 180) % 360;
-  return `<svg class="wind-barb" width="${size}" height="${size}" viewBox="-12 -12 24 24" aria-hidden="true" style="transform:rotate(${travelDeg}deg)">${inner}</svg>`;
-}
-
-function windBarbGroupFromDeg(cx, cy, fromDeg, speedKmh, scale) {
-  scale = scale || 1;
-  if (fromDeg === null || fromDeg === undefined) return '';
-  const inner = windBarbMarkup(speedKmh);
-  if (!inner) return '';
-  const travelDeg = (fromDeg + 180) % 360;
-  return `<g transform="translate(${cx},${cy}) rotate(${travelDeg}) scale(${scale})">${inner}</g>`;
-}
-
-/**
- * ARSO napoved uporablja slovenske smerne okrajšave
- * (S=sever/0°, V=vzhod/90°, J=jug/180°, Z=zahod/270°, standardna kompasna
- * orientacija, tudi vmesne 16-delne).
- */
-const SI_COMPASS_DEG = {
-  S: 0, SSV: 22.5, SV: 45, VSV: 67.5, V: 90, VJV: 112.5, JV: 135, JJV: 157.5,
-  J: 180, JJZ: 202.5, JZ: 225, ZJZ: 247.5, Z: 270, ZSZ: 292.5, SZ: 315, SSZ: 337.5,
+const WIND_ARROW_BY_SI_DIRECTION = {
+  S: '↓', SSV: '↓', SV: '↙', VSV: '↙', V: '←', VJV: '←', JV: '↖', JJV: '↖',
+  J: '↑', JJZ: '↑', JZ: '↗', ZJZ: '↗', Z: '→', ZSZ: '→', SZ: '↘', SSZ: '↘',
 };
 
-function windArrow(direction, speedKmh, size) {
-  if (!direction) return '';
-  return windBarbSvgFromDeg(SI_COMPASS_DEG[direction], speedKmh, size);
+function windArrow(direction) {
+  return direction ? (WIND_ARROW_BY_SI_DIRECTION[direction] || '') : '';
 }
 
 /**
  * SkyTech (žive postaje) uporablja angleške smerne okrajšave
  * (N/NE/E/SE/S/SW/W/NW) - ločen slovar od zgornjega, ker se npr. "S"
  * tu pomeni JUG (south), v ARSO napovedi zgoraj pa SEVER (sever) - NE
- * smeta se zmešati.
+ * smeta se zmešati. Ista konvencija ("kam potuje") kot pri SI različici.
  */
-const EN_COMPASS_DEG = {
-  N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
-  S: 180, SSW: 202.5, SW: 225, WSW: 247.5, W: 270, WNW: 292.5, NW: 315, NNW: 337.5,
+const WIND_ARROW_BY_EN_DIRECTION = {
+  N: '↓', NNE: '↓', NE: '↙', ENE: '↙', E: '←', ESE: '←', SE: '↖', SSE: '↖',
+  S: '↑', SSW: '↑', SW: '↗', WSW: '↗', W: '→', WNW: '→', NW: '↘', NNW: '↘',
 };
 
-function windArrowSkytech(direction, speedKmh, size) {
-  if (!direction) return '';
-  return windBarbSvgFromDeg(EN_COMPASS_DEG[direction], speedKmh, size);
+function windArrowSkytech(direction) {
+  return direction ? (WIND_ARROW_BY_EN_DIRECTION[direction] || '') : '';
 }
+
+/**
+ * Samo za buildDirectionArrowsSvg (graf zgodovine) - tam se puščica gladko
+ * rotira glede na surovo SkyTech stopinjo namesto iz 16-smerne kratice.
+ */
+const EN_COMPASS_DEG = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
 
 /**
  * Veter (in temperatura) po višini (tlačni nivoji)
@@ -829,7 +773,9 @@ function buildWindAloftTable(aloft, windSpeedFormatter, unitLabel) {
         .map((s, i) => {
           const deg = l.dirs[i];
           const cls = windAloftSpeedClass(s);
-          const arrow = windBarbSvgFromDeg(deg, s, 18);
+          const arrow = deg !== null && deg !== undefined
+            ? `<span class="wa-arrow" style="transform:rotate(${(deg + 180) % 360}deg)">↑</span>`
+            : '';
           const speedText = s !== null && s !== undefined ? windSpeedFormatter(s) : '—';
           return `<td class="${cls}">${arrow}<br>${speedText}</td>`;
         })
@@ -1114,18 +1060,20 @@ function buildDirectionArrowsSvg(series, width = 320, height = 28) {
   const n = series.length;
   if (n === 0) return '';
   const xAt = (i) => padding.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
-  const cy = height / 2 + 2;
+  const cy = height / 2 + 4;
 
   const glyphs = pickHourlyIndices(series, 2)
     .map((i) => {
       const deg = EN_COMPASS_DEG[series[i].direction];
       if (deg === undefined) return '';
-      return windBarbGroupFromDeg(xAt(i), cy, deg, series[i].speedKmh, 0.65);
+      const travelDeg = (deg + 180) % 360;
+      const cx = xAt(i).toFixed(1);
+      return `<text x="${cx}" y="${cy}" font-size="14" fill="#55ffff" text-anchor="middle" transform="rotate(${travelDeg} ${cx} ${cy - 4})">↑</text>`;
     })
     .join('');
 
   if (!glyphs) return '';
-  return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" class="history-chart-arrows" style="color:#55ffff">${glyphs}</svg>`;
+  return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" class="history-chart-arrows">${glyphs}</svg>`;
 }
 
 /* ---------- Podrobnosti postaje (klik na trenutno postajo ali vrstico v bližini) ---------- */
@@ -1140,9 +1088,9 @@ function renderStationSnapshot(station) {
   return `
     <p class="meta small">${t('currentMeasurement')}${ageText ? ' · ' + ageText : ''}${station.altitude ? ` · ${station.altitude} ${t('elevAbbrev')}` : ''}</p>
     <div class="big-row">
-      ${metricBox(t('labelWind'), m.windSpeedKmh != null ? `${formatWind(m.windSpeedKmh)}${m.windDirection ? ' ' + windArrowSkytech(m.windDirection, m.windSpeedKmh, 22) : ''}` : '—', wind)}
+      ${metricBox(t('labelWind'), m.windSpeedKmh != null ? `${formatWind(m.windSpeedKmh)}${m.windDirection ? ' ' + windArrowSkytech(m.windDirection) : ''}` : '—', wind)}
       ${metricBox(t('labelGustFull'), formatWind(m.windGustKmh))}
-      ${metricBox(t('labelDirectionEst'), windArrowSkytech(m.windDirection, m.windSpeedKmh, 26) || '—', dirRating)}
+      ${metricBox(t('labelDirectionEst'), windArrowSkytech(m.windDirection) || '—', dirRating)}
       ${metricBox(t('labelTemp'), m.temperatureC != null ? `${m.temperatureC}°C` : '—')}
     </div>
     ${m.windDirection ? `<p class="meta small">${t('directionCodeHint')}</p>` : ''}
@@ -1169,7 +1117,7 @@ function renderHistoryCharts(history) {
   const unitLabel = (WIND_UNITS[state.windUnit] || WIND_UNITS.kmh).label;
   const windSeries = m.map((e) => ({ time: e.time, value: convertWindValue(e.windSpeedKmh) }));
   const gustSeries = m.map((e) => ({ time: e.time, value: convertWindValue(e.windGustKmh) }));
-  const dirSeries = m.map((e) => ({ time: e.time, direction: e.windDirection, speedKmh: e.windSpeedKmh }));
+  const dirSeries = m.map((e) => ({ time: e.time, direction: e.windDirection }));
   const tempSeries = m.map((e) => ({ time: e.time, value: e.temperatureC }));
   const hoursSpan = Math.round((m.length * 10) / 6) / 10;
 
@@ -1516,7 +1464,7 @@ function renderCurrent(data) {
 
   // Smer je iz žive SkyTech postaje (useLive, angleške kratice) ali iz
   // ARSO napovedi (slovenske kratice) - izbira pravi slovar glede na vir.
-  const dirArrow = useLive ? windArrowSkytech(windDir, windSpeed, 30) : windArrow(windDir, windSpeed, 30);
+  const dirArrow = useLive ? windArrowSkytech(windDir) : windArrow(windDir);
 
   el.currentStats.innerHTML = `
     <div class="big-stat"><div class="label">${t('labelWind')}</div><div class="value">${formatWind(windSpeed)}</div></div>
@@ -1576,7 +1524,7 @@ function renderNearby(data) {
       (s) => `
     <li data-station-id="${s.stationId}" data-station-name="${s.stationName}">
       <span>${s.stationName} (${s.distanceKm} km)</span>
-      <span>${s.windSpeedKmh != null ? formatWind(s.windSpeedKmh) + ' ' + windArrowSkytech(s.windDirection, s.windSpeedKmh, 18) : '—'}</span>
+      <span>${s.windSpeedKmh != null ? formatWind(s.windSpeedKmh) + ' ' + windArrowSkytech(s.windDirection) : '—'}</span>
     </li>
   `
     )
@@ -1606,7 +1554,7 @@ function renderForecast(data) {
       const tMin = temps.length ? Math.round(Math.min(...temps)) : null;
       const tMax = temps.length ? Math.round(Math.max(...temps)) : null;
       const windText = windPeak
-        ? t('windUpTo', formatWind(windPeak.windSpeedKmh), windPeak.windDirection ? ' ' + windArrow(windPeak.windDirection, windPeak.windSpeedKmh, 18) : '')
+        ? t('windUpTo', formatWind(windPeak.windSpeedKmh), windPeak.windDirection ? ' ' + windArrow(windPeak.windDirection) : '')
         : '—';
       return `
         <tr>

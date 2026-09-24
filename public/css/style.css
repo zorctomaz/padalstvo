@@ -553,9 +553,8 @@ p {
   padding-top: 12px;
 }
 
-.wind-barb {
+.wa-arrow {
   display: inline-block;
-  vertical-align: middle;
 }
 
 .wa-blue { color: var(--cyan); }
