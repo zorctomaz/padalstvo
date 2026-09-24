@@ -528,6 +528,15 @@ podatek dejansko prihaja (npr. v `renderCurrent` glede na `useLive` –
 živ SkyTech podatek uporabi `windArrowSkytech`, ARSO napoved pa
 `windArrow`), ne glede na trenutno izbrani prikazni jezik strani.
 
+Smerna KRATICA (npr. "JZ") se sicer izven puščic prikaže znotraj besedila
+ocene primernosti (`translateRatingLabel`/`localizeOctantCodes`, glej
+razdelek o i18n zgoraj) - da ne bi bilo dvoma, ali kratica pomeni "od kod"
+ali "proti kam" piha veter, je poleg take ocene (kadar je prikazana)
+dodano kratko pojasnilo (`directionCodeHint`: "Smerna kratica v oklepaju
+... vedno pove, OD KOD piha veter.") - v `renderCurrent` (glavna kartica)
+in `renderStationSnapshot` (okno podrobnosti postaje), pogojeno s tem, da
+je ocena smeri sploh prikazana.
+
 ### Trend zračnega pritiska
 
 Pod glavno kartico "trenutno stanje" je vrstica s trenutnim pritiskom

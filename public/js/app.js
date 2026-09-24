@@ -70,6 +70,7 @@ const TRANSLATIONS = {
     labelGustFull: 'Sunki vetra',
     labelDirection: 'Smer',
     labelDirectionEst: 'Smer (ocena)',
+    directionCodeHint: 'Smerna kratica v oklepaju (npr. JZ) vedno pove, OD KOD piha veter.',
     labelTemp: 'Temperatura',
     labelPressure: 'Pritisk',
     pressureSteady: 'stabilen',
@@ -172,6 +173,7 @@ const TRANSLATIONS = {
     labelGustFull: 'Wind gusts',
     labelDirection: 'Direction',
     labelDirectionEst: 'Direction (estimate)',
+    directionCodeHint: 'The direction code in parentheses (e.g. SW) always shows where the wind is blowing FROM.',
     labelTemp: 'Temperature',
     labelPressure: 'Pressure',
     pressureSteady: 'steady',
@@ -1049,6 +1051,7 @@ function renderStationSnapshot(station) {
       ${metricBox(t('labelDirectionEst'), windArrowSkytech(m.windDirection) || '—', dirRating)}
       ${metricBox(t('labelTemp'), m.temperatureC != null ? `${m.temperatureC}°C` : '—')}
     </div>
+    ${m.windDirection ? `<p class="meta small">${t('directionCodeHint')}</p>` : ''}
   `;
 }
 
@@ -1430,9 +1433,13 @@ function renderCurrent(data) {
 
   const verdictParts = [];
   if (windRating) verdictParts.push(`<span class="${pillClass(windRating.color)}">${translateRatingLabel(windRating.label)}</span>`);
-  if (dirRating && (data.stationMode || !data.myLocationMode)) verdictParts.push(`<span class="${pillClass(dirRating.color)}">${translateRatingLabel(dirRating.label)}</span>`);
+  const showDirRating = dirRating && (data.stationMode || !data.myLocationMode);
+  if (showDirRating) verdictParts.push(`<span class="${pillClass(dirRating.color)}">${translateRatingLabel(dirRating.label)}</span>`);
   el.verdicts.innerHTML =
-    verdictParts.join('') + renderPressureTrend(data) + `<p class="meta" style="margin-top:10px;">${t('sourceLabel', source)}</p>`;
+    verdictParts.join('') +
+    (showDirRating ? `<p class="meta small">${t('directionCodeHint')}</p>` : '') +
+    renderPressureTrend(data) +
+    `<p class="meta" style="margin-top:10px;">${t('sourceLabel', source)}</p>`;
 
   if (useLive) {
     el.currentBlock.dataset.stationId = sk.stationId;
