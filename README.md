@@ -237,7 +237,7 @@ tem ni bilo preneseno – če jih boš pogrešal/-a, jih je treba znova
 dodati v to (zdaj edino) datoteko.
 
 **Vizualni slog** sledi matični strani **fotra.net**
-(padalstvo.fotra.net je njena poddomena) - retro DOS/CRT terminal
+(paragliding.fotra.net je njena poddomena) - retro DOS/CRT terminal
 estetika: pisava **VT323** (Google Fonts, monospace), barvna paleta
 "DOS modra" ozadje (`#0000AA`), cian obroba/poudarki (`#55FFFF`), rumen
 naslov s sijajem (`#FFFF55`), dvojna cian obroba okoli osrednjega
