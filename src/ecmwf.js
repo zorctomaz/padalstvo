@@ -81,4 +81,4 @@ async function fetchSynopticChartSequence() {
   return frames;
 }
 
-module.exports = { fetchSynopticChartSequence };
+module.exports = { fetchSynopticChartSequence, STEP_HOURS };

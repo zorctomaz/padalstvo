@@ -21,7 +21,7 @@ const { buildParaglidingSummary, buildGenericLocationForecast } = require('../sr
 const { fetchAllStations, fetchStationHistory } = require('../src/skytech');
 const { fetchAllThermalRegions, REGION_CENTERS } = require('../src/arso-thermal');
 const { ARSO_LOCATIONS } = require('../src/arso-locations');
-const { fetchSynopticChartSequence } = require('../src/ecmwf');
+const { fetchSynopticChartSequence, STEP_HOURS } = require('../src/ecmwf');
 
 const DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const WEATHER_DIR = path.join(DATA_DIR, 'weather');
@@ -192,9 +192,9 @@ async function main() {
   // Ena sama sekvenca (zdaj/+24h/+48h) za celotno aplikacijo (ni vezana na
   // posamezno vzletišče) - en klic, nato deljen med vsemi vzletišči spodaj
   // (glej src/ecmwf.js).
-  process.stdout.write('Pridobivam ECMWF sinoptične karte (zdaj/+24h/+48h, MSLP + veter 850 hPa)... ');
+  process.stdout.write('Pridobivam ECMWF sinoptične karte (zdaj/+24h/+48h/+72h/+96h, MSLP + veter 850 hPa)... ');
   const synopticChartFrames = await fetchSynopticChartSequence();
-  console.log(`OK(${synopticChartFrames.length}/3)`);
+  console.log(`OK(${synopticChartFrames.length}/${STEP_HOURS.length})`);
 
   const results = [];
   const relevantStationIds = new Set();
