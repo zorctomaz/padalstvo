@@ -204,7 +204,8 @@ function rateSkytechDirection(station, compassDirection) {
     return { known: true, label: `Smer (${compassDirection}) mejna`, color: 'orange' };
   }
   if (station.directionsRed.includes(compassDirection)) {
-    return { known: true, label: `Smer (${compassDirection}) neprimerna`, color: 'red' };
+    const suffix = station.directionsGreen.length > 0 ? ` – primerne: ${station.directionsGreen.join(', ')}` : '';
+    return { known: true, label: `Smer (${compassDirection}) neprimerna${suffix}`, color: 'red' };
   }
   return { known: false, label: `Smer (${compassDirection}) ni razvrščena`, color: 'gray' };
 }

@@ -88,6 +88,9 @@ const TRANSLATIONS = {
     arrowLegend: '↑ = smer, od koder piha veter (sever = puščica navzgor), po ena za vsako uro.',
     legendSpeed: 'hitrost',
     legendGust: 'sunki',
+    legendTemp: 'temperatura',
+    legendAverage: 'povprečje',
+    legendTrend: 'trend',
     tempChartTitle: 'Temperatura (°C)',
     lastMeasurements: (count, hours) => `Zadnjih ${count} meritev (~${hours} h, postaja poroča približno vsakih 10 min).`,
     loadingHistory: 'Nalagam zgodovino…',
@@ -187,6 +190,9 @@ const TRANSLATIONS = {
     arrowLegend: '↑ = direction the wind is blowing FROM (north = arrow pointing up), one per hour.',
     legendSpeed: 'speed',
     legendGust: 'gusts',
+    legendTemp: 'temperature',
+    legendAverage: 'average',
+    legendTrend: 'trend',
     tempChartTitle: 'Temperature (°C)',
     lastMeasurements: (count, hours) => `Last ${count} measurements (~${hours} h, the station reports roughly every 10 min).`,
     loadingHistory: 'Loading history…',
@@ -289,6 +295,8 @@ function translateRatingLabel(label) {
   if (m) return `Direction (${m[1]}) borderline`;
   m = label.match(/^Smer \(([A-Z]+)\) neprimerna$/);
   if (m) return `Direction (${m[1]}) unsuitable`;
+  m = label.match(/^Smer \(([A-Z]+)\) neprimerna – primerne: (.+)$/);
+  if (m) return `Direction (${m[1]}) unsuitable – suitable: ${m[2]}`;
   m = label.match(/^Smer \(([A-Z]+)\) ni razvrščena$/);
   if (m) return `Direction (${m[1]}) not classified`;
   return label;
@@ -816,7 +824,8 @@ function rateSkytechDirectionClient(station, compassDirection) {
     return { label: `Smer (${compassDirection}) mejna`, color: 'orange' };
   }
   if (station.directionsRed && station.directionsRed.includes(compassDirection)) {
-    return { label: `Smer (${compassDirection}) neprimerna`, color: 'red' };
+    const suffix = station.directionsGreen && station.directionsGreen.length > 0 ? ` – primerne: ${station.directionsGreen.join(', ')}` : '';
+    return { label: `Smer (${compassDirection}) neprimerna${suffix}`, color: 'red' };
   }
   return { label: `Smer (${compassDirection}) ni razvrščena`, color: 'gray' };
 }
@@ -857,7 +866,30 @@ function pickThreeHourTicks(series) {
   return picked;
 }
 
-function buildLineChartSvg({ series, series2, width = 320, height = 130, color = '#55ffff', color2 = '#ffaa00', unit = '', yLabelFormatter }) {
+/**
+ * Drseče povprečje (centrirano okno) za "trend" črto - zgladi šum
+ * surovih meritev (glej buildLineChartSvg/showStats), ne da bi
+ * spremenili x-os (dolžina/časi ostanejo enaki kot pri vhodni seriji).
+ */
+function movingAverageSeries(series, windowSize) {
+  const half = Math.floor(windowSize / 2);
+  return series.map((p, i) => {
+    const lo = Math.max(0, i - half);
+    const hi = Math.min(series.length - 1, i + half);
+    let sum = 0;
+    let count = 0;
+    for (let j = lo; j <= hi; j++) {
+      const v = series[j].value;
+      if (v !== null && v !== undefined) {
+        sum += v;
+        count++;
+      }
+    }
+    return { time: p.time, value: count > 0 ? sum / count : null };
+  });
+}
+
+function buildLineChartSvg({ series, series2, width = 320, height = 130, color = '#55ffff', color2 = '#ffaa00', unit = '', yLabelFormatter, showStats = false }) {
   const formatY = yLabelFormatter || ((v) => `${Math.round(v * 10) / 10}${unit}`);
   const padding = { top: 14, right: 8, bottom: 20, left: 4 };
   const innerW = width - padding.left - padding.right;
@@ -899,6 +931,21 @@ function buildLineChartSvg({ series, series2, width = 320, height = 130, color =
     return d.trim();
   }
 
+  let statsSvg = '';
+  if (showStats) {
+    const values = series.map((p) => p.value).filter((v) => v !== null && v !== undefined);
+    if (values.length > 0) {
+      const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+      const avgY = yAt(avg).toFixed(1);
+      const windowSize = Math.max(3, Math.round(series.length / 14));
+      const trendPath = pathFor(movingAverageSeries(series, windowSize));
+      statsSvg = `
+        <line x1="${padding.left}" y1="${avgY}" x2="${width - padding.right}" y2="${avgY}" stroke="#aaaaaa" stroke-width="1.2" stroke-dasharray="6,4" />
+        <path d="${trendPath}" fill="none" stroke="#ffff55" stroke-width="1.5" stroke-dasharray="2,2" />
+      `;
+    }
+  }
+
   const fmtTime = (tv) => (tv ? new Date(tv).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' }) : '');
   const baselineY = height - padding.bottom;
   const tickIdx = pickThreeHourTicks(series);
@@ -919,6 +966,7 @@ function buildLineChartSvg({ series, series2, width = 320, height = 130, color =
       <text x="${padding.left}" y="${padding.top - 4}" font-size="12" fill="#55ffff">${formatY(max)}</text>
       <text x="${padding.left}" y="${height - padding.bottom - 2}" font-size="12" fill="#55ffff">${formatY(min)}</text>
       ${series2 ? `<path d="${pathFor(series2)}" fill="none" stroke="${color2}" stroke-width="1.5" stroke-dasharray="3,3" />` : ''}
+      ${statsSvg}
       <path d="${pathFor(series)}" fill="none" stroke="${color}" stroke-width="2" />
       ${ticks}
     </svg>
@@ -1010,17 +1058,24 @@ function renderHistoryCharts(history) {
   el.historyModalBody.innerHTML = `
     <div class="chart-block">
       <h4>${t('windChartTitle', unitLabel)}</h4>
-      ${buildLineChartSvg({ series: windSeries, series2: gustSeries, color: '#55ffff', color2: '#ffaa00' })}
+      ${buildLineChartSvg({ series: windSeries, series2: gustSeries, color: '#55ffff', color2: '#ffaa00', showStats: true })}
       ${buildDirectionArrowsSvg(dirSeries)}
       <p class="meta small">${t('arrowLegend')}</p>
       <div class="chart-legend">
         <span><span class="swatch" style="background:#55ffff"></span>${t('legendSpeed')}</span>
         <span><span class="swatch" style="background:#ffaa00"></span>${t('legendGust')}</span>
+        <span><span class="swatch" style="background:#aaaaaa"></span>${t('legendAverage')}</span>
+        <span><span class="swatch" style="background:#ffff55"></span>${t('legendTrend')}</span>
       </div>
     </div>
     <div class="chart-block">
       <h4>${t('tempChartTitle')}</h4>
-      ${buildLineChartSvg({ series: tempSeries, color: '#ff5555', unit: '°' })}
+      ${buildLineChartSvg({ series: tempSeries, color: '#ff5555', unit: '°', showStats: true })}
+      <div class="chart-legend">
+        <span><span class="swatch" style="background:#ff5555"></span>${t('legendTemp')}</span>
+        <span><span class="swatch" style="background:#aaaaaa"></span>${t('legendAverage')}</span>
+        <span><span class="swatch" style="background:#ffff55"></span>${t('legendTrend')}</span>
+      </div>
     </div>
     <p class="meta small">${t('lastMeasurements', m.length, hoursSpan)}</p>
   `;

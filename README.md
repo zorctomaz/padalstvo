@@ -252,7 +252,13 @@ naloženo prek CDN) in **podrobnosti ob kliku**:
   vrstico v seznamu bližnjih postaj odpre okno s trenutno meritvijo
   (veter/sunki/smer/temperatura + ocene) in grafom vetra/temperature
   zadnjih ur (`buildLineChartSvg`, oznake na osi vsake 3 ure, puščice
-  smeri vetra po urah);
+  smeri vetra po urah). Poleg surovih meritev (polna/črtkana črta) sta
+  na obeh grafih (veter - hitrost; temperatura) prikazani še dve tanki
+  črtkani referenčni črti za lažje branje šumnih surovih podatkov:
+  vodoravna **povprečje** (sivo, `stroke-dasharray="6,4"`) in
+  **trend** - centrirano drseče povprečje (`movingAverageSeries`,
+  velikost okna ~1/14 dolžine serije), rumeno, `stroke-dasharray="2,2"`;
+  legenda pod vsakim grafom pojasni barve;
 - klik na kartico termike odpre uradno ARSO napoved (danes/jutri) + naš
   graf "po urah" (glej razdelek "Uradna ARSO napoved termike" spodaj za
   razlago, zakaj to ni uradni podatek);
@@ -455,6 +461,16 @@ naloži v brskalniku in zanj zrcali `haversineKm`, `rateWind` in
 bližnje postaje za POLJUBNO GPS točko brez dodatnega strežniškega
 klica – to je edini način, ki deluje tudi na povsem statičnem GitHub
 Pages gostovanju brez žive backend poti.
+
+`rateSkytechDirection`/`rateSkytechDirectionClient` ob "neprimerni" smeri
+(rdeča ocena, `station.directionsRed`) v sporočilo doda tudi seznam
+primernih smeri za to postajo (`– primerne: ${station.directionsGreen.join(', ')}`),
+če so te za postajo sploh definirane - prej je sporočilo javilo le
+"neprimerna" brez pojasnila, katera smer BI bila v redu. Enak vzorec
+(seznam primernih smeri v sporočilu) že prej uporablja `rateLaunchAlignment`
+za uradno potrjeno primerno smer vzleta (glej "primerna smer vzleta"
+zgoraj) - ta popravek ga uskladi tudi za oceno na podlagi žive SkyTech
+postaje.
 
 Enak vzorec za samo ARSO napoved: `src/arso-locations.js` (`ARSO_LOCATIONS`)
 vsebuje 36 krajev, za katere je ARSO-jev napovedni API dejansko potrjeno
