@@ -251,10 +251,14 @@ naloženo prek CDN) in **podrobnosti ob kliku**:
 - klik na trenutno kartico (če prikazuje živo SkyTech meritev) ali na
   vrstico v seznamu bližnjih postaj odpre okno s trenutno meritvijo
   (veter/sunki/smer/temperatura + ocene) in grafom vetra/temperature
-  zadnjih ur (`buildLineChartSvg`, oznake na osi vsake 3 ure, puščice
-  smeri vetra po urah). Poleg surovih meritev (polna/črtkana črta) sta
-  na obeh grafih (veter - hitrost; temperatura) prikazani še dve tanki
-  črtkani referenčni črti za lažje branje šumnih surovih podatkov:
+  zadnjih ur (`buildLineChartSvg`, oznake na osi vsake 3 ure, vetrne
+  zastavice po urah). Graf ima tudi **vodoravne referenčne črte pri
+  "lepih" vrednostih** (kot pri skytech.si) namesto samo ene oznake na
+  vrhu/dnu - `niceGridStep` zaokroži surov razmik na 1/2/5 × 10ⁿ, nato se
+  izriše ~4-5 tankih vodoravnih črt čez celoten graf, vsaka z lastno
+  oznako vrednosti na levi. Poleg surovih meritev (polna/črtkana črta)
+  sta na obeh grafih (veter - hitrost; temperatura) prikazani še dve
+  tanki črtkani referenčni črti za lažje branje šumnih surovih podatkov:
   vodoravna **povprečje** (sivo, `stroke-dasharray="6,4"`) in
   **trend** - centrirano drseče povprečje (`movingAverageSeries`,
   velikost okna ~1/14 dolžine serije), rumeno, `stroke-dasharray="2,2"`;
@@ -336,12 +340,12 @@ padala, oba vedno vidna, le trenutno aktivni poudarjen; na uporabnikovo
   slovenskemu "S" = sever) ne pride v poštev; ARSO/`rateLaunchAlignment`
   besedila to prehajajo skozi isto pot, čeprav interno prav tako
   uporabljajo `degToOctant`, ki vrača angleške kode.
-- **Smerne kratice se sploh ne prikazujejo kot besedilo** (glej "Puščice
-  namesto besedilnih smeri" spodaj) - zato tu ni prevoda kratic v SI/EN
-  načinu, le izbira prave puščične preslikave glede na VIR podatka
-  (`windArrow` za ARSO/SI kratice, `windArrowSkytech` za SkyTech/EN
-  kratice) - ta izbira je neodvisna od trenutno izbranega prikaznega
-  jezika.
+- **Smerne kratice se sploh ne prikazujejo kot besedilo** (glej "Vetrne
+  zastavice namesto besedilnih smeri" spodaj) - zato tu ni prevoda kratic
+  v SI/EN načinu, le izbira prave preslikave kratica→stopinja glede na
+  VIR podatka (`windArrow` za ARSO/SI kratice, `windArrowSkytech` za
+  SkyTech/EN kratice) - ta izbira je neodvisna od trenutno izbranega
+  prikaznega jezika.
 - **Izven obsega:** prosto besedilo, ki ga uredniki ročno vpišejo v
   `src/sites.json` (`notes`, `liveStation.note` - opombe posameznih
   vzletišč), s tem mehanizmom NI zajeto in ostane v slovenščini tudi v
@@ -503,39 +507,63 @@ Nad večdnevno napovedjo (`#forecastMeta`) je izpisan ARSO **kraj**, za
 katerega napoved dejansko velja (`data.arsoLocationName` v načinu "Moja
 lokacija", sicer `data.site.arsoLocation` – slednje mora izpostaviti tudi
 `buildParaglidingSummary`, glej `src/paragliding.js`). Vsak dan v tabeli
-(ob najmočnejšem vetru tistega dne) prikaže smer vetra kot **puščico**
-(`windArrow`, glej "Puščice namesto besedilnih smeri" spodaj) – puščica
-kaže, OD KOD piha veter (npr. "S" → ↑, "od severa"; standardna kompasna
-orientacija, sever gor).
+(ob najmočnejšem vetru tistega dne) prikaže smer vetra kot **vetrno
+zastavico** (`windArrow`, glej "Vetrne zastavice namesto besedilnih smeri"
+spodaj) – ročaj kaže, KAM veter potuje (npr. veter od severa → ročaj
+navzdol, proti jugu), zastavice na njem pa moč vetra.
 
-### Puščice namesto besedilnih smeri
+### Vetrne zastavice namesto besedilnih smeri
 
-Smer vetra je **povsod na strani prikazana kot puščica** (↑↗→↘↓↙←↖), NE
-kot besedilna kratica (S/SV/NE ipd.) – v glavni kartici "trenutno
-stanje", v seznamu bližnjih postaj, v oknu podrobnosti postaje, v
-tedenski napovedi in v grafu zgodovine (kjer je vsaka urna puščica
-gladko zarotirana glede na surovo SkyTech stopinjo, `buildDirectionArrowsSvg`).
-Puščica je jezikovno neodvisna (enaka v SI in EN načinu), zato ta odločitev
-hkrati poenostavi i18n – ni več treba prevajati smernih kratic med
-jeziki, kot bi bilo potrebno pri besedilnem prikazu.
+Smer vetra je **povsod na strani prikazana kot vetrna zastavica** (SVG
+ikona, `windBarbMarkup`/`windBarbSvgFromDeg`/`windBarbGroupFromDeg`), NE
+kot besedilna kratica (S/SV/NE ipd.) niti kot gola puščica – v glavni
+kartici "trenutno stanje", v seznamu bližnjih postaj, v oknu podrobnosti
+postaje, v tedenski napovedi, v tabeli vetra po višini in v grafu
+zgodovine (kjer je vsaka urna ikona gladko zarotirana glede na surovo
+SkyTech stopinjo, `buildDirectionArrowsSvg`). Ikona je jezikovno
+neodvisna (enaka v SI in EN načinu), zato ta odločitev hkrati poenostavi
+i18n – ni več treba prevajati smernih kratic med jeziki, kot bi bilo
+potrebno pri besedilnem prikazu.
+
+**Konvencija "smer potovanja" (kot na Windy.com), NE "od kod piha":**
+ročaj zastavice kaže, KAM veter potuje, ne od kod prihaja – to je
+NASPROTNO od meteorološke konvencije, ki jo (še vedno) uporablja
+besedilna kompasna koda v oklepaju ob oceni primernosti (glej spodaj).
+Sprememba je bila namenska (uporabniško poročilo: puščica navzdol ob
+"Smer (J) neprimerna" je bila zamenjana za nasprotje resnične smeri
+vetra) - `windBarbSvgFromDeg`/`windBarbGroupFromDeg` interno pretvorita
+meteorološko "od kod" stopinjo v prikazano "kam" stopinjo z `(deg + 180) %
+360`, preden jo uporabita za CSS/SVG `rotate(...)`.
+
+Ročaj poleg smeri prikaže tudi **moč vetra brez potrebe po branju
+števila** (kot pri poenostavljenih zastavicah na skytech.si): trikotnik
+(zastavica) = 20 km/h, dolga črtica = 10 km/h, kratka črtica = 5 km/h
+(hitrost se zaokroži na najbližjih 5 km/h), sam krožec brez ročaja pa
+pomeni šibek/miren veter (< 3 km/h, smer takrat ni relevantna) –
+`windBarbMarkup` v `public/js/app.js`.
 
 Ker ARSO napoved uporablja slovenske kratice (S/SV/V/JV/J/JZ/Z/SZ), SkyTech
 (žive postaje) pa angleške (N/NE/E/SE/S/SW/W/NW) – in se npr. "S" med
-njima pomensko obrne (sever ↔ south) – obstajata **dva ločena slovarja**
-kratica→puščica: `windArrow` (ARSO/SI vhod) in `windArrowSkytech`
-(SkyTech/EN vhod). Klicna mesta izberejo pravega glede na to, od kod
-podatek dejansko prihaja (npr. v `renderCurrent` glede na `useLive` –
-živ SkyTech podatek uporabi `windArrowSkytech`, ARSO napoved pa
-`windArrow`), ne glede na trenutno izbrani prikazni jezik strani.
+njima pomensko obrne (sever ↔ south) – obstajata **dva ločena slovarja
+stopinj** (`SI_COMPASS_DEG`, `EN_COMPASS_DEG`) in dve funkciji
+kratica→zastavica: `windArrow` (ARSO/SI vhod) in `windArrowSkytech`
+(SkyTech/EN vhod), obe sprejmeta tudi hitrost (km/h) za izris zastavic.
+Klicna mesta izberejo pravo glede na to, od kod podatek dejansko prihaja
+(npr. v `renderCurrent` glede na `useLive` – živ SkyTech podatek uporabi
+`windArrowSkytech`, ARSO napoved pa `windArrow`), ne glede na trenutno
+izbrani prikazni jezik strani.
 
-Smerna KRATICA (npr. "JZ") se sicer izven puščic prikaže znotraj besedila
+Smerna KRATICA (npr. "JZ") se sicer izven ikon prikaže znotraj besedila
 ocene primernosti (`translateRatingLabel`/`localizeOctantCodes`, glej
-razdelek o i18n zgoraj) - da ne bi bilo dvoma, ali kratica pomeni "od kod"
-ali "proti kam" piha veter, je poleg take ocene (kadar je prikazana)
+razdelek o i18n zgoraj) - ta OSTAJA v izvirni meteorološki "od kod piha"
+konvenciji (ni razlog za spremembo - gre za ustaljen način branja takih
+kratic v besedilu). Da ne bi bilo dvoma, zakaj se torej ikona in besedilna
+kratica ob njej zdita nasprotni, je poleg take ocene (kadar je prikazana)
 dodano kratko pojasnilo (`directionCodeHint`: "Smerna kratica v oklepaju
-... vedno pove, OD KOD piha veter.") - v `renderCurrent` (glavna kartica)
-in `renderStationSnapshot` (okno podrobnosti postaje), pogojeno s tem, da
-je ocena smeri sploh prikazana.
+... vedno pove, OD KOD piha veter. Puščica pri ikoni pa kaže nasprotno –
+KAM veter potuje (kot na Windy.com).") - v `renderCurrent` (glavna
+kartica) in `renderStationSnapshot` (okno podrobnosti postaje), pogojeno
+s tem, da je ocena smeri sploh prikazana.
 
 ### Trend zračnega pritiska
 
