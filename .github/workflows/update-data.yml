@@ -43,6 +43,9 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
+      - name: Začasno - preveri ECMWF base_time dissemination lag in max. razpon
+        run: node scripts/debug-ecmwf-basetime.js
+
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
         with:
