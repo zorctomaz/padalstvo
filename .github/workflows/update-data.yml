@@ -43,9 +43,6 @@ jobs:
           SKYTECH_API_TOKEN: ${{ secrets.SKYTECH_API_TOKEN }}
         run: node scripts/build-data.js
 
-      - name: Začasno - preveri, ali ECMWF podpira vmesne (ne le 24h) časovne korake
-        run: node scripts/debug-ecmwf-finer-steps.js
-
       - name: Pripravi Pages artefakt
         uses: actions/upload-pages-artifact@v3
         with:
