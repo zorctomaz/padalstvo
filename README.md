@@ -252,7 +252,8 @@ naloženo prek CDN) in **podrobnosti ob kliku**:
   vrstico v seznamu bližnjih postaj odpre okno s trenutno meritvijo
   (veter/sunki/smer/temperatura + ocene) in grafom vetra/temperature
   zadnjih ur (`buildLineChartSvg`, oznake na osi vsake 3 ure, vetrne
-  zastavice po urah). Graf ima tudi **vodoravne referenčne črte pri
+  zastavice vsaki 2 uri - `pickHourlyIndices(series, 2)`). Graf ima tudi
+  **vodoravne referenčne črte pri
   "lepih" vrednostih** (kot pri skytech.si) namesto samo ene oznake na
   vrhu/dnu - `niceGridStep` zaokroži surov razmik na 1/2/5 × 10ⁿ, nato se
   izriše ~4-5 tankih vodoravnih črt čez celoten graf, vsaka z lastno

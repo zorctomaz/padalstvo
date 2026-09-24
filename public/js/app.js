@@ -86,7 +86,7 @@ const TRANSLATIONS = {
     historyUnavailableRecent: 'Zgodovina za to postajo (zadnjih nekaj ur) ni na voljo.',
     windChartTitle: (unitLabel) => `Veter (${unitLabel})`,
     windAloftWindHeader: (unitLabel) => `Veter (${unitLabel}) · puščica = kam piha`,
-    arrowLegend: 'Puščica kaže, KAM veter potuje (sever = puščica navzgor pomeni veter proti severu); zastavice na njej naznanjajo moč vetra, po ena puščica za vsako uro.',
+    arrowLegend: 'Puščica kaže, KAM veter potuje (sever = puščica navzgor pomeni veter proti severu); zastavice na njej naznanjajo moč vetra, po ena puščica vsaki dve uri.',
     legendSpeed: 'hitrost',
     legendGust: 'sunki',
     legendTemp: 'temperatura',
@@ -189,7 +189,7 @@ const TRANSLATIONS = {
     historyUnavailableRecent: 'History for this station (the last few hours) is not available.',
     windChartTitle: (unitLabel) => `Wind (${unitLabel})`,
     windAloftWindHeader: (unitLabel) => `Wind (${unitLabel}) · arrow = where it's blowing toward`,
-    arrowLegend: 'Arrow shows where the wind is blowing TOWARD (north = arrow pointing up means wind heading north); the barbs show wind strength, one arrow per hour.',
+    arrowLegend: 'Arrow shows where the wind is blowing TOWARD (north = arrow pointing up means wind heading north); the barbs show wind strength, one arrow every two hours.',
     legendSpeed: 'speed',
     legendGust: 'gusts',
     legendTemp: 'temperature',
@@ -1090,16 +1090,17 @@ function buildLineChartSvg({ series, series2, width = 320, height = 130, color =
   `;
 }
 
-function pickHourlyIndices(series) {
+function pickHourlyIndices(series, intervalHours = 1) {
   const indices = [];
-  let lastHourKey = null;
+  let lastBucketKey = null;
   series.forEach((p, i) => {
     if (!p.time) return;
     const d = new Date(p.time);
-    const hourKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
-    if (hourKey !== lastHourKey) {
+    const bucketHour = Math.floor(d.getHours() / intervalHours) * intervalHours;
+    const bucketKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${bucketHour}`;
+    if (bucketKey !== lastBucketKey) {
       indices.push(i);
-      lastHourKey = hourKey;
+      lastBucketKey = bucketKey;
     }
   });
   return indices;
@@ -1113,7 +1114,7 @@ function buildDirectionArrowsSvg(series, width = 320, height = 28) {
   const xAt = (i) => padding.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
   const cy = height / 2 + 2;
 
-  const glyphs = pickHourlyIndices(series)
+  const glyphs = pickHourlyIndices(series, 2)
     .map((i) => {
       const deg = EN_COMPASS_DEG[series[i].direction];
       if (deg === undefined) return '';
