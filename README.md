@@ -322,8 +322,20 @@ padala, oba vedno vidna, le trenutno aktivni poudarjen; na uporabnikovo
   NE dajo prevesti s ključem, ker so podatki že "končno" slovensko
   besedilo - `translateRatingLabel()` jih zato prevede z iskanjem po
   točnem slovenskem nizu (`RATING_LABEL_MAP_EN`), za parametrizirane
-  predloge ("Smer (NE) ustreza postaji" ipd.) pa z regexom, ki ohrani
-  smerno kratico nespremenjeno.
+  predloge ("Smer (NE) ustreza postaji" ipd.) pa z regexom.
+  Vgrajena 8-smerna koda (`NE` v zgornjem primeru) je v teh predlogah
+  VEDNO v angleškem slogu (N/NE/E/SE/S/SW/W/NW), tudi v sicer
+  slovenskem besedilu - namerno, glej "Puščice namesto besedilnih
+  smeri" spodaj za razlog (koliziji med slovenskim in angleškim "S").
+  V EN načinu jo `translateRatingLabel()` (regex) preprosto ohrani, saj
+  je že v pravilni (angleški) obliki; v SI načinu pa jo dodatno
+  pretvori v slovensko kodo (`localizeOctantCodes`, `EN_OCTANT_TO_SI` -
+  S→J, SW→JZ ...) prek iskanja CELIH žetonov (`\b...\b`) - varno, ker
+  gre za pretvorbo cele kode prek preslikave, ne za ponovno tolmačenje
+  ene same črke, zato edina dejanska kolizija (angleški "S" = jug proti
+  slovenskemu "S" = sever) ne pride v poštev; ARSO/`rateLaunchAlignment`
+  besedila to prehajajo skozi isto pot, čeprav interno prav tako
+  uporabljajo `degToOctant`, ki vrača angleške kode.
 - **Smerne kratice se sploh ne prikazujejo kot besedilo** (glej "Puščice
   namesto besedilnih smeri" spodaj) - zato tu ni prevoda kratic v SI/EN
   načinu, le izbira prave puščične preslikave glede na VIR podatka

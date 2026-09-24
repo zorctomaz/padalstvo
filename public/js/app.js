@@ -282,8 +282,29 @@ const RATING_LABEL_MAP_EN = {
   'Ni podatka o smeri vetra': 'No wind direction data',
 };
 
+/**
+ * `rateLaunchAlignment`/`rateSkytechDirection`/`rateSkytechDirectionClient`
+ * (src/paragliding.js + zgoraj) v sporočilo vedno vstavijo 8-smerne kode v
+ * ANGLEŠKEM slogu (N/NE/E/SE/S/SW/W/NW) - namenoma, tudi v slovenskem
+ * besedilu, ker slovenski "S" pomeni SEVER, angleški "S" pa JUG (South) -
+ * ista črka, nasprotni pomen. Ta funkcija za slovenski prikaz kode
+ * PRETVORI v slovenske (S→J, SW→JZ ...) prek iskanja CELIH žetonov
+ * (\b...\b) - varno, ker gre za iskanje po celotni kodi, ne posamezni
+ * črki, zato ne more priti do zamenjave "S" (jug) za slovenski "S" (sever)
+ * po nesreči (edina dejansko nevarna kolizija - vse ostale angleške kode
+ * v slovenskem sistemu sploh ne obstajajo).
+ */
+const EN_OCTANT_TO_SI = { N: 'S', NE: 'SV', E: 'V', SE: 'JV', S: 'J', SW: 'JZ', W: 'Z', NW: 'SZ' };
+const OCTANT_TOKEN_REGEX = /\b(NE|SE|SW|NW|N|E|S|W)\b/g;
+
+function localizeOctantCodes(label) {
+  if (!label) return label;
+  return label.replace(OCTANT_TOKEN_REGEX, (code) => EN_OCTANT_TO_SI[code] || code);
+}
+
 function translateRatingLabel(label) {
-  if (state.lang !== 'en' || !label) return label;
+  if (!label) return label;
+  if (state.lang !== 'en') return localizeOctantCodes(label);
   if (RATING_LABEL_MAP_EN[label]) return RATING_LABEL_MAP_EN[label];
   let m = label.match(/^Smer vetra \(([A-Z]+)\) ustreza vzletišču$/);
   if (m) return `Wind direction (${m[1]}) matches the launch site`;
