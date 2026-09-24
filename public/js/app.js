@@ -1055,7 +1055,10 @@ function pickHourlyIndices(series, intervalHours = 1) {
 }
 
 function buildDirectionArrowsSvg(series, width = 320, height = 28) {
-  const padding = { left: 4, right: 8 };
+  // Isti levi/desni odmik kot buildLineChartSvg (glej niceGridStep/gridSvg
+  // zgoraj) - drugače se puščice ne poravnajo z grafom nad njimi, ker ima
+  // graf širši levi rob za oznake vrednosti na vodoravnih črtah.
+  const padding = { left: 34, right: 8 };
   const innerW = width - padding.left - padding.right;
   const n = series.length;
   if (n === 0) return '';
