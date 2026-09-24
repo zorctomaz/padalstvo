@@ -8,8 +8,8 @@
  * API in same PNG slike nista (potrjeno prek GitHub Actions - status
  * 200/image/png tudi brez posebne User-Agent glave).
  *
- * Namesto ene same "trenutne" karte pridobimo ZAPOREDJE enajstih (zdaj,
- * nato vsakih 24h do +240h/10 dni) iz ISTEGA modelskega teka (base_time),
+ * Namesto ene same "trenutne" karte pridobimo ZAPOREDJE 41 sličic (zdaj,
+ * nato vsakih 6h do +240h/10 dni) iz ISTEGA modelskega teka (base_time),
  * v projekciji "opencharts_europe" (širši zemljevid - cela Evropa in rob
  * severnega Atlantika/severne Afrike/zahodne Azije, ne le "Central
  * Europe" - uporabnik je želel videti tudi sisteme, ki šele prihajajo
@@ -20,7 +20,8 @@
  * klicatelja v scripts/build-data.js). V uporabniškem vmesniku je
  * zaporedje prikazano kot interaktiven drsnik/animacija (glej
  * renderSynopticChart/showSynopticFrame v public/js/app.js), ne kot
- * vrstica klikljivih sličic - z 11 koraki bi ta postala nepregledna.
+ * vrstica klikljivih sličic - z desetinami korakov bi ta postala
+ * popolnoma nepregledna.
  *
  * Razpoložljive projekcije so bile pridobljene prek GitHub Actions z
  * namerno neveljavno vrednostjo "projection" - API v napaki (404) navede
@@ -31,7 +32,9 @@
  * nobenega parametra "projection".
  *
  * Produkt dejansko sega do +240h (10 dni) - potrjeno prek GitHub Actions
- * (koraki do vključno +240h vrnejo veljavno sliko, +264h vrne 404).
+ * (koraki do vključno +240h vrnejo veljavno sliko, +264h vrne 404), in
+ * podpira tudi korake, ki niso večkratniki 24h (npr. +3h, +6h - prav
+ * tako potrjeno prek GitHub Actions).
  *
  * base_time NI "trenutni tek" (npr. danes 00Z takoj po polnoči), temveč
  * zadnji 00Z/12Z tek, ki je star vsaj 12 ur - build teče vsako uro in
@@ -43,17 +46,31 @@
  * istega teka objavijo pozneje kot korak +0h. "Včeraj 12Z" (ali "danes
  * 00Z" po 12h) je v testih vedno zanesljivo objavljen za cel razpon do
  * +240h.
+ *
+ * API ima OBČUTLJIVO omejitev hitrosti klicev - potrjeno prek GitHub
+ * Actions: v istem teku je prava izgradnja opravila 11 zaporednih
+ * klicev (takrat še 24h koraki), takoj zatem pa je dodaten diagnostični
+ * skript v ISTI minuti dosegel 429 (Too Many Requests) že pri 14.
+ * kumulativnem klicu. Zato med posameznimi klici NAMENOMA počakamo
+ * (REQUEST_SPACING_MS) in ob 429 enkrat počakamo dlje ter ponovimo
+ * (RETRY_DELAY_MS) - brez tega bi bila večina od 41 sličic izpuščena.
  */
 
 const { fetchJsonCached } = require('./fetchUtil');
 
 const PRODUCT_URL = 'https://charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/';
 const PROJECTION = 'opencharts_europe';
-const STEP_HOURS = [0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240];
+const STEP_HOURS = Array.from({ length: 41 }, (_, i) => i * 6); // 0, 6, 12, ..., 240
 const MIN_BASE_TIME_AGE_HOURS = 12;
+const REQUEST_SPACING_MS = 5000;
+const RETRY_DELAY_MS = 15000;
 
 function isoHour(d) {
   return d.toISOString().slice(0, 19) + 'Z';
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function pickBaseTime(now) {
@@ -66,7 +83,7 @@ function pickBaseTime(now) {
   return baseTime;
 }
 
-async function fetchChartFrame(baseTime, stepHours) {
+async function fetchChartFrameOnce(baseTime, stepHours) {
   const validTime = new Date(baseTime.getTime() + stepHours * 3600 * 1000);
   const params = new URLSearchParams({
     projection: PROJECTION,
@@ -81,12 +98,25 @@ async function fetchChartFrame(baseTime, stepHours) {
   return { stepHours, url: href, validTime: validTime.toISOString() };
 }
 
+async function fetchChartFrame(baseTime, stepHours) {
+  try {
+    return await fetchChartFrameOnce(baseTime, stepHours);
+  } catch (err) {
+    const isRateLimited = /HTTP 429/.test(String((err && err.message) || err));
+    if (!isRateLimited) throw err;
+    // En sam ponovni poskus po daljšem premoru - API se navadno hitro odpre nazaj.
+    await sleep(RETRY_DELAY_MS);
+    return fetchChartFrameOnce(baseTime, stepHours);
+  }
+}
+
 async function fetchSynopticChartSequence() {
   const baseTime = pickBaseTime(new Date());
   const frames = [];
-  for (const stepHours of STEP_HOURS) {
+  for (let i = 0; i < STEP_HOURS.length; i++) {
+    if (i > 0) await sleep(REQUEST_SPACING_MS);
     try {
-      frames.push(await fetchChartFrame(baseTime, stepHours));
+      frames.push(await fetchChartFrame(baseTime, STEP_HOURS[i]));
     } catch (_) {
       // En spodleteli korak ne sme podreti preostalih - preprosto ga izpustimo.
     }

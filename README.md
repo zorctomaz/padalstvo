@@ -47,7 +47,7 @@ za pilote:
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
 | **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini |
 | **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Povezava "Veter na višini (Windy)" v kartici "Povezave" na dnu strani – za več podrobnosti/nivojev, kot jih prikaže tabela |
-| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisane javne karte pritiska na morski gladini (MSLP) + vetra na 850 hPa za Evropo (projekcija `opencharts_europe` - širša od privzete ožje "Central Europe"), osvežene z vsakim tekom ECMWF-jevega modela (produkt sega do +240h/10 dni), CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji, zaporedje 11 kart (zdaj, nato vsakih 24h do +240h, isti modelski tek, star vsaj 12h zaradi objavnega zamika); interaktivna kartica "🗺️ Premikanje sistemov (ECMWF)" z drsnikom in gumbom ▶/⏸ za animacijo – prikazuje, kako se pritisni sistemi (in posredno fronte) premikajo v naslednjih desetih dneh, ne le trenutni posnetek |
+| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisane javne karte pritiska na morski gladini (MSLP) + vetra na 850 hPa za Evropo (projekcija `opencharts_europe` - širša od privzete ožje "Central Europe"), osvežene z vsakim tekom ECMWF-jevega modela (produkt sega do +240h/10 dni), CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji, zaporedje 41 kart (zdaj, nato vsakih 6h do +240h, isti modelski tek, star vsaj 12h zaradi objavnega zamika; klici namenoma razmaknjeni zaradi omejitve hitrosti API-ja - izgradnja zato traja nekaj minut dlje); interaktivna kartica "🗺️ Premikanje sistemov (ECMWF)" z drsnikom in gumbom ▶/⏸ za animacijo – prikazuje, kako se pritisni sistemi (in posredno fronte) premikajo v naslednjih desetih dneh, ne le trenutni posnetek |
 
 ### Ocene, specifične za jadralno padalstvo
 
@@ -507,9 +507,9 @@ podatek že imamo.
 
 Poleg tega izračunanega trenda je pod kartico z vetrom po višini
 kartica **"🗺️ Premikanje sistemov (ECMWF)"** - interaktiven prikaz
-zaporedja enajstih vnaprej izrisanih kart pritiska + vetra na 850 hPa
+zaporedja 41 vnaprej izrisanih kart pritiska + vetra na 850 hPa
 za Evropo (glej "ECMWF Open Charts" v tabeli virov zgoraj): zdaj, nato
-vsakih 24 ur do +240 h (10 dni), vse iz istega modelskega teka. Namesto
+vsakih 6 ur do +240 h (10 dni), vse iz istega modelskega teka. Namesto
 klikljivih sličic je na voljo **drsnik** (povleci za poljuben korak) in
 **gumb za predvajanje** (▶/⏸ - samodejno se pomika skozi vse korake in
 ob koncu začne znova), pod sliko pa je izpisan datum/ura in korak
@@ -533,10 +533,10 @@ polno velikost v novem zavihku.
   pritiska ne merijo, zato ta podatek ni odvisen od izbire žive
   postaje.
 - **Premikanje sistemov (ECMWF)** je za razliko od trenda ENO SAMO
-  zaporedje enajstih kart za celotno aplikacijo, ne po vzletišču/lokaciji -
+  zaporedje 41 kart za celotno aplikacijo, ne po vzletišču/lokaciji -
   `src/ecmwf.js` (`fetchSynopticChartSequence`) ob vsaki izgradnji z
   JSON API-jem (`charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/`)
-  pridobi 11 sličic iz istega modelskega teka za korake 0 h, 24 h, 48 h
+  pridobi 41 sličic iz istega modelskega teka za korake 0 h, 6 h, 12 h
   ... do 240 h (`STEP_HOURS`, `valid_time`), v projekciji
   `opencharts_europe`. `scripts/build-data.js` isto zaporedje (polje
   `synopticChartFrames`) doda vsem vzletiščem. Sama HTML produktna stran
@@ -546,6 +546,17 @@ polno velikost v novem zavihku.
   zato je varno za neposredno povezavo v aplikaciji. Če posamezen korak
   spodleti, se preprosto izpusti iz zaporedja (ne podre izgradnje); če
   spodletijo vsi, se kartica na strani skrije.
+- **Omejitev hitrosti klicev ECMWF API-ja** - potrjeno prek GitHub
+  Actions: v istem teku je prava izgradnja opravila 11 zaporednih
+  klicev (takrat še s 24h koraki), takoj zatem pa je dodaten
+  diagnostični skript v ISTI minuti dosegel `429 Too Many Requests` že
+  pri 14. kumulativnem klicu. Ker jih 41 potrebujemo v vsaki izgradnji,
+  `fetchSynopticChartSequence` med klici namenoma počaka
+  (`REQUEST_SPACING_MS`, 5 sekund) in ob `429` enkrat počaka dlje ter
+  ponovi klic (`RETRY_DELAY_MS`, 15 sekund) - brez tega bi bila večina
+  sličic izpuščena. Posledica: ta korak izgradnje zdaj traja nekaj
+  minut (namesto prejšnjih ~20 sekund za 11 klicev), kar je pri urni
+  (ne pogostejši) izgradnji zanemarljivo.
 - **Projekcija `opencharts_europe`** (namesto prvotne
   `opencharts_central_europe`) je bila izbrana namenoma širša - uporabnik
   je želel na zemljevidu videti tudi sisteme, ki šele prihajajo izven
@@ -570,11 +581,12 @@ polno velikost v novem zavihku.
   vseh testih zanesljivo objavljeno za cel razpon. Produkt sicer sega
   vse do **+240h (10 dni)** - preverjeno prek GitHub Actions (koraki do
   vključno +240h vrnejo veljavno sliko, +264h vrne 404) - `STEP_HOURS`
-  zdaj uporabi cel ta razpon (vsakih 24h).
+  zdaj uporabi cel ta razpon (vsakih 6h; potrjeno je tudi, da API sprejme
+  korake, ki niso večkratniki 24h, npr. +3h/+6h).
 - **Interaktiven prikaz** (`renderSynopticChart`/`showSynopticFrame`/
   `toggleSynopticPlayback` v `public/js/app.js`, `.synoptic-viewer*` v
   `public/css/style.css`) namesto prejšnje vrstice klikljivih sličic -
-  z 11 koraki bi ta postala nepregledna. Ena velika slika, pod njo
+  z desetinami korakov bi ta postala popolnoma nepregledna. Ena velika slika, pod njo
   drsnik (`<input type="range">`, korak = indeks v `synopticChartFrames`)
   za poljuben korak in gumb ▶/⏸ za samodejno animacijo (samodejno se
   pomika po korakih vsakih 1200 ms in se ob koncu zaporedja zacikla).

@@ -192,7 +192,7 @@ async function main() {
   // Ena sama sekvenca (zdaj/+24h/+48h) za celotno aplikacijo (ni vezana na
   // posamezno vzletišče) - en klic, nato deljen med vsemi vzletišči spodaj
   // (glej src/ecmwf.js).
-  process.stdout.write('Pridobivam ECMWF sinoptične karte (zdaj do +240h/10 dni, vsakih 24h, MSLP + veter 850 hPa)... ');
+  process.stdout.write('Pridobivam ECMWF sinoptične karte (zdaj do +240h/10 dni, vsakih 6h, MSLP + veter 850 hPa, lahko traja nekaj minut)... ');
   const synopticChartFrames = await fetchSynopticChartSequence();
   console.log(`OK(${synopticChartFrames.length}/${STEP_HOURS.length})`);
 
