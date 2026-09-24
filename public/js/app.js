@@ -648,15 +648,17 @@ function metricBox(label, value, pill) {
 }
 
 /**
- * Vetrne "zastavice" (wind barb) namesto preprostih puščic: ročaj SVG
- * ikone kaže SMER, KAMOR veter potuje (konvencija kot na Windy.com -
- * "smer potovanja", NASPROTNO od "od kod piha", ki jo uporablja
- * kompasna koda v besedilu ocene - glej directionCodeHint), zastavice na
- * koncu ročaja pa kodirajo MOČ vetra, tako da je jakost razvidna tudi
- * brez branja števila:
+ * Vetrne "zastavice" (wind barb) namesto preprostih puščic - poenostavljena
+ * standardna meteorološka oblika (kot na klasičnih diagramih "how to read
+ * wind barbs"): raven ročaj BREZ puščične konice, majhna pika na enem
+ * koncu (postaja/oporišče), zastavice (feather barbs) na drugem koncu.
+ * Ročaj kaže SMER, KAMOR veter potuje (konvencija kot na Windy.com -
+ * "smer potovanja", NASPROTNO od "od kod piha", ki jo uporablja kompasna
+ * koda v besedilu ocene - glej directionCodeHint), zastavice pa kodirajo
+ * MOČ vetra, tako da je jakost razvidna tudi brez branja števila:
  *   - trikotnik (zastavica) = 20 km/h, dolga črtica = 10 km/h, kratka
  *     črtica = 5 km/h (hitrost se za izris zaokroži na najbližjih 5 km/h)
- *   - sam krožec brez ročaja = šibek/miren veter (< 3 km/h, smer takrat
+ *   - sama pika brez ročaja = šibek/miren veter (< 3 km/h, smer takrat
  *     ni relevantna)
  * Barva ikone se prevzame iz besedila okrog nje (fill/stroke="currentColor"),
  * zato se npr. znotraj rdeče/zelene oznake ustrezno obarva sama.
@@ -664,7 +666,7 @@ function metricBox(label, value, pill) {
 function windBarbMarkup(speedKmh) {
   if (speedKmh === null || speedKmh === undefined) return '';
   if (speedKmh < 3) {
-    return '<circle cx="0" cy="0" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/>';
+    return '<circle cx="0" cy="0" r="3" fill="currentColor"/>';
   }
   const units5 = Math.max(1, Math.round(speedKmh / 5));
   let rem = units5;
@@ -675,21 +677,21 @@ function windBarbMarkup(speedKmh) {
   const shortBarbs = rem;
 
   let barbs = '';
-  let y = 7;
-  const step = 3.2;
+  let y = -8;
+  const step = 3;
   for (let i = 0; i < pennants; i++) {
-    barbs += `<path d="M0,${y.toFixed(1)} L7,${(y - 2.6).toFixed(1)} L0,${(y - 3.2).toFixed(1)} Z" fill="currentColor"/>`;
-    y -= step;
+    barbs += `<path d="M0,${y.toFixed(1)} L6,${(y + 3).toFixed(1)} L0,${(y + 3).toFixed(1)} Z" fill="currentColor"/>`;
+    y += step;
   }
   for (let i = 0; i < longBarbs; i++) {
-    barbs += `<line x1="0" y1="${y.toFixed(1)}" x2="7" y2="${(y - 2.6).toFixed(1)}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`;
-    y -= step;
+    barbs += `<line x1="0" y1="${y.toFixed(1)}" x2="6" y2="${(y + 3).toFixed(1)}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`;
+    y += step;
   }
   for (let i = 0; i < shortBarbs; i++) {
-    barbs += `<line x1="0" y1="${y.toFixed(1)}" x2="3.5" y2="${(y - 1.3).toFixed(1)}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`;
-    y -= step;
+    barbs += `<line x1="0" y1="${y.toFixed(1)}" x2="3" y2="${(y + 1.5).toFixed(1)}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`;
+    y += step;
   }
-  return `<line x1="0" y1="8" x2="0" y2="-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M0,-8.8 L-3,-4 L3,-4 Z" fill="currentColor"/>${barbs}`;
+  return `<line x1="0" y1="8" x2="0" y2="-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="0" cy="8" r="2" fill="currentColor"/>${barbs}`;
 }
 
 function windBarbSvgFromDeg(fromDeg, speedKmh, size) {

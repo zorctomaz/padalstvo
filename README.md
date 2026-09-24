@@ -536,12 +536,15 @@ vetra) - `windBarbSvgFromDeg`/`windBarbGroupFromDeg` interno pretvorita
 meteorološko "od kod" stopinjo v prikazano "kam" stopinjo z `(deg + 180) %
 360`, preden jo uporabita za CSS/SVG `rotate(...)`.
 
-Ročaj poleg smeri prikaže tudi **moč vetra brez potrebe po branju
-števila** (kot pri poenostavljenih zastavicah na skytech.si): trikotnik
-(zastavica) = 20 km/h, dolga črtica = 10 km/h, kratka črtica = 5 km/h
-(hitrost se zaokroži na najbližjih 5 km/h), sam krožec brez ročaja pa
-pomeni šibek/miren veter (< 3 km/h, smer takrat ni relevantna) –
-`windBarbMarkup` v `public/js/app.js`.
+Oblika ikone je **poenostavljena standardna meteorološka vetrna
+zastavica** (kot na klasičnih diagramih "how to read wind barbs"): raven
+ročaj BREZ puščične konice, z majhno piko na enem koncu (postaja) in
+zastavicami na drugem. Ročaj poleg smeri prikaže tudi **moč vetra brez
+potrebe po branju števila**: trikotnik (zastavica) = 20 km/h, dolga
+črtica = 10 km/h, kratka črtica = 5 km/h (hitrost se zaokroži na
+najbližjih 5 km/h), sama pika brez ročaja pa pomeni šibek/miren veter
+(< 3 km/h, smer takrat ni relevantna) – `windBarbMarkup` v
+`public/js/app.js`.
 
 Ker ARSO napoved uporablja slovenske kratice (S/SV/V/JV/J/JZ/Z/SZ), SkyTech
 (žive postaje) pa angleške (N/NE/E/SE/S/SW/W/NW) – in se npr. "S" med
