@@ -47,7 +47,7 @@ za pilote:
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
 | **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini |
 | **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Povezava "Veter na višini (Windy)" v kartici "Povezave" na dnu strani – za več podrobnosti/nivojev, kot jih prikaže tabela |
-| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisane javne karte pritiska na morski gladini (MSLP) + vetra na 850 hPa za srednjo Evropo, osvežene z vsakim tekom ECMWF-jevega modela (produkt sega do +240h/10 dni), CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji, zaporedje petih kart (zdaj/+24h/+48h/+72h/+96h, isti modelski tek, star vsaj 12h zaradi objavnega zamika); kartica "🗺️ Premikanje sistemov (ECMWF)" s petimi sličicami – prikazuje, kako se pritisni sistemi (in posredno fronte) premikajo v naslednjih dneh, ne le trenutni posnetek |
+| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisane javne karte pritiska na morski gladini (MSLP) + vetra na 850 hPa za Evropo (projekcija `opencharts_europe` - širša od privzete ožje "Central Europe"), osvežene z vsakim tekom ECMWF-jevega modela (produkt sega do +240h/10 dni), CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji, zaporedje 11 kart (zdaj, nato vsakih 24h do +240h, isti modelski tek, star vsaj 12h zaradi objavnega zamika); interaktivna kartica "🗺️ Premikanje sistemov (ECMWF)" z drsnikom in gumbom ▶/⏸ za animacijo – prikazuje, kako se pritisni sistemi (in posredno fronte) premikajo v naslednjih desetih dneh, ne le trenutni posnetek |
 
 ### Ocene, specifične za jadralno padalstvo
 
@@ -506,13 +506,17 @@ nizkega pritiska/fronte, hiter dvig krepitev anticiklona), za katerega
 podatek že imamo.
 
 Poleg tega izračunanega trenda je pod kartico z vetrom po višini
-kartica **"🗺️ Premikanje sistemov (ECMWF)"** - zaporedje petih vnaprej
-izrisanih kart pritiska + vetra na 850 hPa za srednjo Evropo (glej
-"ECMWF Open Charts" v tabeli virov zgoraj): zdaj, čez 24 h, 48 h, 72 h
-in 96 h, vse iz istega modelskega teka. Tako je viden ne le trenutni
-položaj pritisnih sistemov (in posredno front), temveč tudi smer in
-hitrost njihovega premikanja v naslednjih dneh. Klik na sličico odpre
-polno velikost slike v novem zavihku.
+kartica **"🗺️ Premikanje sistemov (ECMWF)"** - interaktiven prikaz
+zaporedja enajstih vnaprej izrisanih kart pritiska + vetra na 850 hPa
+za Evropo (glej "ECMWF Open Charts" v tabeli virov zgoraj): zdaj, nato
+vsakih 24 ur do +240 h (10 dni), vse iz istega modelskega teka. Namesto
+klikljivih sličic je na voljo **drsnik** (povleci za poljuben korak) in
+**gumb za predvajanje** (▶/⏸ - samodejno se pomika skozi vse korake in
+ob koncu začne znova), pod sliko pa je izpisan datum/ura in korak
+trenutno prikazane karte. Tako je viden ne le trenutni položaj
+pritisnih sistemov (in posredno front), temveč tudi smer in hitrost
+njihovega premikanja v naslednjih desetih dneh. Klik na sliko odpre
+polno velikost v novem zavihku.
 
 - `pressureHpa` je ARSO polje (`msl` - pritisk na morski gladini),
   razčlenjeno že v `src/arso.js` za vsak 3h vnos napovedi, doslej pa
@@ -529,19 +533,31 @@ polno velikost slike v novem zavihku.
   pritiska ne merijo, zato ta podatek ni odvisen od izbire žive
   postaje.
 - **Premikanje sistemov (ECMWF)** je za razliko od trenda ENO SAMO
-  zaporedje petih kart za celotno aplikacijo, ne po vzletišču/lokaciji -
+  zaporedje enajstih kart za celotno aplikacijo, ne po vzletišču/lokaciji -
   `src/ecmwf.js` (`fetchSynopticChartSequence`) ob vsaki izgradnji z
   JSON API-jem (`charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/`)
-  pridobi pet sličic iz istega modelskega teka za korake 0 h/+24 h/+48 h/
-  +72 h/+96 h (`valid_time`), v projekciji `opencharts_central_europe`
-  (bolj primerna za Slovenijo kot privzeta "Europe"). `scripts/build-data.js`
-  isto zaporedje (polje `synopticChartFrames`) doda vsem vzletiščem. Sama
-  HTML produktna stran ECMWF-ja je za brskalnike zaščitena z anti-bot
-  izzivom (Anubis), a JSON API in same PNG slike nista (potrjeno prek
-  GitHub Actions - status 200/`image/png` tako s kot brez posebne
-  `User-Agent` glave), zato je varno za neposredno povezavo v aplikaciji.
-  Če posamezen korak spodleti, se preprosto izpusti iz zaporedja (ne
-  podre izgradnje); če spodletijo vsi, se kartica na strani skrije.
+  pridobi 11 sličic iz istega modelskega teka za korake 0 h, 24 h, 48 h
+  ... do 240 h (`STEP_HOURS`, `valid_time`), v projekciji
+  `opencharts_europe`. `scripts/build-data.js` isto zaporedje (polje
+  `synopticChartFrames`) doda vsem vzletiščem. Sama HTML produktna stran
+  ECMWF-ja je za brskalnike zaščitena z anti-bot izzivom (Anubis), a
+  JSON API in same PNG slike nista (potrjeno prek GitHub Actions -
+  status 200/`image/png` tako s kot brez posebne `User-Agent` glave),
+  zato je varno za neposredno povezavo v aplikaciji. Če posamezen korak
+  spodleti, se preprosto izpusti iz zaporedja (ne podre izgradnje); če
+  spodletijo vsi, se kartica na strani skrije.
+- **Projekcija `opencharts_europe`** (namesto prvotne
+  `opencharts_central_europe`) je bila izbrana namenoma širša - uporabnik
+  je želel na zemljevidu videti tudi sisteme, ki šele prihajajo izven
+  ožje Evrope. Seznam VSEH veljavnih projekcij je bil pridobljen prek
+  GitHub Actions z namerno neveljavno vrednostjo parametra `projection`
+  - API v 404 odgovoru navede poln seznam (npr. `opencharts_europe`,
+  `opencharts_global`, `opencharts_central_europe`,
+  `opencharts_north_west_europe`, `opencharts_north_atlantic`,
+  `opencharts_africa`, ... - skupno več kot 25 regij/kontinentov po
+  vsem svetu). `opencharts_europe` je bila tudi privzeta vrednost, ko
+  API ni dobil parametra `projection` - torej najbolj "standardna"
+  širša izbira za ta produkt.
 - **Izbira `base_time` (`pickBaseTime` v `src/ecmwf.js`)** NI "zadnji
   00Z/12Z tek takoj po objavi", temveč zadnji tek, ki je star **vsaj 12
   ur**. Build teče vsako uro, ECMWF pa karte objavi šele nekaj ur po
@@ -553,10 +569,17 @@ polno velikost slike v novem zavihku.
   le delno zaporedje. "Včeraj 12Z"/"danes 00Z" po izteku 12h je bilo v
   vseh testih zanesljivo objavljeno za cel razpon. Produkt sicer sega
   vse do **+240h (10 dni)** - preverjeno prek GitHub Actions (koraki do
-  vključno +240h vrnejo veljavno sliko, +264h vrne 404) - za prikaz pa
-  je izbranih prvih 96h (5 sličic), da kartica ostane pregledna;
-  `STEP_HOURS` v `src/ecmwf.js` je mogoče razširiti, če bo v prihodnje
-  zaželen daljši razpon.
+  vključno +240h vrnejo veljavno sliko, +264h vrne 404) - `STEP_HOURS`
+  zdaj uporabi cel ta razpon (vsakih 24h).
+- **Interaktiven prikaz** (`renderSynopticChart`/`showSynopticFrame`/
+  `toggleSynopticPlayback` v `public/js/app.js`, `.synoptic-viewer*` v
+  `public/css/style.css`) namesto prejšnje vrstice klikljivih sličic -
+  z 11 koraki bi ta postala nepregledna. Ena velika slika, pod njo
+  drsnik (`<input type="range">`, korak = indeks v `synopticChartFrames`)
+  za poljuben korak in gumb ▶/⏸ za samodejno animacijo (samodejno se
+  pomika po korakih vsakih 1200 ms in se ob koncu zaporedja zacikla).
+  Ob vsakem `renderAll` (npr. ob spremembi jezika ali izbiri druge
+  lokacije) se predvajanje ustavi in prikaz ponastavi na prvi korak.
 
 ### Veter po višini (🌬️)
 

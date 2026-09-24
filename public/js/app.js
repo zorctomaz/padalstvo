@@ -37,8 +37,11 @@ const TRANSLATIONS = {
     clickForHourlyDetailsChart: 'Klikni za podrobnosti in graf po urah ↗',
     windAloftTitle: '🌬️ Veter po višini',
     synopticChartTitle: '🗺️ Premikanje sistemov (ECMWF)',
-    synopticChartHint: 'Karte pritiska + vetra na 850 hPa – zdaj, čez 24 h, 48 h, 72 h in 96 h, isti modelski tek. Klik odpre polno velikost.',
+    synopticChartHint: 'Karta pritiska + vetra na 850 hPa za Evropo – od zdaj do 10 dni v naprej, isti modelski tek. Povleci drsnik ali predvajaj animacijo; klik na sliko odpre polno velikost.',
     synopticFrameLabel: (hours) => (hours === 0 ? 'Zdaj' : `+${hours} h`),
+    synopticPlayLabel: 'Predvajaj animacijo',
+    synopticPauseLabel: 'Ustavi animacijo',
+    synopticSliderLabel: 'Časovni korak',
     nearbyStationsTitle: '📡 Postaje v bližini',
     forecastTitle: 'Večdnevna napoved',
     colDay: 'Dan',
@@ -132,8 +135,11 @@ const TRANSLATIONS = {
     clickForHourlyDetailsChart: 'Click for hourly details and chart ↗',
     windAloftTitle: '🌬️ Wind aloft',
     synopticChartTitle: '🗺️ System movement (ECMWF)',
-    synopticChartHint: 'Pressure + 850 hPa wind charts – now, in 24 h, 48 h, 72 h and 96 h, same model run. Tap to open full size.',
+    synopticChartHint: 'Pressure + 850 hPa wind chart for Europe – from now up to 10 days ahead, same model run. Drag the slider or play the animation; tap the image to open full size.',
     synopticFrameLabel: (hours) => (hours === 0 ? 'Now' : `+${hours} h`),
+    synopticPlayLabel: 'Play animation',
+    synopticPauseLabel: 'Pause animation',
+    synopticSliderLabel: 'Time step',
     nearbyStationsTitle: '📡 Nearby stations',
     forecastTitle: 'Multi-day forecast',
     colDay: 'Day',
@@ -340,6 +346,9 @@ const state = {
   currentHistoryStationId: null,
   windUnit: loadStoredWindUnit(),
   lang: loadStoredLang(),
+  synopticFrames: [],
+  synopticPlaying: false,
+  synopticTimer: null,
 };
 
 const el = {
@@ -353,7 +362,11 @@ const el = {
   windAloftMeta: document.getElementById('windAloftMeta'),
   windAloftList: document.getElementById('windAloftList'),
   synopticChartBlock: document.getElementById('synopticChartBlock'),
-  synopticChartFrames: document.getElementById('synopticChartFrames'),
+  synopticViewerLink: document.getElementById('synopticViewerLink'),
+  synopticViewerImg: document.getElementById('synopticViewerImg'),
+  synopticViewerLabel: document.getElementById('synopticViewerLabel'),
+  synopticSlider: document.getElementById('synopticSlider'),
+  synopticPlayBtn: document.getElementById('synopticPlayBtn'),
   statusBox: document.getElementById('statusBox'),
   currentBlock: document.getElementById('currentBlock'),
   siteName: document.getElementById('siteName'),
@@ -1447,29 +1460,75 @@ function renderLinks(data) {
   el.linksBlock.hidden = false;
 }
 
+function formatSynopticFrameLabel(frame) {
+  const stepLabel = t('synopticFrameLabel', frame.stepHours);
+  const d = new Date(frame.validTime);
+  if (Number.isNaN(d.getTime())) return stepLabel;
+  const dateLabel = d.toLocaleDateString(dateLocale(), { weekday: 'short', day: 'numeric', month: 'numeric' });
+  const timeLabel = d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+  return `${dateLabel} ${timeLabel} (${stepLabel})`;
+}
+
+function showSynopticFrame(index) {
+  const frames = state.synopticFrames;
+  if (!frames || frames.length === 0) return;
+  const clamped = Math.max(0, Math.min(index, frames.length - 1));
+  const frame = frames[clamped];
+  el.synopticViewerImg.src = frame.url;
+  el.synopticViewerImg.alt = t('synopticFrameLabel', frame.stepHours);
+  el.synopticViewerLink.href = frame.url;
+  el.synopticViewerLabel.textContent = formatSynopticFrameLabel(frame);
+  el.synopticSlider.value = String(clamped);
+}
+
+function stopSynopticPlayback() {
+  if (state.synopticTimer) {
+    clearInterval(state.synopticTimer);
+    state.synopticTimer = null;
+  }
+  state.synopticPlaying = false;
+  el.synopticPlayBtn.textContent = '▶';
+  el.synopticPlayBtn.setAttribute('aria-pressed', 'false');
+  el.synopticPlayBtn.setAttribute('aria-label', t('synopticPlayLabel'));
+}
+
+function startSynopticPlayback() {
+  if (!state.synopticFrames || state.synopticFrames.length < 2) return;
+  state.synopticPlaying = true;
+  el.synopticPlayBtn.textContent = '⏸';
+  el.synopticPlayBtn.setAttribute('aria-pressed', 'true');
+  el.synopticPlayBtn.setAttribute('aria-label', t('synopticPauseLabel'));
+  state.synopticTimer = setInterval(() => {
+    const next = (Number(el.synopticSlider.value) + 1) % state.synopticFrames.length;
+    showSynopticFrame(next);
+  }, 1200);
+}
+
+function toggleSynopticPlayback() {
+  if (state.synopticPlaying) {
+    stopSynopticPlayback();
+  } else {
+    startSynopticPlayback();
+  }
+}
+
 /**
- * Zaporedje treh ECMWF kart (zdaj/+24h/+48h, glej src/ecmwf.js) - male
- * sličice, klik odpre polno velikost v novem zavihku. Namen: prikazati
+ * Zaporedje ECMWF kart (zdaj, nato vsakih 24h do +240h/10 dni, glej
+ * src/ecmwf.js) - interaktiven drsnik/animacija namesto vrstice klikljivih
+ * sličic (z 11 koraki bi ta postala nepregledna). Namen: prikazati
  * premikanje pritisnih sistemov (in posredno front) čez naslednje dni,
  * ne le en posnetek.
  */
 function renderSynopticChart(data) {
   const frames = data.synopticChartFrames;
-  if (!frames || frames.length === 0) {
+  stopSynopticPlayback();
+  state.synopticFrames = frames && frames.length > 0 ? frames : [];
+  if (state.synopticFrames.length === 0) {
     el.synopticChartBlock.hidden = true;
     return;
   }
-  el.synopticChartFrames.innerHTML = frames
-    .map((f) => {
-      const label = t('synopticFrameLabel', f.stepHours);
-      return `
-        <a href="${f.url}" target="_blank" rel="noopener" class="synoptic-frame">
-          <img src="${f.url}" alt="${label}" loading="lazy" />
-          <span>${label}</span>
-        </a>
-      `;
-    })
-    .join('');
+  el.synopticSlider.max = String(state.synopticFrames.length - 1);
+  showSynopticFrame(0);
   el.synopticChartBlock.hidden = false;
 }
 
@@ -1642,6 +1701,12 @@ function setWindUnit(unit) {
 
 el.unitMsBtn.addEventListener('click', () => setWindUnit('ms'));
 el.unitKmhBtn.addEventListener('click', () => setWindUnit('kmh'));
+
+el.synopticSlider.addEventListener('input', () => {
+  stopSynopticPlayback();
+  showSynopticFrame(Number(el.synopticSlider.value));
+});
+el.synopticPlayBtn.addEventListener('click', toggleSynopticPlayback);
 
 function updateLangButtons() {
   el.langSiBtn.setAttribute('aria-pressed', state.lang === 'sl' ? 'true' : 'false');

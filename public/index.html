@@ -64,8 +64,17 @@
 
   <section id="synopticChartBlock" class="block" hidden>
     <h2 data-i18n="synopticChartTitle">🗺️ Premikanje sistemov (ECMWF)</h2>
-    <p class="meta small" data-i18n="synopticChartHint">Karte pritiska + vetra na 850 hPa – zdaj, čez 24 h, 48 h, 72 h in 96 h, isti modelski tek. Klik odpre polno velikost.</p>
-    <div id="synopticChartFrames" class="synoptic-frames"></div>
+    <p class="meta small" data-i18n="synopticChartHint">Karta pritiska + vetra na 850 hPa za Evropo – od zdaj do 10 dni v naprej, isti modelski tek. Povleci drsnik ali predvajaj animacijo; klik na sliko odpre polno velikost.</p>
+    <div class="synoptic-viewer">
+      <a id="synopticViewerLink" href="#" target="_blank" rel="noopener" class="synoptic-viewer-frame">
+        <img id="synopticViewerImg" alt="" />
+      </a>
+      <div class="synoptic-viewer-controls">
+        <button id="synopticPlayBtn" type="button" class="synoptic-play-btn" aria-pressed="false" data-i18n-aria="synopticPlayLabel">▶</button>
+        <input id="synopticSlider" type="range" min="0" max="0" value="0" step="1" class="synoptic-slider" data-i18n-aria="synopticSliderLabel" />
+      </div>
+      <p id="synopticViewerLabel" class="meta small synoptic-viewer-label"></p>
+    </div>
   </section>
 
   <section id="nearbyBlock" class="block" hidden>

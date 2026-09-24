@@ -8,18 +8,30 @@
  * API in same PNG slike nista (potrjeno prek GitHub Actions - status
  * 200/image/png tudi brez posebne User-Agent glave).
  *
- * Namesto ene same "trenutne" karte pridobimo ZAPOREDJE petih (zdaj/+24h/
- * +48h/+72h/+96h) iz ISTEGA modelskega teka (base_time), v projekciji
- * "opencharts_central_europe" (bolj primerna za Slovenijo kot privzeta
- * "Europe") - da lahko prikažemo, kako se pritisni sistemi (in posredno
- * fronte) premikajo čez naslednje dni, ne le trenutni posnetek. Karte
- * niso vezane na posamezno vzletišče - ena sama sekvenca velja za
+ * Namesto ene same "trenutne" karte pridobimo ZAPOREDJE enajstih (zdaj,
+ * nato vsakih 24h do +240h/10 dni) iz ISTEGA modelskega teka (base_time),
+ * v projekciji "opencharts_europe" (širši zemljevid - cela Evropa in rob
+ * severnega Atlantika/severne Afrike/zahodne Azije, ne le "Central
+ * Europe" - uporabnik je želel videti tudi sisteme, ki šele prihajajo
+ * izven Evrope) - da lahko prikažemo, kako se pritisni sistemi (in
+ * posredno fronte) premikajo čez naslednje dni, ne le trenutni posnetek.
+ * Karte niso vezane na posamezno vzletišče - ena sama sekvenca velja za
  * celotno aplikacijo, deljena med vsemi vzletišči/lokacijami (glej
- * klicatelja v scripts/build-data.js).
+ * klicatelja v scripts/build-data.js). V uporabniškem vmesniku je
+ * zaporedje prikazano kot interaktiven drsnik/animacija (glej
+ * renderSynopticChart/showSynopticFrame v public/js/app.js), ne kot
+ * vrstica klikljivih sličic - z 11 koraki bi ta postala nepregledna.
+ *
+ * Razpoložljive projekcije so bile pridobljene prek GitHub Actions z
+ * namerno neveljavno vrednostjo "projection" - API v napaki (404) navede
+ * poln seznam veljavnih vrednosti, npr. 'opencharts_europe',
+ * 'opencharts_global', 'opencharts_central_europe',
+ * 'opencharts_north_west_europe', 'opencharts_north_atlantic', ...
+ * "opencharts_europe" je bila tudi privzeta vrednost, ko API ni dobil
+ * nobenega parametra "projection".
  *
  * Produkt dejansko sega do +240h (10 dni) - potrjeno prek GitHub Actions
- * (koraki do vključno +240h vrnejo veljavno sliko, +264h vrne 404). Za
- * prikaz izberemo prvih 96h (5 sličic), da kartica ostane pregledna.
+ * (koraki do vključno +240h vrnejo veljavno sliko, +264h vrne 404).
  *
  * base_time NI "trenutni tek" (npr. danes 00Z takoj po polnoči), temveč
  * zadnji 00Z/12Z tek, ki je star vsaj 12 ur - build teče vsako uro in
@@ -36,7 +48,8 @@
 const { fetchJsonCached } = require('./fetchUtil');
 
 const PRODUCT_URL = 'https://charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/';
-const STEP_HOURS = [0, 24, 48, 72, 96];
+const PROJECTION = 'opencharts_europe';
+const STEP_HOURS = [0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240];
 const MIN_BASE_TIME_AGE_HOURS = 12;
 
 function isoHour(d) {
@@ -56,7 +69,7 @@ function pickBaseTime(now) {
 async function fetchChartFrame(baseTime, stepHours) {
   const validTime = new Date(baseTime.getTime() + stepHours * 3600 * 1000);
   const params = new URLSearchParams({
-    projection: 'opencharts_central_europe',
+    projection: PROJECTION,
     base_time: isoHour(baseTime),
     valid_time: isoHour(validTime),
   });
