@@ -1,6 +1,6 @@
 {
-  "name": "Padalstvo Vreme",
-  "short_name": "Padalstvo",
+  "name": "Paragliding Weather",
+  "short_name": "Paragliding",
   "description": "Vremenska napoved za jadralno padalstvo v Sloveniji",
   "start_url": ".",
   "display": "standalone",
