@@ -178,35 +178,10 @@ p {
   display: block;
 }
 
-/* Gumb "svetilka" za začasen izklop nočne zatemnitve - glej
-   updateNightMode()/#nightOverrideBtn v app.js. Viden je le ponoči
-   (glede na dejanski sončni vzhod/zahod, ne fiksno uro), zato je v HTML
-   privzeto hidden in JS ga prikaže/skrije. */
-.btn-flashlight {
-  font-family: 'VT323', monospace;
-  background: none;
-  border: none;
-  padding: 4px;
-  font-size: 1.3rem;
-  line-height: 1;
-  color: var(--cyan);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.btn-flashlight:hover,
-.btn-flashlight:focus-visible {
-  color: var(--yellow);
-  outline: none;
-}
-
-.btn-flashlight.active {
-  color: var(--orange);
-  filter: drop-shadow(0 0 5px rgba(255, 170, 0, 0.7));
-}
-
 /* Opozorilni pas ob nočni zatemnitvi - namenoma ZUNAJ #appContent, zato
-   ostane čitljiv tudi takrat, ko je preostala vsebina zatemnjena. */
+   ostane čitljiv tudi takrat, ko je preostala vsebina zatemnjena. Sam
+   pas je klikljiv/tapljiv (role="button") - klik/tap začasno izklopi
+   (ali znova vklopi) zatemnitev, glej updateNightMode() v app.js. */
 .night-banner {
   margin: 0 0 14px;
   padding: 10px 14px;
@@ -215,6 +190,19 @@ p {
   color: var(--cyan);
   font-size: 1rem;
   text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.night-banner:hover,
+.night-banner:focus-visible {
+  border-color: var(--yellow);
+  outline: none;
+}
+
+.night-banner.active {
+  border-color: var(--orange);
+  color: var(--orange);
 }
 
 /* Nočna zatemnitev (jadralno padalstvo/VFR se sme uradno izvajati le

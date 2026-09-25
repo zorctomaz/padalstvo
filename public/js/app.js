@@ -135,9 +135,8 @@ const TRANSLATIONS = {
     errLoadingGeneric: (msg) => `Napaka pri nalaganju: ${msg}`,
     selectedLocationNamed: (name, coords) => `Izbrana lokacija: ${name} (${coords})`,
     selectedLocationCoords: (coords) => `Izbrana lokacija: ${coords}`,
-    nightBannerActive: '🌙 Trenutno je noč – uradno (VFR, dnevno letenje) se ne sme leteti, zato so podatki spodaj zatemnjeni. Klikni 🔦 zgoraj, če jih vseeno želiš prebrati.',
-    nightBannerOverride: '🔦 Zatemnitev začasno izklopljena – ponoči se uradno (VFR, dnevno letenje) še vedno ne sme leteti.',
-    nightOverrideBtnTitle: 'Začasno prižgi zatemnitev (podatke vseeno prikaži berljivo)',
+    nightBannerActive: '🌙 Trenutno je noč – uradno (VFR, dnevno letenje) se ne sme leteti, zato so podatki spodaj zatemnjeni. Tapni tukaj, če jih vseeno želiš prebrati.',
+    nightBannerOverride: '🔦 Zatemnitev začasno izklopljena – ponoči se uradno (VFR, dnevno letenje) še vedno ne sme leteti. Tapni tukaj za ponovno zatemnitev.',
   },
   en: {
     locateBtn: '📍 Use my location',
@@ -245,9 +244,8 @@ const TRANSLATIONS = {
     errLoadingGeneric: (msg) => `Error loading: ${msg}`,
     selectedLocationNamed: (name, coords) => `Selected location: ${name} (${coords})`,
     selectedLocationCoords: (coords) => `Selected location: ${coords}`,
-    nightBannerActive: '🌙 It is currently night – official (VFR, daytime) flying is not allowed, so the data below is dimmed. Tap 🔦 above if you want to read it anyway.',
-    nightBannerOverride: '🔦 Dimming temporarily turned off – at night, official (VFR, daytime) flying is still not allowed.',
-    nightOverrideBtnTitle: 'Temporarily turn off dimming (show the data readably anyway)',
+    nightBannerActive: '🌙 It is currently night – official (VFR, daytime) flying is not allowed, so the data below is dimmed. Tap here if you want to read it anyway.',
+    nightBannerOverride: '🔦 Dimming temporarily turned off – at night, official (VFR, daytime) flying is still not allowed. Tap here to dim again.',
   },
 };
 
@@ -407,7 +405,6 @@ const el = {
   locateBtn: document.getElementById('locateBtn'),
   mapPickerBtn: document.getElementById('mapPickerBtn'),
   nightBanner: document.getElementById('nightBanner'),
-  nightOverrideBtn: document.getElementById('nightOverrideBtn'),
   windAloftBlock: document.getElementById('windAloftBlock'),
   windAloftMeta: document.getElementById('windAloftMeta'),
   windAloftList: document.getElementById('windAloftList'),
@@ -520,19 +517,15 @@ function currentCoordsForSun() {
 /**
  * Preveri, ali je trenutno (glede na sistemsko uro brskalnika) noč na
  * relevantni lokaciji, in ustrezno zatemni #appContent. Uporabnik lahko
- * zatemnitev začasno izklopi z gumbom "svetilka" (state.nightOverride) -
- * to se ne shranjuje med obiski, saj gre za varnostni opomnik, ne
- * nastavitev.
+ * zatemnitev začasno izklopi s klikom/tapom na opozorilni pas
+ * #nightBanner (state.nightOverride) - to se ne shranjuje med obiski,
+ * saj gre za varnostni opomnik, ne nastavitev.
  */
 function updateNightMode() {
-  el.nightOverrideBtn.title = t('nightOverrideBtnTitle');
-  el.nightOverrideBtn.setAttribute('aria-label', t('nightOverrideBtnTitle'));
-
   const coords = currentCoordsForSun();
   if (!coords || coords.lat == null || coords.lon == null) {
     document.body.classList.remove('is-night');
     el.nightBanner.hidden = true;
-    el.nightOverrideBtn.hidden = true;
     return;
   }
 
@@ -540,11 +533,10 @@ function updateNightMode() {
   const sun = getSunTimes(now, coords.lat, coords.lon);
   const isNight = sun.alwaysNight || (!sun.alwaysDay && (now < sun.sunrise || now > sun.sunset));
 
-  el.nightOverrideBtn.hidden = !isNight;
   if (!isNight) state.nightOverride = false;
 
   document.body.classList.toggle('is-night', isNight && !state.nightOverride);
-  el.nightOverrideBtn.classList.toggle('active', isNight && state.nightOverride);
+  el.nightBanner.classList.toggle('active', isNight && state.nightOverride);
 
   if (!isNight) {
     el.nightBanner.hidden = true;
@@ -2038,9 +2030,15 @@ function setLang(lang) {
 el.langSiBtn.addEventListener('click', () => setLang('sl'));
 el.langEnBtn.addEventListener('click', () => setLang('en'));
 
-el.nightOverrideBtn.addEventListener('click', () => {
+el.nightBanner.addEventListener('click', () => {
   state.nightOverride = !state.nightOverride;
   updateNightMode();
+});
+el.nightBanner.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    el.nightBanner.click();
+  }
 });
 
 el.mapPickerBtn.addEventListener('click', openMapPicker);

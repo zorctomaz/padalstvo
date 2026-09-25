@@ -331,9 +331,11 @@ zemljevidu, preklop jezika/enote) in enkrat na minuto prek
 `setInterval` (nastavljenega v `init()`), da se zatemnitev samodejno
 posodobi tudi med odprto stranjo (npr. ob dejanskem sončnem vzhodu).
 
-Gumb "🔦" (`#nightOverrideBtn`, v `.icon-links` ob gumbih domov/email)
-je viden le ponoči in omogoča začasen preklop nazaj na berljiv prikaz
-(npr. za pregled jutrišnje napovedi) - `state.nightOverride`. To se
+Opozorilni pas `#nightBanner` je sam po sebi klikljiv/tapljiv
+(`role="button"`, Enter/presledek na tipkovnici) - klik/tap nanj
+začasno preklopi nazaj na berljiv prikaz (npr. za pregled jutrišnje
+napovedi), `state.nightOverride`, brez ločenega gumba v glavi strani
+(besedilo pasu samo pove, da je klikljiv - "Tapni tukaj ..."). To se
 namenoma **ne shranjuje** med obiski (ni v `localStorage`), saj gre za
 varnostni opomnik, ne trajno izklopljivo nastavitev - ob ponovnem
 odprtju strani (ali naslednji uri, ko `updateNightMode` znova preveri)
