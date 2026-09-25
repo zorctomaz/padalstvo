@@ -135,6 +135,9 @@ const TRANSLATIONS = {
     errLoadingGeneric: (msg) => `Napaka pri nalaganju: ${msg}`,
     selectedLocationNamed: (name, coords) => `Izbrana lokacija: ${name} (${coords})`,
     selectedLocationCoords: (coords) => `Izbrana lokacija: ${coords}`,
+    nightBannerActive: '🌙 Trenutno je noč – uradno (VFR, dnevno letenje) se ne sme leteti, zato so podatki spodaj zatemnjeni. Klikni 🔦 zgoraj, če jih vseeno želiš prebrati.',
+    nightBannerOverride: '🔦 Zatemnitev začasno izklopljena – ponoči se uradno (VFR, dnevno letenje) še vedno ne sme leteti.',
+    nightOverrideBtnTitle: 'Začasno prižgi zatemnitev (podatke vseeno prikaži berljivo)',
   },
   en: {
     locateBtn: '📍 Use my location',
@@ -242,6 +245,9 @@ const TRANSLATIONS = {
     errLoadingGeneric: (msg) => `Error loading: ${msg}`,
     selectedLocationNamed: (name, coords) => `Selected location: ${name} (${coords})`,
     selectedLocationCoords: (coords) => `Selected location: ${coords}`,
+    nightBannerActive: '🌙 It is currently night – official (VFR, daytime) flying is not allowed, so the data below is dimmed. Tap 🔦 above if you want to read it anyway.',
+    nightBannerOverride: '🔦 Dimming temporarily turned off – at night, official (VFR, daytime) flying is still not allowed.',
+    nightOverrideBtnTitle: 'Temporarily turn off dimming (show the data readably anyway)',
   },
 };
 
@@ -390,6 +396,7 @@ const state = {
   synopticFrames: [],
   synopticPlaying: false,
   synopticTimer: null,
+  nightOverride: false,
 };
 
 const el = {
@@ -399,6 +406,8 @@ const el = {
   unitKmhBtn: document.getElementById('unitKmhBtn'),
   locateBtn: document.getElementById('locateBtn'),
   mapPickerBtn: document.getElementById('mapPickerBtn'),
+  nightBanner: document.getElementById('nightBanner'),
+  nightOverrideBtn: document.getElementById('nightOverrideBtn'),
   windAloftBlock: document.getElementById('windAloftBlock'),
   windAloftMeta: document.getElementById('windAloftMeta'),
   windAloftList: document.getElementById('windAloftList'),
@@ -458,6 +467,91 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   const a =
     Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Približen izračun sončnega vzhoda/zahoda (NOAA poenostavljena formula,
+ * natančnost ~1-2 min) za dano koordinato in datum. Uporabljeno za nočno
+ * zatemnitev strani - jadralno padalstvo (VFR, dnevno letenje) se sme
+ * uradno izvajati le med sončnim vzhodom in zahodom, zato je uporaba
+ * fiksnih ur (npr. "6:00-21:00") skozi leto preveč netočna.
+ * Vrne { sunrise, sunset } kot Date objekta (UTC, zato primerljiva z
+ * `new Date()` ne glede na časovni pas brskalnika), ali { alwaysDay:
+ * true } / { alwaysNight: true } za polarni dan/noč (ne velja za
+ * Slovenijo, a formula naj bo splošno pravilna).
+ */
+function getSunTimes(date, lat, lon) {
+  const rad = Math.PI / 180;
+  const deg = 180 / Math.PI;
+
+  const dayStartUTC = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const yearStartUTC = Date.UTC(date.getUTCFullYear(), 0, 1);
+  const dayOfYear = Math.floor((dayStartUTC - yearStartUTC) / 86400000) + 1;
+
+  const b = rad * (360 / 365) * (dayOfYear - 81);
+  const decl = 23.44 * rad * Math.sin(b);
+  const eqTimeMin = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b);
+
+  const latRad = lat * rad;
+  const cosHourAngle =
+    (Math.sin(-0.83 * rad) - Math.sin(latRad) * Math.sin(decl)) /
+    (Math.cos(latRad) * Math.cos(decl));
+
+  if (cosHourAngle > 1) return { sunrise: null, sunset: null, alwaysNight: true };
+  if (cosHourAngle < -1) return { sunrise: null, sunset: null, alwaysDay: true };
+
+  const hourAngleDeg = Math.acos(cosHourAngle) * deg;
+  const solarNoonUTCMin = 720 - 4 * lon - eqTimeMin;
+  const sunriseUTCMin = solarNoonUTCMin - 4 * hourAngleDeg;
+  const sunsetUTCMin = solarNoonUTCMin + 4 * hourAngleDeg;
+
+  return {
+    sunrise: new Date(dayStartUTC + sunriseUTCMin * 60000),
+    sunset: new Date(dayStartUTC + sunsetUTCMin * 60000),
+  };
+}
+
+function currentCoordsForSun() {
+  if (state.userCoords) return state.userCoords;
+  if (state.lastData && state.lastData.site) return { lat: state.lastData.site.lat, lon: state.lastData.site.lon };
+  return null;
+}
+
+/**
+ * Preveri, ali je trenutno (glede na sistemsko uro brskalnika) noč na
+ * relevantni lokaciji, in ustrezno zatemni #appContent. Uporabnik lahko
+ * zatemnitev začasno izklopi z gumbom "svetilka" (state.nightOverride) -
+ * to se ne shranjuje med obiski, saj gre za varnostni opomnik, ne
+ * nastavitev.
+ */
+function updateNightMode() {
+  el.nightOverrideBtn.title = t('nightOverrideBtnTitle');
+  el.nightOverrideBtn.setAttribute('aria-label', t('nightOverrideBtnTitle'));
+
+  const coords = currentCoordsForSun();
+  if (!coords || coords.lat == null || coords.lon == null) {
+    document.body.classList.remove('is-night');
+    el.nightBanner.hidden = true;
+    el.nightOverrideBtn.hidden = true;
+    return;
+  }
+
+  const now = new Date();
+  const sun = getSunTimes(now, coords.lat, coords.lon);
+  const isNight = sun.alwaysNight || (!sun.alwaysDay && (now < sun.sunrise || now > sun.sunset));
+
+  el.nightOverrideBtn.hidden = !isNight;
+  if (!isNight) state.nightOverride = false;
+
+  document.body.classList.toggle('is-night', isNight && !state.nightOverride);
+  el.nightOverrideBtn.classList.toggle('active', isNight && state.nightOverride);
+
+  if (!isNight) {
+    el.nightBanner.hidden = true;
+    return;
+  }
+  el.nightBanner.hidden = false;
+  el.nightBanner.textContent = state.nightOverride ? t('nightBannerOverride') : t('nightBannerActive');
 }
 
 function findNearestSite(lat, lon) {
@@ -1753,6 +1847,7 @@ function renderAll(data) {
   renderLinks(data);
   el.disclaimerBox.textContent = data.disclaimer;
   el.disclaimerBox.hidden = false;
+  updateNightMode();
 }
 
 async function loadWeatherForSite(siteId) {
@@ -1943,6 +2038,11 @@ function setLang(lang) {
 el.langSiBtn.addEventListener('click', () => setLang('sl'));
 el.langEnBtn.addEventListener('click', () => setLang('en'));
 
+el.nightOverrideBtn.addEventListener('click', () => {
+  state.nightOverride = !state.nightOverride;
+  updateNightMode();
+});
+
 el.mapPickerBtn.addEventListener('click', openMapPicker);
 el.mapModalClose.addEventListener('click', closeMapPicker);
 el.mapModalOverlay.addEventListener('click', (e) => {
@@ -2004,6 +2104,10 @@ document.addEventListener('keydown', (e) => {
     await loadSites();
     if (state.sites.length > 0) {
       await loadWeatherForSite(state.sites[0].id);
+    }
+    updateNightMode();
+    if (window.setInterval) {
+      window.setInterval(updateNightMode, 60000);
     }
   } catch (err) {
     setStatus(t('errLoadingGeneric', err.message), 'error');

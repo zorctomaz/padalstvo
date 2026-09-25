@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=fc081ae" />
 </head>
 <body>
 <div class="screen">
@@ -34,6 +34,7 @@
         <a href="mailto:info@fotra.net" class="email-btn" aria-label="info@fotra.net" title="info@fotra.net">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
         </a>
+        <button id="nightOverrideBtn" class="btn-flashlight" type="button" hidden>🔦</button>
       </div>
       <div class="lang-toggle" role="group" data-i18n-aria="langGroup" aria-label="Jezik">
         <button id="langSiBtn" class="lang-btn" type="button" data-lang="sl" aria-pressed="true">SI</button>
@@ -42,6 +43,9 @@
     </div>
   </header>
 
+  <div id="nightBanner" class="night-banner" hidden></div>
+
+  <div id="appContent">
   <button id="locateBtn" class="btn-big" type="button" data-i18n="locateBtn">📍 Uporabi mojo lokacijo</button>
   <button id="mapPickerBtn" class="btn-big" type="button" data-i18n="mapPickerBtn">🗺️ Izberi na zemljevidu</button>
 
@@ -115,6 +119,7 @@
   <footer class="footer">
     <p data-i18n="footerSources">Podatki: ARSO (vreme.arso.gov.si, meteo.si), opendata.si, SkyTech.si. Ni uradna letalska napoved.</p>
   </footer>
+  </div>
 </div>
 
   <div id="historyModalOverlay" class="modal-overlay" hidden>
@@ -147,6 +152,6 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=fc081ae"></script>
 </body>
 </html>

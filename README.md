@@ -230,10 +230,12 @@ en konsolidiran blok na vzletišče, retro DOS/CRT slog). Na uporabnikovo
 željo je napredni pogled odstranjen, enostaven pogled pa je postal
 **edina stran** aplikacije (`preprosto.html`/`preprosto.js`/
 `preprosto.css` so preimenovani v `index.html`/`app.js`/`style.css`).
-Nekaj funkcij naprednega pogleda (npr. nočna zatemnitev, predogled
-žive postaje v pojavnem oknu ob kliku na vzletišče na zemljevidu) pri
-tem ni bilo preneseno – če jih boš pogrešal/-a, jih je treba znova
-dodati v to (zdaj edino) datoteko.
+Nekaj funkcij naprednega pogleda (npr. predogled žive postaje v
+pojavnem oknu ob kliku na vzletišče na zemljevidu) pri tem ni bilo
+preneseno – če jih boš pogrešal/-a, jih je treba znova dodati v to
+(zdaj edino) datoteko. Nočna zatemnitev je bila kasneje znova dodana
+(glej razdelek "Nočna zatemnitev" spodaj), prilagojena tej (enojni,
+kartic-na-vzletišče) strukturi strani.
 
 **Vizualni slog** sledi matični strani **fotra.net**
 (paragliding.fotra.net je njena poddomena) - retro DOS/CRT terminal
@@ -305,6 +307,38 @@ agenta nima neposrednega dostopa do fotra.net omrežja). Ikoni in email
 naslov (`info@fotra.net`, skupen celotnemu fotra.net omrežju, ne
 specifičen za to podstran) sta enaka v obeh jezikih, zato nista del
 `data-i18n` mehanizma spodaj.
+
+## Nočna zatemnitev (🌙)
+
+Jadralno padalstvo se sme uradno (VFR, dnevno letenje) izvajati le med
+sončnim vzhodom in zahodom. Zato aplikacija ponoči vizualno poudari, da
+letenje trenutno ni dovoljeno: vsebina strani (`#appContent` - vse
+kartice pod glavo/opozorilnim pasom) je namenoma zelo slabo vidna
+(`opacity: 0.25` + `grayscale(0.7) brightness(0.6)`, glej `body.is-night
+#appContent` v `style.css`), glava strani in nov opozorilni pas
+`#nightBanner` (nad `#appContent`, torej ZUNAJ zatemnjenega dela) pa
+ostaneta vedno berljiva.
+
+"Noč" ni fiksna ura (npr. "med 21. in 6. uro"), ampak dejanski sončni
+vzhod/zahod za relevantno lokacijo, izračunan z `getSunTimes(date, lat,
+lon)` (poenostavljena NOAA formula, natančnost ~1-2 min). Lokacija je
+enaka tisti, ki jo uporablja tudi "Veter po višini" (`currentCoordsForSun()`
+- najprej `state.userCoords`, sicer koordinate trenutno prikazanega
+vzletišča iz `state.lastData.site`). `updateNightMode()` to primerja s
+trenutnim časom in preklopi razred `body.is-night`; kliče se ob vsakem
+`renderAll()` (nalaganje vzletišča, "Moja lokacija", izbira postaje na
+zemljevidu, preklop jezika/enote) in enkrat na minuto prek
+`setInterval` (nastavljenega v `init()`), da se zatemnitev samodejno
+posodobi tudi med odprto stranjo (npr. ob dejanskem sončnem vzhodu).
+
+Gumb "🔦" (`#nightOverrideBtn`, v `.icon-links` ob gumbih domov/email)
+je viden le ponoči in omogoča začasen preklop nazaj na berljiv prikaz
+(npr. za pregled jutrišnje napovedi) - `state.nightOverride`. To se
+namenoma **ne shranjuje** med obiski (ni v `localStorage`), saj gre za
+varnostni opomnik, ne trajno izklopljivo nastavitev - ob ponovnem
+odprtju strani (ali naslednji uri, ko `updateNightMode` znova preveri)
+se zatemnitev povrne. Brez znane lokacije (ni GPS-a niti izbranega
+vzletišča) se zatemnitev ne uporabi.
 
 ## Jezik strani (SI/EN)
 

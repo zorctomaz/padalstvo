@@ -178,6 +178,58 @@ p {
   display: block;
 }
 
+/* Gumb "svetilka" za začasen izklop nočne zatemnitve - glej
+   updateNightMode()/#nightOverrideBtn v app.js. Viden je le ponoči
+   (glede na dejanski sončni vzhod/zahod, ne fiksno uro), zato je v HTML
+   privzeto hidden in JS ga prikaže/skrije. */
+.btn-flashlight {
+  font-family: 'VT323', monospace;
+  background: none;
+  border: none;
+  padding: 4px;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--cyan);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.btn-flashlight:hover,
+.btn-flashlight:focus-visible {
+  color: var(--yellow);
+  outline: none;
+}
+
+.btn-flashlight.active {
+  color: var(--orange);
+  filter: drop-shadow(0 0 5px rgba(255, 170, 0, 0.7));
+}
+
+/* Opozorilni pas ob nočni zatemnitvi - namenoma ZUNAJ #appContent, zato
+   ostane čitljiv tudi takrat, ko je preostala vsebina zatemnjena. */
+.night-banner {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 2px solid var(--cyan-dim);
+  background: var(--dos-blue-dark);
+  color: var(--cyan);
+  font-size: 1rem;
+  text-align: center;
+}
+
+/* Nočna zatemnitev (jadralno padalstvo/VFR se sme uradno izvajati le
+   podnevi) - zatemni SAMO #appContent (podatkovne kartice), ne glave ali
+   opozorilnega pasu zgoraj, da ostaneta oba vedno berljiva. */
+body.is-night #appContent {
+  opacity: 0.25;
+  filter: grayscale(0.7) brightness(0.6);
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+body:not(.is-night) #appContent {
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
 /* Jezikovni preklopnik (SI/EN) - natančna kopija sloga in obnašanja
    preklopnika na fotra.net (.lang-toggle/.lang-btn, preiskano prek
    GitHub Actions, glej git zgodovino). Viden je LE gumb za jezik, V
