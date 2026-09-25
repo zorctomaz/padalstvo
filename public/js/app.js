@@ -105,7 +105,7 @@ const TRANSLATIONS = {
     viewOnArsoSite: 'Poglej na uradni ARSO strani ↗',
     mapLoadError: 'Zemljevida ni bilo mogoče naložiti (ni internetne povezave). Poskusi gumb "Moja lokacija" ali izberi vzletišče ročno.',
     myLocation: '📍 Tvoja lokacija',
-    selectedLiveStation: (station, arsoName, km) => `izbrana živa postaja: ${station} · ARSO napoved: ${arsoName} (${km} km)`,
+    selectedLiveStation: (arsoName, km) => `📍 tvoja lokacija · najbližja ARSO napoved: ${arsoName} (${km} km)`,
     nearestArsoSource: (name, km) => `najbližji vir ARSO napovedi: ${name} (${km} km)`,
     regionElevation: (region, elev) => `${region} · ${elev} m n.v.`,
     liveMeasurementSource: (station) => `živa meritev (${station})`,
@@ -212,7 +212,7 @@ const TRANSLATIONS = {
     viewOnArsoSite: 'View on the official ARSO site ↗',
     mapLoadError: 'Could not load the map (no internet connection). Try the "My location" button or pick a launch site manually.',
     myLocation: '📍 Your location',
-    selectedLiveStation: (station, arsoName, km) => `selected live station: ${station} · ARSO forecast: ${arsoName} (${km} km)`,
+    selectedLiveStation: (arsoName, km) => `📍 your location · nearest ARSO forecast: ${arsoName} (${km} km)`,
     nearestArsoSource: (name, km) => `nearest ARSO forecast source: ${name} (${km} km)`,
     regionElevation: (region, elev) => `${region} · ${elev} m a.s.l.`,
     liveMeasurementSource: (station) => `live measurement (${station})`,
@@ -1510,12 +1510,23 @@ function renderPressureTrend(data) {
 }
 
 function renderCurrent(data) {
-  el.siteName.textContent = data.myLocationMode ? t('myLocation') : data.site.name;
+  // Ko uporabnik izbere živo postajo na poljubni GPS točki ("Moja
+  // lokacija"), naslov kartice namesto splošnega "📍 Tvoja lokacija"
+  // prikaže IME te postaje (kot pri uradnem vzletišču) - da je takoj
+  // jasno, KATERI vir se dejansko prikazuje. Splošni "tvoja lokacija"
+  // napis se v tem primeru preseli v podnaslov (glej selectedLiveStation
+  // spodaj), da ni izgubljen.
+  el.siteName.textContent =
+    data.myLocationMode && data.stationMode && data.skytech && data.skytech.stationName
+      ? `📡 ${data.skytech.stationName}`
+      : data.myLocationMode
+        ? t('myLocation')
+        : data.site.name;
   const arsoSourceName = data.arsoLocationName || data.site.name;
   const arsoSourceKm = data.arsoLocationDistanceKm != null ? data.arsoLocationDistanceKm : data.distanceKm;
   const regionText = data.myLocationMode
     ? data.stationMode
-      ? t('selectedLiveStation', data.skytech.stationName, arsoSourceName, arsoSourceKm)
+      ? t('selectedLiveStation', arsoSourceName, arsoSourceKm)
       : t('nearestArsoSource', arsoSourceName, arsoSourceKm)
     : t('regionElevation', data.site.region, data.site.elevation);
   el.siteMeta.textContent = regionText;

@@ -504,6 +504,18 @@ je v bližini potrjena živa postaja:
   vzletišče, ne za poljubno točko v njegovi bližini, zato bi bil njihov
   prikaz zavajajoč.
 
+**Naslov kartice po izbiri žive postaje:** dokler v načinu "Moja
+lokacija" uporabnik ne izbere konkretne žive postaje (klik na vrstico v
+"bližnjih postajah" ali na 📡 oznako na zemljevidu - `selectStationAsCurrent`),
+naslov kartice ostane splošen "📍 Tvoja lokacija". Po izbiri se naslov
+zamenja z IMENOM izbrane postaje (npr. "📡 Nebesa nad Šentrupertom") -
+prej je naslov ostal generičen tudi po izbiri, ime postaje pa se je
+videlo le v podnapisu ("izbrana živa postaja: ..."), kar je bilo lahko
+zavajajoče (ni bilo na prvi pogled jasno, KATERI vir kartica dejansko
+prikazuje). Splošni napis "tvoja lokacija" se v tem primeru preseli v
+podnapis (`selectedLiveStation`, skupaj z ARSO virom/razdaljo), da ni
+izgubljen.
+
 Tehnično: `scripts/build-data.js` ob vsaki izgradnji zapiše tudi javni
 `public/data/skytech-stations.json` (celoten seznam vseh SkyTech postaj
 z zadnjo meritvijo, brez API tokena – gre za iste javne podatke, ki so
