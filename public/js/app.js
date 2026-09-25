@@ -2032,11 +2032,10 @@ function updateLangButtons() {
   el.langEnBtn.setAttribute('aria-pressed', state.lang === 'en' ? 'true' : 'false');
 }
 
-// Carries the current language back to fotra.net (and keeps this page's own
-// URL in sync) - mirrors the ?lang= handling on the other FOTRA subpages.
+// Posodobi lastni URL (?lang=) ob vsaki spremembi jezika - mirrors the
+// ?lang= handling on the other FOTRA subpages. Gumb "domov" (el.homeBtn)
+// dobi isti jezik prek applyStaticTranslations(), klicanega takoj za tem.
 function syncLangLink() {
-  const homeBtn = document.querySelector('.home-btn');
-  if (homeBtn) homeBtn.href = 'https://fotra.net/?lang=' + state.lang;
   try {
     const url = new URL(location.href);
     url.searchParams.set('lang', state.lang);
