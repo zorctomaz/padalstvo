@@ -48,7 +48,6 @@ za pilote:
 | **SFFA telefonski odzivniki** | Žive vremenske postaje (veter v realnem času) na nekaterih vzletiščih | Za vzletišča s potrjeno postajo aplikacija prikaže telefonsko številko odzivnika (vir: SFFA – Zveza za prosto letenje) kot dodaten/varnostni vir |
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
 | **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini; povezava "Open-Meteo (veter po višini)" v kartici "Povezave" |
-| **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Povezava "Veter na višini (Windy)" v kartici "Povezave" na dnu strani – za več podrobnosti/nivojev, kot jih prikaže tabela |
 | **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisane javne karte pritiska na morski gladini (MSLP) + vetra na 850 hPa za Evropo (projekcija `opencharts_europe` - širša od privzete ožje "Central Europe"), osvežene z vsakim tekom ECMWF-jevega modela (produkt sega do +240h/10 dni), CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji, zaporedje 41 kart (zdaj, nato vsakih 6h do +240h, isti modelski tek, star vsaj 12h zaradi objavnega zamika; klici namenoma razmaknjeni zaradi omejitve hitrosti API-ja - izgradnja zato traja nekaj minut dlje); interaktivna kartica "🗺️ Premikanje sistemov (ECMWF)" z drsnikom in gumbom ▶/⏸ za animacijo – prikazuje, kako se pritisni sistemi (in posredno fronte) premikajo v naslednjih desetih dneh, ne le trenutni posnetek; povezava na človeku berljivo produktno stran (`charts.ecmwf.int/products/medium-mslp-wind850`, prikazana le, če je sekvenca kart dejansko naložena) je dodana tudi v kartici "Povezave" – ta HTML stran je sicer za brskalnike zaščitena z anti-bot izzivom (Anubis), ki pa se pri pravih brskalnikih reši samodejno v ozadju |
 
 ### Ocene, specifične za jadralno padalstvo
@@ -740,8 +739,11 @@ prizemni polet 8–30 km/h, ne za morebiten jetstream čez 100 km/h na višjih
 nivojih). `state.windAloftRequestToken` prepreči, da bi počasnejši/starejši
 klic (npr. po hitri menjavi vzletišča) prepisal novejši rezultat.
 Povezava na Windy.com (za podroben interaktiven profil) pod tabelo je
-bila odstranjena – na voljo ostane prek kartice "Povezave" na dnu
-strani ("Veter na višini (Windy)").
+bila odstranjena; kasneje je bila odstranjena tudi iz kartice
+"Povezave" na dnu strani, ker se Windy.com dejansko nikjer v aplikaciji
+ni uporabljal kot vir podatkov (prikazana tabela ves čas bere iz
+Open-Meteo, ki ima svojo lastno povezavo "Open-Meteo (veter po višini)"
+v isti kartici).
 
 Gumb "🗺️" poleg "Moja lokacija" odpre modalno okno z interaktivnim
 zemljevidom ([Leaflet](https://leafletjs.com/) + [OpenStreetMap](https://www.openstreetmap.org/)
