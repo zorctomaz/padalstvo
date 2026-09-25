@@ -43,13 +43,13 @@ za pilote:
 | Vir | Kaj ponuja | Kako je uporabljen |
 |---|---|---|
 | **ARSO** – `vreme.arso.gov.si/api/1.0/location/` | Večdnevna napoved (temperatura, veter, oblačnost, padavine) po imenu kraja | Strežnik (`src/arso.js`) pridobi napoved za ARSO lokacijo, najbližjo izbranemu vzletišču |
-| **opendata.si** – `opendata.si/vreme/report/` | ARSO radar padavin, ALADIN napoved oblačnosti/padavin, verjetnost toče – neposredno po GPS koordinati | Strežnik (`src/opendata.js`) pridobi podatke za koordinato vzletišča/uporabnika |
+| **opendata.si** – `opendata.si/vreme/report/` | ARSO radar padavin, ALADIN napoved oblačnosti/padavin, verjetnost toče – neposredno po GPS koordinati | Strežnik (`src/opendata.js`) pridobi podatke za koordinato vzletišča/uporabnika; dejanski `sourceUrl` (iz `data.sources.opendata`) je povezan tudi v kartici "Povezave" na dnu strani |
 | **ARSO letalsko vreme** – `meteo.si/met/sl/aviation/` | GAFOR, SIGWX, karte vetra na višini | Aplikacija povezuje neposredno na uradno stran (grafični/besedilni produkti, primerni za odpiranje, ne za avtomatsko razčlenjevanje) |
 | **SFFA telefonski odzivniki** | Žive vremenske postaje (veter v realnem času) na nekaterih vzletiščih | Za vzletišča s potrjeno postajo aplikacija prikaže telefonsko številko odzivnika (vir: SFFA – Zveza za prosto letenje) kot dodaten/varnostni vir |
 | **KOK/SkyTech API** – `api.kok.si/aws_api_v2.php` | Uradne žive meritve (veter, sunki, smer, temperatura) za javne vremenske postaje po vsej Sloveniji, vključno z uradno oceno primerne smeri vetra po postaji (zelena/rumena/rdeča) | `src/skytech.js` (glej razdelek spodaj) – strežniški klic prek GitHub Actions, token v secrets |
-| **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini |
+| **Open-Meteo** – `api.open-meteo.com/v1/forecast` | Veter po tlačnih nivojih (1000/925/850/700/600 hPa), brez API ključa, odprt CORS | Klic NEPOSREDNO iz brskalnika (glej razdelek "Veter po višini" spodaj) – edini od preverjenih virov, ki dejansko strojno objavlja veter po višini; povezava "Open-Meteo (veter po višini)" v kartici "Povezave" |
 | **Windy.com** | Veter na višini (izbira nivoja/hPa), globalni model, interaktiven profil/graf | Povezava "Veter na višini (Windy)" v kartici "Povezave" na dnu strani – za več podrobnosti/nivojev, kot jih prikaže tabela |
-| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisane javne karte pritiska na morski gladini (MSLP) + vetra na 850 hPa za Evropo (projekcija `opencharts_europe` - širša od privzete ožje "Central Europe"), osvežene z vsakim tekom ECMWF-jevega modela (produkt sega do +240h/10 dni), CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji, zaporedje 41 kart (zdaj, nato vsakih 6h do +240h, isti modelski tek, star vsaj 12h zaradi objavnega zamika; klici namenoma razmaknjeni zaradi omejitve hitrosti API-ja - izgradnja zato traja nekaj minut dlje); interaktivna kartica "🗺️ Premikanje sistemov (ECMWF)" z drsnikom in gumbom ▶/⏸ za animacijo – prikazuje, kako se pritisni sistemi (in posredno fronte) premikajo v naslednjih desetih dneh, ne le trenutni posnetek |
+| **ECMWF Open Charts** – `charts.ecmwf.int/opencharts-api/v1/products/medium-mslp-wind850/` | Vnaprej izrisane javne karte pritiska na morski gladini (MSLP) + vetra na 850 hPa za Evropo (projekcija `opencharts_europe` - širša od privzete ožje "Central Europe"), osvežene z vsakim tekom ECMWF-jevega modela (produkt sega do +240h/10 dni), CC-BY-4.0 licenca | `src/ecmwf.js` – strežniški klic ob vsaki izgradnji, zaporedje 41 kart (zdaj, nato vsakih 6h do +240h, isti modelski tek, star vsaj 12h zaradi objavnega zamika; klici namenoma razmaknjeni zaradi omejitve hitrosti API-ja - izgradnja zato traja nekaj minut dlje); interaktivna kartica "🗺️ Premikanje sistemov (ECMWF)" z drsnikom in gumbom ▶/⏸ za animacijo – prikazuje, kako se pritisni sistemi (in posredno fronte) premikajo v naslednjih desetih dneh, ne le trenutni posnetek; povezava na človeku berljivo produktno stran (`charts.ecmwf.int/products/medium-mslp-wind850`, prikazana le, če je sekvenca kart dejansko naložena) je dodana tudi v kartici "Povezave" – ta HTML stran je sicer za brskalnike zaščitena z anti-bot izzivom (Anubis), ki pa se pri pravih brskalnikih reši samodejno v ozadju |
 
 ### Ocene, specifične za jadralno padalstvo
 
@@ -245,6 +245,15 @@ naslov s sijajem (`#FFFF55`), dvojna cian obroba okoli osrednjega
 prevzete neposredno iz fotra.net (preiskano prek začasnega GitHub
 Actions debug skripta, glej git zgodovino - peskovnik agenta nima
 neposrednega dostopa do fotra.net).
+
+**Blagovna znamka** je bila preimenovana iz "Padalstvo Vreme" v
+"Paragliding Weather" (usklajeno s selitvijo domene s padalstvo.fotra.net
+na paragliding.fotra.net) - `<title>` in `public/manifest.json`
+(`name`/`short_name`). To je statično angleško ime izven i18n sistema in
+se NE spreminja z SI/EN preklopnikom (podobno kot že prej sam URL). Pod
+ikono padala v glavi strani (`.brand-row`) je dodana še stalna oznaka
+`.brand-tagline` – "🇸🇮 Made in Slovenia for Slovenia" – ki iz istega
+razloga ostaja enaka v obeh jezikih.
 
 Stran ima **izbiro lokacije na zemljevidu** (🗺️, Leaflet + OpenStreetMap,
 naloženo prek CDN) in **podrobnosti ob kliku**:

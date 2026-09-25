@@ -119,6 +119,9 @@ const TRANSLATIONS = {
     linkArsoRadar: 'ARSO radar padavin',
     linkWindAloft: 'Veter na višini (Windy)',
     linkSkytech: 'SkyTech.si',
+    linkOpendata: 'opendata.si (ARSO/ALADIN)',
+    linkEcmwf: 'ECMWF sinoptična karta',
+    linkOpenMeteo: 'Open-Meteo (veter po višini)',
     loadingData: 'Nalagam podatke…',
     siteDataUnavailable: 'Podatki za to vzletišče še niso na voljo.',
     errLoadingData: (msg) => `Napaka pri nalaganju podatkov: ${msg}`,
@@ -222,6 +225,9 @@ const TRANSLATIONS = {
     linkArsoRadar: 'ARSO precipitation radar',
     linkWindAloft: 'Wind aloft (Windy)',
     linkSkytech: 'SkyTech.si',
+    linkOpendata: 'opendata.si (ARSO/ALADIN)',
+    linkEcmwf: 'ECMWF synoptic chart',
+    linkOpenMeteo: 'Open-Meteo (wind aloft)',
     loadingData: 'Loading data…',
     siteDataUnavailable: 'Data for this launch site is not available yet.',
     errLoadingData: (msg) => `Error loading data: ${msg}`,
@@ -1575,12 +1581,16 @@ function renderForecast(data) {
 
 function renderLinks(data) {
   const links = data.links || {};
+  const sources = data.sources || {};
   const items = [
     { href: links.arsoForecastPage, label: t('linkArsoForecast') },
     { href: links.arsoAviation, label: t('linkArsoAviation') },
     { href: links.arsoRadar, label: t('linkArsoRadar') },
     { href: links.windAloft, label: t('linkWindAloft') },
+    { href: links.windAloft ? 'https://open-meteo.com/' : null, label: t('linkOpenMeteo') },
     { href: links.skytech, label: t('linkSkytech') },
+    { href: sources.opendata && sources.opendata.ok ? sources.opendata.sourceUrl : null, label: t('linkOpendata') },
+    { href: (data.synopticChartFrames && data.synopticChartFrames.length > 0) ? 'https://charts.ecmwf.int/products/medium-mslp-wind850' : null, label: t('linkEcmwf') },
   ].filter((i) => i.href);
   if (items.length === 0) {
     el.linksBlock.hidden = true;

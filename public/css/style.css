@@ -104,6 +104,15 @@ p {
   filter: drop-shadow(0 0 6px rgba(255, 255, 85, 0.5));
 }
 
+/* Statična blagovna oznaka izven i18n sistema (glej rename "Padalstvo
+   Vreme" -> "Paragliding Weather" v <title>/manifest.json) - ostane
+   enaka v SI in EN načinu. */
+.brand-tagline {
+  font-size: 0.9rem;
+  color: var(--cyan-dim);
+  letter-spacing: 0.03em;
+}
+
 /* Vrstica z enotskim preklopnikom (M/S ⇄ KM/H), gumbom "domov" (nazaj
    na fotra.net), email povezavo in jezikovnim preklopnikom - struktura
    po zgledu .titlebar-controls > .icon-links + .lang-toggle na
