@@ -255,6 +255,17 @@ ikono padala v glavi strani (`.brand-row`) je dodana še stalna oznaka
 `.brand-tagline` – "🇸🇮 Made in Slovenia for Slovenia" – ki iz istega
 razloga ostaja enaka v obeh jezikih.
 
+**Favicon** (`public/favicon.svg`) je isti 🪂 emoji kot povsod drugod po
+strani/oglasih, na modrem zaobljenem kvadratu (`#0000AA`, ista "DOS
+modra" kot ostala aplikacija) – preverjeno berljivo tudi pri 16×16 px.
+Ker mobilni operacijski sistemi (ikona na domačem zaslonu ob "Dodaj na
+domači zaslon") in `manifest.json`/`apple-touch-icon` SVG ne podpirajo
+zanesljivo, so iz istega SVG-ja z brezglavim Chromium-om (Playwright,
+en sam screenshot na velikost) izrisane tudi rastrske različice:
+`icon-192.png`, `icon-512.png` (manifest `icons`) in
+`apple-touch-icon.png` (180×180, iOS bere izključno prek
+`<link rel="apple-touch-icon">`, ne prek manifesta).
+
 Stran ima **izbiro lokacije na zemljevidu** (🗺️, Leaflet + OpenStreetMap,
 naloženo prek CDN) in **podrobnosti ob kliku**:
 - klik na trenutno kartico (če prikazuje živo SkyTech meritev) ali na
