@@ -1156,9 +1156,51 @@ function renderHistoryCharts(history) {
   `;
 }
 
+/**
+ * Na mobilnem brskalniku naj gumb/gesta "nazaj" ob odprtem oknu (graf
+ * zgodovine, termika, zemljevid) zapre okno namesto da zapusti stran.
+ * Rešeno prek History API: ob odprtju okna potisnemo eno dodatno stanje
+ * v zgodovino; pritisk "nazaj" ga porabi (popstate) namesto da bi šel na
+ * prejšnjo stran. Ob ročnem zapiranju (X, klik zunaj, Escape) to isto
+ * stanje počistimo z history.back(), da zgodovina brskalnika ne kopiči
+ * odvečnih vnosov. modalHistoryPushed prepreči dvojni pushState, če se
+ * isto okno (npr. historyModalOverlay) le posodobi, ne ponovno odpre.
+ */
+let modalHistoryPushed = false;
+
+function pushModalHistoryState() {
+  if (modalHistoryPushed) return;
+  modalHistoryPushed = true;
+  if (window.history && window.history.pushState) {
+    window.history.pushState({ appModalOpen: true }, '');
+  }
+}
+
+function consumeModalHistoryState() {
+  if (!modalHistoryPushed) return;
+  modalHistoryPushed = false;
+  if (window.history && window.history.state && window.history.state.appModalOpen) {
+    window.history.back();
+  }
+}
+
+if (window.addEventListener) {
+  window.addEventListener('popstate', () => {
+    modalHistoryPushed = false;
+    if (!el.historyModalOverlay.hidden) {
+      el.historyModalOverlay.hidden = true;
+      state.currentHistoryStationId = null;
+    }
+    if (!el.mapModalOverlay.hidden) {
+      el.mapModalOverlay.hidden = true;
+    }
+  });
+}
+
 function closeHistoryModal() {
   el.historyModalOverlay.hidden = true;
   state.currentHistoryStationId = null;
+  consumeModalHistoryState();
 }
 
 function openHistoryModal(stationId, stationName, station) {
@@ -1167,6 +1209,7 @@ function openHistoryModal(stationId, stationName, station) {
   el.historyModalSnapshot.innerHTML = station ? renderStationSnapshot(station) : '';
   el.historyModalBody.innerHTML = `<p class="meta small">${t('loadingHistory')}</p>`;
   el.historyModalOverlay.hidden = false;
+  pushModalHistoryState();
   loadStationHistory(stationId)
     .then((history) => {
       if (state.currentHistoryStationId === stationId) renderHistoryCharts(history);
@@ -1269,6 +1312,7 @@ function openArsoThermalDetailModal() {
       .join('') +
     renderThermalHourlyEstimate();
   el.historyModalOverlay.hidden = false;
+  pushModalHistoryState();
 }
 
 /* ---------- Izbira lokacije na zemljevidu (Leaflet + OpenStreetMap) ---------- */
@@ -1391,6 +1435,7 @@ function openMapPicker() {
     return;
   }
   el.mapModalOverlay.hidden = false;
+  pushModalHistoryState();
   requestAnimationFrame(() => {
     initMapPicker();
     mapPickerMap.invalidateSize();
@@ -1399,6 +1444,7 @@ function openMapPicker() {
 
 function closeMapPicker() {
   el.mapModalOverlay.hidden = true;
+  consumeModalHistoryState();
 }
 
 /* ---------- Prikaz podatkov ---------- */
