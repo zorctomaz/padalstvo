@@ -18,6 +18,7 @@
  * ostane v slovenščini v obeh jezikih (ni praktično mehansko prevedljivo).
  */
 const LANG_STORAGE_KEY = 'padalstvo-vreme:lang';
+const BASE_DOCUMENT_TITLE = document.title;
 
 function loadStoredLang() {
   try {
@@ -344,7 +345,10 @@ function dateLocale() {
 /**
  * Osveži vsa besedila v HTML, ki so označena z data-i18n/data-i18n-aria
  * (statični napisi - gumbi, naslovi razdelkov, legenda ...), ob zagonu in
- * ob vsakem preklopu jezika.
+ * ob vsakem preklopu jezika. Ob istem dogodku osveži tudi naslov zavihka
+ * (vsebuje trenutno izbrani jezik) in povezavo "domov" na fotra.net - ta
+ * dobi isti jezik kot query parameter (?lang=sl/en), da ga fotra.net
+ * lahko prevzame ob kliku.
  */
 function applyStaticTranslations() {
   document.querySelectorAll('[data-i18n]').forEach((elNode) => {
@@ -354,6 +358,10 @@ function applyStaticTranslations() {
     elNode.setAttribute('aria-label', t(elNode.getAttribute('data-i18n-aria')));
   });
   document.documentElement.lang = state.lang;
+  document.title = `${BASE_DOCUMENT_TITLE} · ${state.lang.toUpperCase()}`;
+  if (el.homeBtn) {
+    el.homeBtn.href = `https://fotra.net/?lang=${state.lang}`;
+  }
 }
 
 /**
@@ -402,6 +410,7 @@ const el = {
   langSiBtn: document.getElementById('langSiBtn'),
   langEnBtn: document.getElementById('langEnBtn'),
   unitKmhBtn: document.getElementById('unitKmhBtn'),
+  homeBtn: document.getElementById('homeBtn'),
   locateBtn: document.getElementById('locateBtn'),
   mapPickerBtn: document.getElementById('mapPickerBtn'),
   nightBanner: document.getElementById('nightBanner'),

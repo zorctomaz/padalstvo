@@ -308,6 +308,12 @@ naslov (`info@fotra.net`, skupen celotnemu fotra.net omrežju, ne
 specifičen za to podstran) sta enaka v obeh jezikih, zato nista del
 `data-i18n` mehanizma spodaj.
 
+Gumb "domov" nosi trenutno izbrani jezik strani naprej na fotra.net:
+`href` se ob vsakem `applyStaticTranslations()` (zagon strani, preklop
+jezika) posodobi na `https://fotra.net/?lang=sl` oz. `?lang=en`
+(`el.homeBtn`), da lahko fotra.net ob kliku prevzame isto jezikovno
+izbiro.
+
 ## Nočna zatemnitev (🌙)
 
 Jadralno padalstvo se sme uradno (VFR, dnevno letenje) izvajati le med
@@ -370,6 +376,11 @@ padala, oba vedno vidna, le trenutno aktivni poudarjen; na uporabnikovo
   `data-i18n-aria` atributi; `applyStaticTranslations()` v `app.js` jih
   ob zagonu in ob vsakem preklopu jezika osveži iz slovarja
   `TRANSLATIONS` (`{ sl: {...}, en: {...} }`).
+- **Naslov zavihka** (`document.title`) ob istem dogodku dobi pripono s
+  trenutno izbranim jezikom - `"Paragliding Weather · SL"` oz.
+  `"... · EN"` (`BASE_DOCUMENT_TITLE` prebran iz `<title>` ob zagonu +
+  `state.lang.toUpperCase()`). Isti jezik se prek gumba "domov" pošlje
+  tudi na fotra.net (glej razdelek "Glava strani" zgoraj).
 - **Dinamično besedilo**, ki ga generira `app.js` sam (sporočila o
   napakah/nalaganju, "Vir: ...", naslovi grafov ipd.), gre prek funkcije
   `t(key, ...args)` - parametrizirani vnosi v slovarju so funkcije
