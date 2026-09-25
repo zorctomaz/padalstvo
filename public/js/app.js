@@ -21,6 +21,19 @@ const LANG_STORAGE_KEY = 'padalstvo-vreme:lang';
 const BASE_DOCUMENT_TITLE = document.title;
 
 function loadStoredLang() {
+  // A ?lang= URL param (set by fotra.net and the other FOTRA subpages when
+  // linking here) takes priority over what's stored locally, so the
+  // language choice carries across origins - localStorage isn't shared
+  // between fotra.net and paragliding.fotra.net.
+  try {
+    const urlLang = new URLSearchParams(location.search).get('lang');
+    if (urlLang === 'en' || urlLang === 'sl') {
+      localStorage.setItem(LANG_STORAGE_KEY, urlLang);
+      return urlLang;
+    }
+  } catch (_) {
+    /* ni kritično, spregledamo */
+  }
   try {
     const stored = localStorage.getItem(LANG_STORAGE_KEY);
     return stored === 'en' ? 'en' : 'sl';
@@ -2019,6 +2032,20 @@ function updateLangButtons() {
   el.langEnBtn.setAttribute('aria-pressed', state.lang === 'en' ? 'true' : 'false');
 }
 
+// Carries the current language back to fotra.net (and keeps this page's own
+// URL in sync) - mirrors the ?lang= handling on the other FOTRA subpages.
+function syncLangLink() {
+  const homeBtn = document.querySelector('.home-btn');
+  if (homeBtn) homeBtn.href = 'https://fotra.net/?lang=' + state.lang;
+  try {
+    const url = new URL(location.href);
+    url.searchParams.set('lang', state.lang);
+    history.replaceState(history.state, '', url);
+  } catch (_) {
+    /* ni kritično, spregledamo */
+  }
+}
+
 function setLang(lang) {
   state.lang = lang;
   try {
@@ -2027,6 +2054,7 @@ function setLang(lang) {
     /* ni kritično, spregledamo */
   }
   updateLangButtons();
+  syncLangLink();
   applyStaticTranslations();
   if (state.lastData) {
     renderAll(state.lastData);
@@ -2107,6 +2135,7 @@ document.addEventListener('keydown', (e) => {
   try {
     updateUnitButtons();
     updateLangButtons();
+    syncLangLink();
     applyStaticTranslations();
     await loadSites();
     if (state.sites.length > 0) {
