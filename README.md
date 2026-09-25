@@ -375,12 +375,29 @@ padala, oba vedno vidna, le trenutno aktivni poudarjen; na uporabnikovo
 ## Žive postaje vs. samo napoved
 
 Nekatera vzletišča imajo **potrjeno živo vremensko postajo**, druga le
-**izračunano napoved**. Stran to ne prikaže kot ločeno oznako v seznamu
-(seznama/spustnega menija vzletišč ni več - izbira je prek zemljevida,
-glej "Ena stran" zgoraj), ampak neposredno na kartici "trenutno stanje":
-če ima vzletišče živo postajo s svežo meritvijo, kartica prikaže NJENE
-podatke (`useLive` v `renderCurrent`) in postane klikljiva (odpre graf
-zgodovine); sicer prikaže prvo uro ARSO napovedi in ni klikljiva.
+**izračunano napoved**. Stran tega ne prikaže kot ločeno oznako v
+seznamu (seznama/spustnega menija vzletišč ni več - izbira je prek
+zemljevida, glej "Ena stran" zgoraj), ampak neposredno na kartici
+"trenutno stanje": če ima vzletišče živo postajo s svežo meritvijo,
+kartica prikaže NJENE podatke (`useLive` v `renderCurrent`), postane
+klikljiva (odpre graf zgodovine) IN ob vrstici z virom prikaže rdečo
+utripajočo oznako **"🔴 LIVE"** (`liveBadge()`, glej spodaj) kot povezavo
+na skytech.si; sicer prikaže prvo uro ARSO napovedi, kartica ni
+klikljiva in oznake LIVE ni.
+
+**Oznaka "LIVE"** (`liveBadge(skytechUrl)` v `public/js/app.js`,
+`.live-badge`/`.live-dot` v CSS) se prikaže povsod, kjer je prikazana
+DEJANSKA živa meritev SkyTech postaje - poleg glavne kartice še v oknu
+podrobnosti postaje (`renderStationSnapshot`, ki se odpre iz grafa
+zgodovine/seznama bližnjih postaj/oznake na zemljevidu - tam se okno
+PO DEFINICIJI vedno nanaša na živo postajo, zato je oznaka vedno
+prikazana). V seznamu "bližnjih postaj" oznaka namerno NI podvojena na
+vsaki vrstici - ves seznam je po definiciji sestavljen izključno iz
+živih postaj, dodatna oznaka bi bila odvečen šum. Ker javna stran
+skytech.si nima potrjenega/stabilnega naslova po posamezni postaji
+(glej `skytechUrl` v `src/sites.json` - za vsa vzletišča enak,
+`https://skytech.si/`), oznaka povsod vodi na splošno domačo stran
+skytech.si, ne na konkretno postajo.
 
 Od septembra 2026 aplikacija bere žive meritve prek **uradnega KOK/SkyTech
 API-ja** (`api.kok.si/aws_api_v2.php`) – dostop nam je na podlagi

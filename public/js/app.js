@@ -111,6 +111,8 @@ const TRANSLATIONS = {
     liveMeasurementSource: (station) => `živa meritev (${station})`,
     arsoForecastSource: 'ARSO napoved',
     sourceLabel: (source) => `Vir: ${source}`,
+    liveBadgeLabel: 'LIVE',
+    liveBadgeTitle: 'Živa meritev SkyTech - odpri skytech.si',
     regionMaxClimb: (region) => `Regija: ${region} · max. hitrost dviganj`,
     windForecastSource: (name) => `Vir: ARSO napoved za ${name}`,
     windUpTo: (wind, arrow) => `do ${wind}${arrow}`,
@@ -216,6 +218,8 @@ const TRANSLATIONS = {
     liveMeasurementSource: (station) => `live measurement (${station})`,
     arsoForecastSource: 'ARSO forecast',
     sourceLabel: (source) => `Source: ${source}`,
+    liveBadgeLabel: 'LIVE',
+    liveBadgeTitle: 'Live SkyTech measurement - open skytech.si',
     regionMaxClimb: (region) => `Region: ${region} · max. climb rate`,
     windForecastSource: (name) => `Source: ARSO forecast for ${name}`,
     windUpTo: (wind, arrow) => `up to ${wind}${arrow}`,
@@ -617,6 +621,18 @@ async function loadArsoLocationForecast(slug) {
 
 function pillClass(color) {
   return `verdict verdict-${color || 'gray'}`;
+}
+
+/**
+ * Vidna oznaka, da prikazani podatki niso ARSO napoved, ampak živa
+ * meritev SkyTech postaje - z linkom nazaj na skytech.si (na posamezno
+ * postajo ne kažemo, ker javne strani SkyTech nima potrjenega/stabilnega
+ * naslova po postaji - glej `skytechUrl` v src/sites.json, ki je iz
+ * istega razloga za vsa vzletišča enak, `https://skytech.si/`).
+ */
+function liveBadge(skytechUrl) {
+  const href = skytechUrl || 'https://skytech.si/';
+  return `<a class="live-badge" href="${href}" target="_blank" rel="noopener" title="${t('liveBadgeTitle')}"><span class="live-dot" aria-hidden="true"></span>${t('liveBadgeLabel')}</a>`;
 }
 
 function formatDayLabel(dateStr) {
@@ -1093,7 +1109,7 @@ function renderStationSnapshot(station) {
   const wind = rateWindClient(m.windSpeedKmh, m.windGustKmh);
   const dirRating = rateSkytechDirectionClient(station, m.windDirection);
   return `
-    <p class="meta small">${t('currentMeasurement')}${ageText ? ' · ' + ageText : ''}${station.altitude ? ` · ${station.altitude} ${t('elevAbbrev')}` : ''}</p>
+    <p class="meta small">${t('currentMeasurement')}${ageText ? ' · ' + ageText : ''}${station.altitude ? ` · ${station.altitude} ${t('elevAbbrev')}` : ''} ${liveBadge()}</p>
     <div class="big-row">
       ${metricBox(t('labelWind'), m.windSpeedKmh != null ? `${formatWind(m.windSpeedKmh)}${m.windDirection ? ' ' + windArrowSkytech(m.windDirection) : ''}` : '—', wind)}
       ${metricBox(t('labelGustFull'), formatWind(m.windGustKmh))}
@@ -1534,7 +1550,7 @@ function renderCurrent(data) {
     verdictParts.join('') +
     (showDirRating ? `<p class="meta small">${t('directionCodeHint')}</p>` : '') +
     renderPressureTrend(data) +
-    `<p class="meta" style="margin-top:10px;">${t('sourceLabel', source)}</p>`;
+    `<p class="meta" style="margin-top:10px;">${t('sourceLabel', source)}${useLive ? ' ' + liveBadge(data.links && data.links.skytech) : ''}</p>`;
 
   if (useLive) {
     el.currentBlock.dataset.stationId = sk.stationId;
